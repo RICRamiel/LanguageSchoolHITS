@@ -6,13 +6,13 @@
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>4.0.2</version>
-		<relativePath/> <!-- lookup parent from repository -->
+		<relativePath>../pom.xml</relativePath>
 	</parent>
 	<groupId>com.hits</groupId>
 	<artifactId>language-school-back</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
 	<name>language-school-back</name>
 	<description>school project for Spring Boot</description>
+	<packaging>jar</packaging>
 	<url/>
 	<licenses>
 		<license/>
