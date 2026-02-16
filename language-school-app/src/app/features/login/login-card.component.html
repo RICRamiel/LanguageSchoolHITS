@@ -1,0 +1,30 @@
+<app-card class="login-card">
+  <app-card-header class="login-card-header">
+    <div class="login-icon-wrap">
+      <svg
+        class="graduation-icon"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+        <path d="M6 12v5c3 3 9 3 12 0v-5" />
+      </svg>
+    </div>
+    <div class="login-header-text">
+      <app-card-title class="login-title">Образовательная платформа</app-card-title>
+      <app-card-description class="login-description">
+        Войдите в систему используя ваши учетные данные
+      </app-card-description>
+    </div>
+  </app-card-header>
+  <app-card-content>
+    <ng-content />
+  
+  </app-card-content>
+</app-card>
+

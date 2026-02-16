@@ -1,0 +1,10 @@
+<input
+  [id]="id()"
+  [type]="type()"
+  [placeholder]="placeholder()"
+  [class]="'input ' + (class() || '')"
+  [ngModel]="value()"
+  (ngModelChange)="value.set($event)"
+  [required]="required()"
+/>
+
