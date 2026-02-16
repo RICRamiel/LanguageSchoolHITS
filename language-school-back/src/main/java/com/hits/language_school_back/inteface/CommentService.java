@@ -1,12 +1,13 @@
 package com.hits.language_school_back.inteface;
 
 import com.hits.language_school_back.dto.CommentDTO;
+import com.hits.language_school_back.model.Comment;
 
 import java.util.List;
 
 public interface CommentService {
     List<CommentDTO> getCommentsByTaskId(Long taskId);
-    void createComment(CommentDTO commentDTO);
-    void editComment(CommentDTO commentDTO);
+    Comment createComment(CommentDTO commentDTO);
+    Comment editComment(CommentDTO commentDTO, Long commentId);
     void deleteComment(Long commentId);
 }
