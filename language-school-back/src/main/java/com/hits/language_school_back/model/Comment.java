@@ -20,4 +20,6 @@ public class Comment {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "task_id", insertable = false, updatable = false)
     private Long taskId;
+
+    private boolean privateStatus;
 }

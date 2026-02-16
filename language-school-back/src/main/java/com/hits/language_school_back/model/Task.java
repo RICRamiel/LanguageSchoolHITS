@@ -26,6 +26,10 @@ public class Task {
     @JoinColumn(name = "user_id", insertable = false, updatable = false)
     private Long userId;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "name", insertable = false, updatable = false)
+    private String groupName;
+
     @OneToMany(fetch = FetchType.EAGER)
     private List<Comment> commentList;
 
