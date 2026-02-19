@@ -23,12 +23,12 @@ public class Task {
     private TaskStatus taskStatus;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", insertable = false, updatable = false)
-    private Long userId;
+    @JoinColumn(name = "user_id")
+    private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "name", insertable = false, updatable = false)
-    private String groupName;
+    @JoinColumn(name = "group_name")
+    private Group group;
 
     @OneToMany(fetch = FetchType.EAGER)
     private List<Comment> commentList;

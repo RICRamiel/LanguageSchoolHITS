@@ -1,6 +1,6 @@
 package com.hits.language_school_back.controller;
 
-import com.hits.language_school_back.inteface.AttachmentService;
+import com.hits.language_school_back.service.AttachmentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;

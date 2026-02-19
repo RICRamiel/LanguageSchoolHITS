@@ -3,7 +3,7 @@ package com.hits.language_school_back.controller;
 import com.hits.language_school_back.dto.LoginDTO;
 import com.hits.language_school_back.dto.RegisterDTO;
 import com.hits.language_school_back.dto.TokenDTO;
-import com.hits.language_school_back.inteface.AuthService;
+import com.hits.language_school_back.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;

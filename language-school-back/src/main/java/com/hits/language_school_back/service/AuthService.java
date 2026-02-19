@@ -1,4 +1,4 @@
-package com.hits.language_school_back.inteface;
+package com.hits.language_school_back.service;
 
 import com.hits.language_school_back.dto.RegisterDTO;
 import com.hits.language_school_back.dto.TokenDTO;

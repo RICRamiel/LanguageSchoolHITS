@@ -30,18 +30,14 @@ public class User implements UserDetails {
     private String email;
     private String password;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.LAZY)
     private List<Group> groups;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.LAZY)
     private List<Language> languages;
 
     @Enumerated(EnumType.STRING)
     private Role role;
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
-    private List<Request> requests;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

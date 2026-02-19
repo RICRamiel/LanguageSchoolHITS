@@ -1,7 +1,7 @@
 package com.hits.language_school_back.controller;
 
 import com.hits.language_school_back.dto.CommentDTO;
-import com.hits.language_school_back.inteface.CommentService;
+import com.hits.language_school_back.service.CommentService;
 import com.hits.language_school_back.model.Comment;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

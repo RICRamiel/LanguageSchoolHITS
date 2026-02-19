@@ -1,4 +1,4 @@
-package com.hits.language_school_back.inteface;
+package com.hits.language_school_back.service;
 
 import com.hits.language_school_back.dto.TaskDTO;
 import com.hits.language_school_back.dto.TaskStudentDTO;
