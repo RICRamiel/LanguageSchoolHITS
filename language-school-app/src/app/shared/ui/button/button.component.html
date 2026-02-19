@@ -1,0 +1,8 @@
+<button
+  [type]="type()"
+  [class]="'btn ' + (class() || '')"
+  [disabled]="disabled()"
+>
+  <ng-content />
+</button>
+
