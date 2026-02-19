@@ -33,6 +33,6 @@ public class Task {
     @OneToMany(fetch = FetchType.EAGER)
     private List<Comment> commentList;
 
-    //TODO: связь с ответом на задание когда вася сделает сущность
-
+    @OneToMany(fetch = FetchType.EAGER)
+    private List<Attachment> attachmentList;
 }

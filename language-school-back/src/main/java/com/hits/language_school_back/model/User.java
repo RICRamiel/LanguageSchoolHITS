@@ -33,6 +33,9 @@ public class User implements UserDetails {
     @ManyToMany(fetch = FetchType.EAGER)
     private List<Group> groups;
 
+    @ManyToMany(fetch = FetchType.EAGER)
+    private List<Language> languages;
+
     @Enumerated(EnumType.STRING)
     private Role role;
 

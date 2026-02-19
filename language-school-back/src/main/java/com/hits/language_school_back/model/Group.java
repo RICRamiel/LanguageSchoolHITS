@@ -20,6 +20,9 @@ public class Group {
     private String description;
     private Difficulty difficulty;
 
+    @ManyToOne
+    private Language language;
+
     @ManyToMany
     private List<User> users;
 }
