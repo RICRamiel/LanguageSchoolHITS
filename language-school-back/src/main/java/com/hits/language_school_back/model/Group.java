@@ -20,9 +20,9 @@ public class Group {
     private String description;
     private Difficulty difficulty;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Language language;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.LAZY)
     private List<User> users;
 }

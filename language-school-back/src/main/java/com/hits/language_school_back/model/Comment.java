@@ -14,12 +14,12 @@ public class Comment {
     private String text;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", insertable = false, updatable = false)
-    private Long userId;
+    @JoinColumn(name = "user_id")
+    private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "task_id", insertable = false, updatable = false)
-    private Long taskId;
+    @JoinColumn(name = "task_id")
+    private Task task;
 
     private boolean privateStatus;
 }

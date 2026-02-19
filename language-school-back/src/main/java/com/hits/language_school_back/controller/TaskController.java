@@ -3,7 +3,7 @@ package com.hits.language_school_back.controller;
 import com.hits.language_school_back.dto.TaskDTO;
 import com.hits.language_school_back.dto.TaskStudentDTO;
 import com.hits.language_school_back.dto.TaskTeacherDTO;
-import com.hits.language_school_back.inteface.TaskService;
+import com.hits.language_school_back.service.TaskService;
 import com.hits.language_school_back.model.Task;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

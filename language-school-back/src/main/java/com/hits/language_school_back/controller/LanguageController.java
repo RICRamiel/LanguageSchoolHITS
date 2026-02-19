@@ -1,7 +1,7 @@
 package com.hits.language_school_back.controller;
 
 import com.hits.language_school_back.dto.LanguageDTO;
-import com.hits.language_school_back.inteface.LanguageService;
+import com.hits.language_school_back.service.LanguageService;
 import com.hits.language_school_back.model.Language;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

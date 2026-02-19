@@ -1,7 +1,7 @@
 package com.hits.language_school_back.controller;
 
 import com.hits.language_school_back.dto.GroupDTO;
-import com.hits.language_school_back.inteface.GroupService;
+import com.hits.language_school_back.service.GroupService;
 import com.hits.language_school_back.model.Group;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
