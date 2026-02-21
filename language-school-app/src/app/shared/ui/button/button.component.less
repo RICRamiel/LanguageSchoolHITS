@@ -1,6 +1,5 @@
 :host {
   display: block;
-  width: 100%;
 }
 
 .btn {
@@ -15,13 +14,13 @@
   line-height: 1.25rem;
   border-radius: 0.375rem;
   border: 1px solid transparent;
-  background: var(--btn-bg, #2563eb);
-  color: #fff;
+  color: #000;
   cursor: pointer;
   transition: background 0.2s;
 
   &:hover:not(:disabled) {
-    background: var(--btn-hover, #1d4ed8);
+    background: var(--btn-hover);
+    color: #fff;
   }
 
   &:disabled {
@@ -29,4 +28,3 @@
     cursor: not-allowed;
   }
 }
-
