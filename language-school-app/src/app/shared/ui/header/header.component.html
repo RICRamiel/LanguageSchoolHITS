@@ -1,0 +1,50 @@
+<header class="header">
+  <div class="header__inner">
+    <div class="header__left">
+      <div class="avatar">
+        @if (photoUrl()) {
+          <img class="avatar__img" [src]="photoUrl()!" alt="" />
+        } @else {
+          <span class="avatar__fallback">{{ initials() }}</span>
+        }
+      </div>
+
+      <div class="meta">
+        <h1 class="meta__name">{{ fullName() }}</h1>
+        <div class="meta__sub">
+          <p class="meta__email">{{ email() }}</p>
+          @if (badge()) {
+            <span class="badge">{{ badge() }}</span>
+          }
+        </div>
+      </div>
+    </div>
+
+    <app-button class="outline logout-btn" type="button" (click)="logout.emit()">
+      <svg class="logout-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+        <path
+          d="M16 17l5-5-5-5"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+        <path
+          d="M21 12H9"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+      Выйти
+    </app-button>
+  </div>
+</header>
