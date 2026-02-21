@@ -1,0 +1,19 @@
+<div class="tabs" [class.tabs--stretch]="stretch()" role="tablist">
+  @for (t of tabs(); track t.id) {
+    <button
+      type="button"
+      class="tab"
+      [class.tab--active]="isActive(t.id)"
+      [disabled]="t.disabled"
+      role="tab"
+      [attr.aria-selected]="isActive(t.id)"
+      (click)="select(t)"
+    >
+      <span class="tab__label">{{ t.label }}</span>
+
+      @if (t.badge && t.badge > 0) {
+        <span class="tab__badge">{{ t.badge }}</span>
+      }
+    </button>
+  }
+</div>
