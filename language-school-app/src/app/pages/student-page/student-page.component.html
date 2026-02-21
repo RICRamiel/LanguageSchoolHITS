@@ -1,0 +1,31 @@
+<div class="student-page">
+
+  <app-header
+    fullName="Иванов Иван Иванович"
+    email="ivanov@example.com"
+    badge="B2"
+    (logout)="onLogout()"
+  />
+
+  <div class="student-page__content">
+    <app-tabs
+      [tabs]="tabs"
+      [activeId]="activeTab"
+    ></app-tabs>
+    @if (activeTab === 'tasks') {
+      <div class="task-list">
+        @for (t of tasks; track t.title) {
+          <app-task-card
+            [title]="t.title"
+            [pillText]="t.pillText"
+            [pillVariant]="t.pillVariant"
+            [teacher]="t.teacher"
+            [description]="t.description"
+            [dueText]="t.dueText"
+            (details)="openTaskDetails(t.title)"
+          />
+        }
+      </div>
+    }
+  </div>
+</div>
