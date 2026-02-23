@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -16,6 +18,6 @@ public class UserDTO {
     private String firstName;
     private String lastName;
     private String email;
-    private Group studentGroup;
+    private List<Group> groups;
     private Role userRole;
 }
