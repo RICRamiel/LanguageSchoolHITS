@@ -1,0 +1,39 @@
+.card {
+  background: var(--card-bg, #fff);
+  color: var(--card-foreground, #111);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+}
+
+.card-header {
+  display: grid;
+  grid-auto-rows: minmax(0, auto);
+  grid-template-rows: auto auto;
+  align-items: start;
+  gap: 0.375rem;
+  padding: 1.5rem 1.5rem 0;
+}
+
+.card-title {
+  line-height: 1;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.card-description {
+  color: var(--muted-foreground, #6b7280);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.card-content {
+  padding: 0 1.5rem 1.5rem;
+
+  &:last-child {
+    padding-bottom: 1.5rem;
+  }
+}
+
