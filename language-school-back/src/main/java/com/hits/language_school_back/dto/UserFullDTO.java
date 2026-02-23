@@ -5,6 +5,8 @@ import com.hits.language_school_back.model.Group;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 public class UserFullDTO {
@@ -12,6 +14,6 @@ public class UserFullDTO {
     private String firstName;
     private String lastName;
     private String email;
-    private Group studentGroup;
+    private List<Group> groups;
     private Role userRole;
 }
