@@ -4,5 +4,5 @@ import lombok.Data;
 
 @Data
 public class LanguageDTO {
-    String name;
+    private String name;
 }
