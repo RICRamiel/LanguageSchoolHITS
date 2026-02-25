@@ -11,6 +11,7 @@
     <app-tabs
       [tabs]="tabs"
       [activeId]="activeTab"
+      (tabChange)="onTabChange($event)"
     ></app-tabs>
     @if (activeTab === 'tasks') {
       <div class="task-list">
@@ -26,6 +27,11 @@
           />
         }
       </div>
+    } @else {
+      <app-notification-list
+        [notifications]="notifications"
+        (notificationRead)="markNotificationAsRead($event)"
+      />
     }
   </div>
 </div>
