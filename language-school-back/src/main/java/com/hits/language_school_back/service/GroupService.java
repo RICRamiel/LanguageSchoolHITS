@@ -1,6 +1,7 @@
 package com.hits.language_school_back.service;
 
 import com.hits.language_school_back.dto.GroupDTO;
+import com.hits.language_school_back.filter.GroupFilter;
 import com.hits.language_school_back.model.Group;
 
 import java.util.List;
@@ -12,4 +13,5 @@ public interface GroupService {
     List<Group> getGroups();
     List<Group> getGroupsByTeacherId(Long teacherId);
     Group getByGroupId(Long groupId);
+    List<Group> getGroupsWithFilters(GroupFilter groupFilter);
 }

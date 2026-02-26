@@ -1,6 +1,7 @@
 package com.hits.language_school_back.infrastructure;
 
 import com.hits.language_school_back.dto.GroupDTO;
+import com.hits.language_school_back.filter.GroupFilter;
 import com.hits.language_school_back.service.GroupService;
 import com.hits.language_school_back.model.Group;
 import org.springframework.stereotype.Service;
@@ -37,5 +38,10 @@ public class GroupServiceImpl implements GroupService {
     @Override
     public Group getByGroupId(Long groupId) {
         return null;
+    }
+
+    @Override
+    public List<Group> getGroupsWithFilters(GroupFilter groupFilter) {
+        return List.of();
     }
 }
