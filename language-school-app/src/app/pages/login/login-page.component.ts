@@ -25,6 +25,7 @@ import {InputComponent} from '../../shared/ui/input/input.component';
 })
 export class LoginPageComponent {
   private readonly fb = inject(FormBuilder);
+  private readonly router = inject(Router);
 
   readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
@@ -37,5 +38,6 @@ export class LoginPageComponent {
       this.form.markAllAsTouched();
       return;
     }
+    this.router.navigateByUrl('/admin');
   }
 }
