@@ -8,8 +8,8 @@ import lombok.Data;
 @Data
 public class GroupDTO {
     @NotBlank
-    String name;
-    String description;
-    Difficulty difficulty;
-    Language language;
+    private String name;
+    private String description;
+    private Difficulty difficulty;
+    private Language language;
 }

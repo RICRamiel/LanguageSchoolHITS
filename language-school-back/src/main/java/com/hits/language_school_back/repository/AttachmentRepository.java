@@ -1,10 +1,8 @@
 package com.hits.language_school_back.repository;
 
+import com.hits.language_school_back.model.Attachment;
 import com.hits.language_school_back.model.Task;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface TaskRepository extends JpaRepository<Task, Long> {
-    Object findByUserId(Long teacherId);
-
-    Object findByGroupName(String groupName);
+public interface AttachmentRepository extends JpaRepository<Attachment, Long> {
 }
