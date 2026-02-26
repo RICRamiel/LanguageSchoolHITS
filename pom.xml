@@ -9,6 +9,7 @@
         <relativePath/>
     </parent>
     <groupId>com.hits</groupId>
+    <version>1.0.0</version>
     <artifactId>LanguageSchoolHITS</artifactId>
     <name>languageschoolhits</name>
     <packaging>pom</packaging>
