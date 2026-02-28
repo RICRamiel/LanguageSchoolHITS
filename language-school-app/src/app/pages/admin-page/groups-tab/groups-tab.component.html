@@ -1,0 +1,40 @@
+<section class="admin-section">
+  <div class="admin-section__head">
+    <h3 class="section-title">Группы</h3>
+    <app-button type="button" (click)="openAdd()">Добавить группу</app-button>
+  </div>
+  @if (showForm()) {
+    <app-group-form
+      [initialValue]="editingGroup()"
+      (save)="onSave($event)"
+      (cancel)="onCancel()"
+    />
+  }
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Название</th>
+          <th>Язык</th>
+          <th>Преподаватель</th>
+          <th>Студентов</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (g of groups(); track g.id) {
+          <tr>
+            <td>{{ g.name }}</td>
+            <td>{{ g.language }}</td>
+            <td>{{ g.teacherName }}</td>
+            <td>{{ g.studentsCount }}</td>
+            <td class="admin-table__actions">
+              <app-button type="button" class="outline small" (click)="openEdit(g)">Изменить</app-button>
+              <app-button type="button" class="outline small" (click)="deleteGroup(g.id)">Удалить</app-button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
