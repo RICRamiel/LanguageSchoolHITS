@@ -1,0 +1,25 @@
+<app-card class="admin-form-card">
+  <app-card-header>
+    <app-card-title>{{ title }}</app-card-title>
+  </app-card-header>
+  <app-card-content>
+    <form (ngSubmit)="onSubmit()" class="admin-form" [formGroup]="form">
+      <div class="form-row">
+        <app-label for="student-name">ФИО</app-label>
+        <app-input id="student-name" formControlName="fullName" placeholder="ФИО" />
+      </div>
+      <div class="form-row">
+        <app-label for="student-email">Email</app-label>
+        <app-input id="student-email" type="email" formControlName="email" placeholder="email@example.com" />
+      </div>
+      <div class="form-row">
+        <app-label for="student-group">Группа</app-label>
+        <app-input id="student-group" formControlName="groupName" placeholder="Название группы" />
+      </div>
+      <div class="form-actions">
+        <app-button type="submit" class="small">Сохранить</app-button>
+        <app-button type="button" class="outline small" (click)="onCancel()">Отмена</app-button>
+      </div>
+    </form>
+  </app-card-content>
+</app-card>
