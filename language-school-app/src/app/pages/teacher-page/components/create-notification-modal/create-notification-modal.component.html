@@ -1,0 +1,40 @@
+<div class="modal-overlay" (click)="close.emit()">
+  <section class="modal" (click)="$event.stopPropagation()">
+    <button class="modal__close" type="button" (click)="close.emit()">×</button>
+    <h3 class="modal__title">Создать уведомление</h3>
+    <p class="modal__subtitle">Отправьте объявление студентам</p>
+
+    <label class="modal__label" for="notify-title">Заголовок</label>
+    <input
+      id="notify-title"
+      class="modal__input"
+      type="text"
+      placeholder="Например: Изменение расписания"
+      [value]="title"
+      (input)="title = $any($event.target).value"
+    />
+
+    <label class="modal__label" for="notify-content">Содержание</label>
+    <textarea
+      id="notify-content"
+      class="modal__textarea"
+      placeholder="Текст уведомления..."
+      [value]="content"
+      (input)="content = $any($event.target).value"
+    ></textarea>
+
+    <label class="modal__label" for="notify-group">ID группы</label>
+    <input
+      id="notify-group"
+      class="modal__input"
+      type="text"
+      [value]="groupId"
+      (input)="groupId = $any($event.target).value"
+    />
+
+    <div class="modal__actions">
+      <button class="modal__btn modal__btn--ghost" type="button" (click)="close.emit()">Отмена</button>
+      <button class="modal__btn modal__btn--primary" type="button" (click)="onSubmit()">Отправить</button>
+    </div>
+  </section>
+</div>
