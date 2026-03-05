@@ -3,6 +3,8 @@ package com.hits.language_school_back.config;
 import com.hits.language_school_back.filter.JwtAuthentificationFilter;
 import com.hits.language_school_back.service.UserService;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
@@ -26,14 +28,12 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 @EnableWebSecurity
-@AllArgsConstructor
 @Configuration
 public class WebSecurityConfig extends WebSecurityConfiguration {
-    @Lazy
-    private final JwtAuthentificationFilter jwtAuthenticationFilter;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthentificationFilter jwtAuthenticationFilter)
+            throws Exception {
 
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))

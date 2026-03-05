@@ -23,6 +23,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
@@ -54,7 +55,7 @@ class AuthServiceTest {
                 "Иванов",
                 "ivan@example.com",
                 "Qwerty12!",
-                group
+                List.of(group)
         );
     }
 

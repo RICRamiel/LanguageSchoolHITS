@@ -1,4 +1,4 @@
-package com.hits.language_school_back.languageServiceTests;
+package com.hits.language_school_back.service;
 
 import com.hits.language_school_back.infrastructure.GroupServiceImpl;
 import com.hits.language_school_back.model.Group;
@@ -277,7 +277,7 @@ class GroupServiceTests {
         Long teacherId = 1L;
 
         List<Group> expectedGroups = Arrays.asList(group);
-        when(groupRepository.findByUserId(teacherId)).thenReturn(expectedGroups);
+        when(groupRepository.findByUsersId(teacherId)).thenReturn(expectedGroups);
 
         // Act
         List<Group> result = groupService.getGroupsByTeacherId(teacherId);
@@ -286,14 +286,14 @@ class GroupServiceTests {
         assertNotNull(result);
         assertEquals(1, result.size());
 
-        verify(groupRepository, times(1)).findByUserId(teacherId);
+        verify(groupRepository, times(1)).findByUsersId(teacherId);
     }
 
     @Test
     void getGroupsByTeacherId_WhenNoGroups_ShouldReturnEmptyList() {
         // Arrange
         Long teacherId = 1L;
-        when(groupRepository.findByUserId(teacherId)).thenReturn(List.of());
+        when(groupRepository.findByUsersId(teacherId)).thenReturn(List.of());
 
         // Act
         List<Group> result = groupService.getGroupsByTeacherId(teacherId);
@@ -301,7 +301,7 @@ class GroupServiceTests {
         // Assert
         assertNotNull(result);
         assertTrue(result.isEmpty());
-        verify(groupRepository, times(1)).findByUserId(teacherId);
+        verify(groupRepository, times(1)).findByUsersId(teacherId);
     }
 
     @Test
