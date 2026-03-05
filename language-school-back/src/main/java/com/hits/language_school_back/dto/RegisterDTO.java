@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -39,5 +41,5 @@ public class RegisterDTO {
     )
     private String password;
 
-    private Group group;
+    private List<Group> groups;
 }

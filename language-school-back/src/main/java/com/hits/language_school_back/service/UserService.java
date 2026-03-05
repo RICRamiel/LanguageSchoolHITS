@@ -9,10 +9,11 @@ import com.hits.language_school_back.dto.users.TeacherUpdateDTO;
 import com.hits.language_school_back.model.Group;
 import com.hits.language_school_back.model.User;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.core.userdetails.UserDetailsService;
 
 import java.util.List;
 
-public interface UserService {
+public interface UserService extends UserDetailsService {
     UserDTO createStudent(StudentCreateDTO dto);
     UserFullDTO getStudentById(Long id);
     List<UserDTO> getAllStudents(Group group);
