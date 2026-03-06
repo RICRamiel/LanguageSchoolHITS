@@ -1,0 +1,49 @@
+<div class="modal-overlay" (click)="close.emit()">
+  <section class="modal" (click)="$event.stopPropagation()">
+    <button class="modal__close" type="button" (click)="close.emit()">×</button>
+    <h3 class="modal__title">Создать задание</h3>
+    <p class="modal__subtitle">Добавьте новое задание для группы</p>
+
+    <label class="modal__label" for="task-title">Название задания</label>
+    <input
+      id="task-title"
+      class="modal__input"
+      type="text"
+      placeholder="Например: Эссе по грамматике"
+      [value]="title"
+      (input)="title = $any($event.target).value"
+    />
+
+    <label class="modal__label" for="task-content">Описание</label>
+    <textarea
+      id="task-content"
+      class="modal__textarea"
+      placeholder="Описание задания..."
+      [value]="description"
+      (input)="description = $any($event.target).value"
+    ></textarea>
+
+    <label class="modal__label" for="task-date">Срок</label>
+    <input
+      id="task-date"
+      class="modal__input"
+      type="date"
+      [value]="dueDate"
+      (input)="dueDate = $any($event.target).value"
+    />
+
+    <label class="modal__label" for="task-group">ID группы</label>
+    <input
+      id="task-group"
+      class="modal__input"
+      type="text"
+      [value]="groupId"
+      (input)="groupId = $any($event.target).value"
+    />
+
+    <div class="modal__actions">
+      <button class="modal__btn modal__btn--ghost" type="button" (click)="close.emit()">Отмена</button>
+      <button class="modal__btn modal__btn--primary" type="button" (click)="onSubmit()">Создать</button>
+    </div>
+  </section>
+</div>
