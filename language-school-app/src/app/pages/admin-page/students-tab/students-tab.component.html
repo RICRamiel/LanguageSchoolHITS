@@ -1,0 +1,38 @@
+<section class="admin-section">
+  <div class="admin-section__head">
+    <h3 class="section-title">Студенты</h3>
+    <app-button type="button" (click)="openAdd()">Добавить студента</app-button>
+  </div>
+  @if (showForm()) {
+    <app-student-form
+      [initialValue]="editingStudent()"
+      (save)="onSave($event)"
+      (cancel)="onCancel()"
+    />
+  }
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>ФИО</th>
+          <th>Email</th>
+          <th>Группа</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (s of students(); track s.id) {
+          <tr>
+            <td>{{ s.fullName }}</td>
+            <td>{{ s.email }}</td>
+            <td>{{ s.groupName }}</td>
+            <td class="admin-table__actions">
+              <app-button type="button" class="outline small" (click)="openEdit(s)">Изменить</app-button>
+              <app-button type="button" class="outline small" (click)="deleteStudent(s.id)">Удалить</app-button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

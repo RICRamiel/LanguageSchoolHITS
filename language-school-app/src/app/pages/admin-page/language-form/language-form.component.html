@@ -1,0 +1,17 @@
+<app-card class="admin-form-card">
+  <app-card-header>
+    <app-card-title>{{ title }}</app-card-title>
+  </app-card-header>
+  <app-card-content>
+    <form (ngSubmit)="onSubmit()" class="admin-form" [formGroup]="form">
+      <div class="form-row">
+        <app-label for="language-name">Название</app-label>
+        <app-input id="language-name" formControlName="name" placeholder="Название языка" />
+      </div>
+      <div class="form-actions">
+        <app-button type="submit" class="small">Сохранить</app-button>
+        <app-button type="button" class="outline small" (click)="onCancel()">Отмена</app-button>
+      </div>
+    </form>
+  </app-card-content>
+</app-card>
