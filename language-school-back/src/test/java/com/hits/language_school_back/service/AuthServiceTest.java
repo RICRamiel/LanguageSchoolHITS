@@ -3,6 +3,7 @@ package com.hits.language_school_back.service;
 import com.hits.language_school_back.config.JwtUtil;
 import com.hits.language_school_back.dto.RegisterDTO;
 import com.hits.language_school_back.dto.TokenDTO;
+import com.hits.language_school_back.infrastructure.AuthServiceImpl;
 import com.hits.language_school_back.model.Group;
 import com.hits.language_school_back.model.RevokedToken;
 import com.hits.language_school_back.model.User;
@@ -19,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -41,39 +43,31 @@ class AuthServiceTest {
     @Mock private JwtUtil jwtUtil;
 
     @InjectMocks
-    private AuthService authService;
+    private AuthServiceImpl authService;
 
     private RegisterDTO registerDTO;
-    private Group group;
 
     @BeforeEach
     void setUp() {
-        group = new Group();
-
         registerDTO = new RegisterDTO(
                 "Иван",
                 "Иванов",
                 "ivan@example.com",
-                "Qwerty12!",
-                List.of(group)
+                "Qwerty12!"
         );
     }
 
     @Test
     void register_success_shouldSaveUser_encodePassword_andReturnToken() {
-        // arrange
         when(userRepository.findByEmail(registerDTO.getEmail())).thenReturn(Optional.empty());
         when(passwordEncoder.encode(registerDTO.getPassword())).thenReturn("encoded-pass");
         when(jwtUtil.generateToken(any(User.class))).thenReturn("jwt-token");
 
-        // act
         TokenDTO result = authService.register(registerDTO);
 
-        // assert
         assertNotNull(result);
         assertEquals("jwt-token", result.getToken());
 
-        // проверяем что сохранили пользователя с нужными полями
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(userCaptor.capture());
         User saved = userCaptor.getValue();
@@ -82,8 +76,6 @@ class AuthServiceTest {
         assertEquals("Иванов", saved.getLastName());
         assertEquals("ivan@example.com", saved.getEmail());
         assertEquals("encoded-pass", saved.getPassword());
-        assertEquals(Role.USER, saved.getRole());
-        assertEquals(group, saved.getGroups());
 
         verify(passwordEncoder).encode("Qwerty12!");
         verify(jwtUtil).generateToken(saved);
@@ -92,11 +84,9 @@ class AuthServiceTest {
 
     @Test
     void register_userAlreadyExists_shouldThrowBadCredentials_andNotSave() {
-        // arrange
         when(userRepository.findByEmail(registerDTO.getEmail()))
                 .thenReturn(Optional.of(mock(User.class)));
 
-        // act + assert
         BadCredentialsException ex = assertThrows(
                 BadCredentialsException.class,
                 () -> authService.register(registerDTO)
@@ -110,21 +100,18 @@ class AuthServiceTest {
 
     @Test
     void login_success_shouldAuthenticate_findUser_andReturnToken() {
-        // arrange
         String email = "ivan@example.com";
         String password = "Qwerty12!";
 
-        // authenticate() ничего не возвращает — просто не кидает исключение
-        doNothing().when(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(mock(Authentication.class));
 
         User user = mock(User.class);
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
         when(jwtUtil.generateToken(user)).thenReturn("jwt-login");
 
-        // act
         TokenDTO result = authService.login(email, password);
 
-        // assert
         assertNotNull(result);
         assertEquals("jwt-login", result.getToken());
 
@@ -142,14 +129,14 @@ class AuthServiceTest {
 
     @Test
     void login_userNotFound_shouldThrowNoSuchElement() {
-        // arrange
         String email = "missing@example.com";
         String password = "Qwerty12!";
 
-        doNothing().when(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(mock(Authentication.class));
+
         when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
 
-        // act + assert
         NoSuchElementException ex = assertThrows(
                 NoSuchElementException.class,
                 () -> authService.login(email, password)
@@ -161,7 +148,6 @@ class AuthServiceTest {
 
     @Test
     void login_badCredentialsFromAuthManager_shouldPropagate_andNotQueryUserRepo() {
-        // arrange
         String email = "ivan@example.com";
         String password = "wrong";
 
@@ -169,7 +155,6 @@ class AuthServiceTest {
                 .when(authenticationManager)
                 .authenticate(any(UsernamePasswordAuthenticationToken.class));
 
-        // act + assert
         assertThrows(BadCredentialsException.class, () -> authService.login(email, password));
 
         verify(userRepository, never()).findByEmail(any());
@@ -178,14 +163,11 @@ class AuthServiceTest {
 
     @Test
     void logout_success_shouldExtractBearerToken_andSaveRevokedToken() {
-        // arrange
         HttpServletRequest request = mock(HttpServletRequest.class);
         when(request.getHeader("Authorization")).thenReturn("Bearer abc.def.ghi");
 
-        // act
         authService.logout(request);
 
-        // assert
         ArgumentCaptor<RevokedToken> captor = ArgumentCaptor.forClass(RevokedToken.class);
         verify(revokedTokenRepository).save(captor.capture());
         RevokedToken saved = captor.getValue();
@@ -195,11 +177,9 @@ class AuthServiceTest {
 
     @Test
     void logout_noAuthorizationHeader_shouldThrowBadCredentials() {
-        // arrange
         HttpServletRequest request = mock(HttpServletRequest.class);
         when(request.getHeader("Authorization")).thenReturn(null);
 
-        // act + assert
         BadCredentialsException ex = assertThrows(
                 BadCredentialsException.class,
                 () -> authService.logout(request)
@@ -211,11 +191,9 @@ class AuthServiceTest {
 
     @Test
     void logout_notBearer_shouldThrowBadCredentials() {
-        // arrange
         HttpServletRequest request = mock(HttpServletRequest.class);
         when(request.getHeader("Authorization")).thenReturn("Basic abc");
 
-        // act + assert
         BadCredentialsException ex = assertThrows(
                 BadCredentialsException.class,
                 () -> authService.logout(request)

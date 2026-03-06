@@ -8,6 +8,7 @@ import com.hits.language_school_back.dto.users.StudentUpdateDTO;
 import com.hits.language_school_back.dto.users.TeacherCreateDTO;
 import com.hits.language_school_back.dto.users.TeacherUpdateDTO;
 import com.hits.language_school_back.enums.Role;
+import com.hits.language_school_back.infrastructure.UserServiceImpl;
 import com.hits.language_school_back.mapper.UserMapper;
 import com.hits.language_school_back.model.Group;
 import com.hits.language_school_back.model.User;
@@ -33,7 +34,7 @@ class UserServiceTest {
     @Mock private UserMapper userMapper;
     @Mock private JwtUtil jwtUtil;
 
-    @InjectMocks private UserService userService;
+    @InjectMocks private UserServiceImpl userService;
 
     @Mock private HttpServletRequest request;
 
