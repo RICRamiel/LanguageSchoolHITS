@@ -1,4 +1,4 @@
-package com.hits.language_school_back.languageServiceTests;
+package com.hits.language_school_back.service;
 
 import com.hits.language_school_back.config.MinioConfig;
 import com.hits.language_school_back.exception.FileStorageException;

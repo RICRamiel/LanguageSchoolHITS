@@ -40,6 +40,4 @@ public class RegisterDTO {
             message = "Только латинские символы, цифры, знаки только !?. Обязательно наличие минимум 1 буквы верхнего и нижнего регистра, цифры и знака."
     )
     private String password;
-
-    private List<Group> groups;
 }
