@@ -1,15 +1,13 @@
 package com.hits.language_school_back.service;
 
 import com.hits.language_school_back.config.JwtUtil;
-import com.hits.language_school_back.dto.RegisterDTO;
+import com.hits.language_school_back.dto.RegisterStudentDTO;
 import com.hits.language_school_back.dto.TokenDTO;
 import com.hits.language_school_back.infrastructure.AuthServiceImpl;
-import com.hits.language_school_back.model.Group;
 import com.hits.language_school_back.model.RevokedToken;
 import com.hits.language_school_back.model.User;
 import com.hits.language_school_back.repository.RevokedTokenRepository;
 import com.hits.language_school_back.repository.UserRepository;
-import org.h2.engine.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,7 +23,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import jakarta.servlet.http.HttpServletRequest;
 
-import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
@@ -45,11 +42,11 @@ class AuthServiceTest {
     @InjectMocks
     private AuthServiceImpl authService;
 
-    private RegisterDTO registerDTO;
+    private RegisterStudentDTO registerDTO;
 
     @BeforeEach
     void setUp() {
-        registerDTO = new RegisterDTO(
+        registerDTO = new RegisterStudentDTO(
                 "Иван",
                 "Иванов",
                 "ivan@example.com",
@@ -64,7 +61,7 @@ class AuthServiceTest {
         when(passwordEncoder.encode(registerDTO.getPassword())).thenReturn("encoded-pass");
         when(jwtUtil.generateToken(any(User.class))).thenReturn("jwt-token");
 
-        TokenDTO result = authService.register(registerDTO);
+        TokenDTO result = authService.registerStudent(registerDTO);
 
         assertNotNull(result);
         assertEquals("jwt-token", result.getToken());
@@ -90,7 +87,7 @@ class AuthServiceTest {
 
         BadCredentialsException ex = assertThrows(
                 BadCredentialsException.class,
-                () -> authService.register(registerDTO)
+                () -> authService.registerStudent(registerDTO)
         );
         assertEquals("Пользователь уже существует.", ex.getMessage());
 
