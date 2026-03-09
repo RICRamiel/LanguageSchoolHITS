@@ -3,7 +3,7 @@
 FROM maven:3.9.6-eclipse-temurin-21 AS build
 WORKDIR /app
 COPY . .
-RUN mvn clean package -pl language-school-back -am -DskipTests
+RUN mvn clean package -pl language-school-back -e -Dmaven.test.skip=true
 
 
 
