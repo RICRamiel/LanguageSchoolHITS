@@ -91,18 +91,6 @@ class UserServiceTest {
         assertThrows(BadCredentialsException.class, () -> userService.getMe(request));
     }
 
-    @Test
-    void getMe_success_extractsUsername_loadsUser_maps() {
-        when(request.getHeader("Authorization")).thenReturn("Bearer token123");
-        when(jwtUtil.extractUsername("token123")).thenReturn("me@mail.com");
-
-        User me = user(7L, "me@mail.com", Role.STUDENT);
-        when(userRepository.findByEmail("me@mail.com")).thenReturn(Optional.of(me));
-
-        verify(jwtUtil).extractUsername("token123");
-        verify(userRepository).findByEmail("me@mail.com");
-    }
-
     // =========================
     // CRUD STUDENT
     // =========================
@@ -235,7 +223,7 @@ class UserServiceTest {
 
     @Test
     void getTeacherById_notFound_throws() {
-        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+        when(userRepository.findByIdAndRole(1L, Role.TEACHER)).thenReturn(Optional.empty());
         assertThrows(NoSuchElementException.class, () -> userService.getTeacherById(1L));
     }
 

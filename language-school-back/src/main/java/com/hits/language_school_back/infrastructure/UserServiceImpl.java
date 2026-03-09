@@ -65,7 +65,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     @Override
     public UserFullDTO getStudentById(Long id) {
 
-        User user = userRepository.findById(id)
+        User user = userRepository.findByIdAndRole(id, Role.STUDENT)
                 .orElseThrow(() -> new NoSuchElementException("Student not found"));
 
         return mapToFullDTO(user);
@@ -147,7 +147,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     @Override
     public UserFullDTO getTeacherById(Long id) {
 
-        User user = userRepository.findById(id)
+        User user = userRepository.findByIdAndRole(id, Role.TEACHER)
                 .orElseThrow(() -> new NoSuchElementException("Teacher not found"));
 
         return mapToFullDTO(user);
