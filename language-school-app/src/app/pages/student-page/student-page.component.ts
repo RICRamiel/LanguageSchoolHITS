@@ -1,5 +1,7 @@
-import { Component } from '@angular/core';
-import {HeaderComponent} from '../../shared/ui/header/header.component';
+import { Component, inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { HeaderComponent } from '../../shared/ui/header/header.component';
+import { AuthTokenService } from '../../core/auth/auth-token.service';
 import {TabsComponent} from '../../shared/ui/tabs/tabs.component';
 import {TaskCardComponent} from '../../shared/ui/task-card/task-card.component';
 import {NotificationItem, NotificationListComponent} from '../../shared/ui/notification-list/notification-list.component';
@@ -17,6 +19,8 @@ import {NotificationItem, NotificationListComponent} from '../../shared/ui/notif
   styleUrl: './student-page.component.less',
 })
 export class StudentPageComponent {
+  private readonly router = inject(Router);
+  private readonly authToken = inject(AuthTokenService);
 
   tabs = [
     { id: 'tasks', label: 'Задания' },
@@ -98,7 +102,8 @@ export class StudentPageComponent {
 
 
 
-  protected onLogout = () =>{
-    console.log('logout');
-  };
+  onLogout() {
+    this.authToken.setToken(null);
+    this.router.navigateByUrl('/');
+  }
 }
