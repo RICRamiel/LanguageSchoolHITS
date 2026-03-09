@@ -29,8 +29,14 @@ public class User implements UserDetails {
     private String lastName;
     private String email;
     private String password;
+    private String grade;
 
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany
+    @JoinTable(
+            name = "user_groups",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "group_id")
+    )
     private List<Group> groups;
 
     @ManyToMany(fetch = FetchType.LAZY)

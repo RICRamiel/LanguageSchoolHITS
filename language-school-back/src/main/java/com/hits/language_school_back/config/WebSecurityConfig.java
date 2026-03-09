@@ -46,7 +46,7 @@ public class WebSecurityConfig extends WebSecurityConfiguration {
                                 "/swagger-ui/**",
                                 "/webjars/**",
                                 "/v3/api-docs/**").permitAll()
-                        .requestMatchers("/auth/register", "/auth/login").permitAll()
+                        .requestMatchers("/auth/register/**", "/auth/login").permitAll()
                         .requestMatchers("/error").permitAll()
 //                        .requestMatchers(HttpMethod.POST, "/request/**").hasAuthority(Role.STUDENT.toString())
 //                        .requestMatchers(HttpMethod.GET, "/{userId}/grant-role").hasAuthority(Role.DEANERY.toString())
@@ -63,12 +63,11 @@ public class WebSecurityConfig extends WebSecurityConfiguration {
     }
 
     @Bean
-    public AuthenticationProvider authenticationProvider(UserService userService) {
+    public AuthenticationProvider authenticationProvider(UserService userService, PasswordEncoder passwordEncoder) {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userService);
-        provider.setPasswordEncoder(passwordEncoder());
+        provider.setPasswordEncoder(passwordEncoder);
         return provider;
     }
-
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
@@ -92,10 +91,5 @@ public class WebSecurityConfig extends WebSecurityConfiguration {
     @Bean
     public AuthenticationManager authenticationManager(List<AuthenticationProvider> authenticationProviders) {
         return new ProviderManager(authenticationProviders);
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
     }
 }

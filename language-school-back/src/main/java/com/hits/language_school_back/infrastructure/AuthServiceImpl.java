@@ -2,7 +2,9 @@ package com.hits.language_school_back.infrastructure;
 
 import com.hits.language_school_back.config.JwtUtil;
 import com.hits.language_school_back.dto.RegisterDTO;
+import com.hits.language_school_back.dto.RegisterStudentDTO;
 import com.hits.language_school_back.dto.TokenDTO;
+import com.hits.language_school_back.enums.Role;
 import com.hits.language_school_back.model.RevokedToken;
 import com.hits.language_school_back.model.User;
 import com.hits.language_school_back.repository.RevokedTokenRepository;
@@ -29,7 +31,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtUtil jwtUtil;
 
     @Override
-    public TokenDTO register(RegisterDTO request) {
+    public TokenDTO registerAdmin(RegisterDTO request) {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new BadCredentialsException("Пользователь уже существует.");
         }
@@ -39,7 +41,41 @@ public class AuthServiceImpl implements AuthService {
         user.setLastName(request.getLastName());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setGroups(request.getGroups());
+        user.setRole(Role.ADMIN);
+
+        userRepository.save(user);
+        return new TokenDTO(jwtUtil.generateToken(user));
+    }
+
+    @Override
+    public TokenDTO registerStudent(RegisterStudentDTO request) {
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new BadCredentialsException("Пользователь уже существует.");
+        }
+
+        User user = new User();
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRole(Role.ADMIN);
+        user.setGrade(request.getGrade());
+        userRepository.save(user);
+        return new TokenDTO(jwtUtil.generateToken(user));
+    }
+
+    @Override
+    public TokenDTO registerTeacher(RegisterDTO request) {
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new BadCredentialsException("Пользователь уже существует.");
+        }
+
+        User user = new User();
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRole(Role.ADMIN);
 
         userRepository.save(user);
         return new TokenDTO(jwtUtil.generateToken(user));

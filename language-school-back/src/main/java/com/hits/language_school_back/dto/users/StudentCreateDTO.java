@@ -11,5 +11,6 @@ public class StudentCreateDTO {
     private String firstName;
     private String lastName;
     private String password;
+    private String grade;
     private List<Group> groups;
 }

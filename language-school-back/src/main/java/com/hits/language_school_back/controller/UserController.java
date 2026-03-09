@@ -46,6 +46,11 @@ public class UserController {
         return userService.getAllStudents(group);
     }
 
+    @GetMapping("/students/search")
+    public List<UserDTO> searchStudents(@RequestParam String value) {
+        return userService.getStudentsByNameOrEmail(value);
+    }
+
     @GetMapping("/students/{id}")
     public UserFullDTO getStudentById(@PathVariable Long id) {
         return userService.getStudentById(id);

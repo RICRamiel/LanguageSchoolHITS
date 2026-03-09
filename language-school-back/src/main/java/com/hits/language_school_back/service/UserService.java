@@ -9,6 +9,7 @@ import com.hits.language_school_back.dto.users.TeacherUpdateDTO;
 import com.hits.language_school_back.model.Group;
 import com.hits.language_school_back.model.User;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 
 import java.util.List;
@@ -24,7 +25,7 @@ public interface UserService extends UserDetailsService {
     List<UserDTO> getAllTeachers();
     UserDTO updateTeacher(Long id, TeacherUpdateDTO dto);
     void deleteTeacher(Long id);
-    User loadUserByUsername(String username);
     List<UserDTO> getUsers(Group group);
     UserFullDTO getMe(HttpServletRequest request);
-}
+    List<UserDTO> getStudentsByNameOrEmail(String value);
+    }
