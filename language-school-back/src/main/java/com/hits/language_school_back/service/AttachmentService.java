@@ -5,7 +5,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 
 public interface AttachmentService {
-    Attachment uploadAttachment(Long taskId, MultipartFile file);
+    Attachment uploadAttachment(Long taskId, MultipartFile file, Long userId);
 
     void deleteAttachment(Long attachmentId);
 

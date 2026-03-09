@@ -3,8 +3,10 @@ package com.hits.language_school_back.repository;
 import com.hits.language_school_back.model.Task;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface TaskRepository extends JpaRepository<Task, Long> {
-    Object findByUserId(Long teacherId);
+import java.util.List;
 
-    Object findByGroupName(String groupName);
+public interface TaskRepository extends JpaRepository<Task, Long> {
+    List<Task> findByUserId(Long teacherId);
+
+    List<Task> findByGroupName(String groupName);
 }

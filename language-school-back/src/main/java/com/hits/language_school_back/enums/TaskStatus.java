@@ -5,7 +5,8 @@ import lombok.Getter;
 @Getter
 public enum TaskStatus {
     COMPLETE("Сдано"),
-    OVERDUE("Просрочено");
+    OVERDUE("Просрочено"),
+    PENDING("Ожидает решения");
 
     private final String displayName;
 
