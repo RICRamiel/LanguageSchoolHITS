@@ -76,11 +76,11 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public List<UserDTO> getAllStudents(Group group) {
+    public List<UserDTO> getAllStudents(Long group) {
 
         return userRepository.findAll().stream()
                 .filter(u -> u.getRole() == Role.STUDENT)
-                .filter(u -> group == null || u.getGroups().contains(group))
+                .filter(u -> group == null || u.getGroups().stream().map(Group::getId).toList().contains(group))
                 .map(this::mapToDTO)
                 .toList();
     }
@@ -197,10 +197,10 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     // ---------- USERS ----------
 
     @Override
-    public List<UserDTO> getUsers(Group group) {
+    public List<UserDTO> getUsers(Long group) {
 
         return userRepository.findAll().stream()
-                .filter(u -> group == null || u.getGroups().contains(group))
+                .filter(u -> group == null || u.getGroups().stream().map(Group::getId).toList().contains(group))
                 .map(this::mapToDTO)
                 .toList();
     }

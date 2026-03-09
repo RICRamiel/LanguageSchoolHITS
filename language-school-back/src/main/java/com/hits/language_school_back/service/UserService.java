@@ -17,7 +17,7 @@ import java.util.List;
 public interface UserService extends UserDetailsService {
     UserDTO createStudent(StudentCreateDTO dto);
     UserFullDTO getStudentById(Long id);
-    List<UserDTO> getAllStudents(Group group);
+    List<UserDTO> getAllStudents(Long group);
     UserDTO updateStudent(Long id, StudentUpdateDTO dto);
     void deleteStudent(Long id);
     UserDTO createTeacher(TeacherCreateDTO dto);
@@ -25,7 +25,7 @@ public interface UserService extends UserDetailsService {
     List<UserDTO> getAllTeachers();
     UserDTO updateTeacher(Long id, TeacherUpdateDTO dto);
     void deleteTeacher(Long id);
-    List<UserDTO> getUsers(Group group);
+    List<UserDTO> getUsers(Long group);
     UserFullDTO getMe(HttpServletRequest request);
     List<UserDTO> getStudentsByNameOrEmail(String value);
     }

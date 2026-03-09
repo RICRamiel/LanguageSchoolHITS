@@ -31,8 +31,8 @@ public class UserController {
     }
 
     @GetMapping
-    public List<UserDTO> getUsers(@RequestParam(required = false) Group group) {
-        return userService.getUsers(group);
+    public List<UserDTO> getUsers(@RequestParam(required = false) Long groupId) {
+        return userService.getUsers(groupId);
     }
 
     @PostMapping("/students")
@@ -42,8 +42,8 @@ public class UserController {
     }
 
     @GetMapping("/students")
-    public List<UserDTO> getAllStudents(@RequestParam(required = false) Group group) {
-        return userService.getAllStudents(group);
+    public List<UserDTO> getAllStudents(@RequestParam(required = false) Long groupId) {
+        return userService.getAllStudents(groupId);
     }
 
     @GetMapping("/students/search")
