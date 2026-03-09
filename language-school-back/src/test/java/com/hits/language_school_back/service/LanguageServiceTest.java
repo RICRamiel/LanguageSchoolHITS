@@ -1,10 +1,11 @@
 package com.hits.language_school_back.service;
 
-import com.hits.language_school_back.repository.LanguageRepository;
 import com.hits.language_school_back.dto.LanguageDTO;
 import com.hits.language_school_back.infrastructure.LanguageServiceImpl;
 import com.hits.language_school_back.model.Language;
+import com.hits.language_school_back.repository.LanguageRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -15,7 +16,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -28,100 +30,127 @@ class LanguageServiceTest {
     @InjectMocks
     private LanguageServiceImpl languageService;
 
+    private Language language1;
+    private Language language2;
     private LanguageDTO languageDTO;
-    private Language language;
-    private Long languageId;
 
     @BeforeEach
     void setUp() {
-        languageId = 1L;
+        language1 = new Language();
+        language1.setId(1L);
+        language1.setName("English");
+
+        language2 = new Language();
+        language2.setId(2L);
+        language2.setName("Spanish");
 
         languageDTO = new LanguageDTO();
-        languageDTO.setName("Russian");
-
-        language = new Language();
-        language.setId(languageId);
-        language.setName("Russian");
+        languageDTO.setName("French");
     }
 
     @Test
-    void createLanguage_ShouldReturnCreatedLanguage() {
+    @DisplayName("Should create language successfully")
+    void createLanguage_ShouldSaveAndReturnLanguage() {
         // Arrange
-        when(languageRepository.save(any(Language.class))).thenReturn(language);
+        when(languageRepository.save(any(Language.class))).thenAnswer(invocation -> {
+            Language savedLanguage = invocation.getArgument(0);
+            savedLanguage.setId(3L);
+            return savedLanguage;
+        });
 
         // Act
-        Language createdLanguage = languageService.createLanguage(languageDTO);
+        Language result = languageService.createLanguage(languageDTO);
 
         // Assert
-        assertNotNull(createdLanguage);
-        assertEquals(language.getName(), createdLanguage.getName());
-        verify(languageRepository, times(1)).save(any(Language.class));
+        assertThat(result).isNotNull();
+        assertThat(result.getId()).isEqualTo(3L);
+        assertThat(result.getName()).isEqualTo(languageDTO.getName());
+
+        verify(languageRepository).save(any(Language.class));
     }
 
     @Test
-    void editLanguageName_ShouldReturnUpdatedLanguage() {
+    @DisplayName("Should edit language name successfully")
+    void editLanguageName_ShouldUpdateAndReturnLanguage() {
         // Arrange
-        LanguageDTO updateDTO = new LanguageDTO();
-        updateDTO.setName("English");
+        Long languageId = 1L;
+        Language existingLanguage = new Language();
+        existingLanguage.setId(languageId);
+        existingLanguage.setName("Old Name");
 
-        Language updatedLanguage = new Language();
-        updatedLanguage.setId(languageId);
-        updatedLanguage.setName("English");
-
-        when(languageRepository.findById(languageId)).thenReturn(Optional.of(language));
-        when(languageRepository.save(any(Language.class))).thenReturn(updatedLanguage);
+        when(languageRepository.findById(languageId)).thenReturn(Optional.of(existingLanguage));
+        when(languageRepository.save(any(Language.class))).thenReturn(existingLanguage);
 
         // Act
-        Language result = languageService.editLanguageName(updateDTO, languageId);
+        Language result = languageService.editLanguageName(languageDTO, languageId);
 
         // Assert
-        assertNotNull(result);
-        assertEquals("English", result.getName());
-        verify(languageRepository, times(1)).findById(languageId);
-        verify(languageRepository, times(1)).save(any(Language.class));
+        assertThat(result).isNotNull();
+        assertThat(result.getId()).isEqualTo(languageId);
+        assertThat(result.getName()).isEqualTo(languageDTO.getName());
+
+        verify(languageRepository).findById(languageId);
+        verify(languageRepository).save(existingLanguage);
     }
 
     @Test
-    void deleteLanguage_ShouldDeleteLanguage() {
+    @DisplayName("Should throw exception when editing non-existent language")
+    void editLanguageName_WithNonExistentId_ShouldThrowException() {
         // Arrange
+        Long languageId = 999L;
+        when(languageRepository.findById(languageId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() -> languageService.editLanguageName(languageDTO, languageId))
+                .isInstanceOf(RuntimeException.class);
+
+        verify(languageRepository).findById(languageId);
+        verify(languageRepository, never()).save(any(Language.class));
+    }
+
+    @Test
+    @DisplayName("Should delete language by ID")
+    void deleteLanguage_ShouldCallRepositoryDelete() {
+        // Arrange
+        Long languageId = 1L;
         doNothing().when(languageRepository).deleteById(languageId);
 
         // Act
         languageService.deleteLanguage(languageId);
 
         // Assert
-        verify(languageRepository, times(1)).deleteById(languageId);
+        verify(languageRepository).deleteById(languageId);
     }
 
     @Test
+    @DisplayName("Should get all languages")
     void getLanguages_ShouldReturnListOfLanguages() {
         // Arrange
-
-        Language language1 = new Language();
-        language1.setId(2L);
-        language1.setName("English");
-
-        Language language2 = new Language();
-        language2.setId(3L);
-        language2.setName("Spanish");
-
-        List<Language> languages = Arrays.asList(
-                language,
-                language1,
-                language2
-        );
-
+        List<Language> languages = Arrays.asList(language1, language2);
         when(languageRepository.findAll()).thenReturn(languages);
 
         // Act
         List<Language> result = languageService.getLanguages();
 
         // Assert
-        assertNotNull(result);
-        assertEquals(3, result.size());
-        assertEquals("Russian", result.get(0).getName());
-        assertEquals("English", result.get(1).getName());
-        assertEquals("Spanish", result.get(2).getName());
-        verify(languageRepository, times(1)).findAll();
+        assertThat(result).isNotNull();
+        assertThat(result).hasSize(2);
+        assertThat(result).containsExactly(language1, language2);
+        verify(languageRepository).findAll();
+    }
+
+    @Test
+    @DisplayName("Should return empty list when no languages exist")
+    void getLanguages_WhenNoLanguages_ShouldReturnEmptyList() {
+        // Arrange
+        when(languageRepository.findAll()).thenReturn(Arrays.asList());
+
+        // Act
+        List<Language> result = languageService.getLanguages();
+
+        // Assert
+        assertThat(result).isNotNull();
+        assertThat(result).isEmpty();
+        verify(languageRepository).findAll();
     }
 }

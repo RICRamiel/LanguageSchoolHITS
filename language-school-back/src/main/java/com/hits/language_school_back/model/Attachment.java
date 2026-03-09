@@ -16,6 +16,9 @@ public class Attachment {
     private String fileType;
     private Long fileSize;
 
+    @ManyToOne
+    private User user;
+
     @Column(unique = true)
     private String objectKey;
 

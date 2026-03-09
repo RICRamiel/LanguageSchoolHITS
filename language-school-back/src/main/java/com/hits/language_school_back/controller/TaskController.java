@@ -5,6 +5,8 @@ import com.hits.language_school_back.dto.TaskStudentDTO;
 import com.hits.language_school_back.dto.TaskTeacherDTO;
 import com.hits.language_school_back.service.TaskService;
 import com.hits.language_school_back.model.Task;
+import com.hits.language_school_back.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,33 +19,39 @@ import java.util.List;
 public class TaskController {
 
     private final TaskService taskService;
+    private final UserService userService;
 
     @PostMapping("/create")
-    public ResponseEntity<Task> createTask(@RequestBody TaskDTO taskDTO){
-        Task task = taskService.createTask(taskDTO);
+    public ResponseEntity<Task> createTask(@RequestBody TaskDTO taskDTO, HttpServletRequest request) {
+        Task task = taskService.createTask(taskDTO, userService.getMe(request));
         return ResponseEntity.ok(task);
     }
 
     @PutMapping("/{taskId}/edit")
-    public ResponseEntity<Task> editTask(@RequestBody TaskDTO taskDTO, @PathVariable Long taskId){
+    public ResponseEntity<Task> editTask(@RequestBody TaskDTO taskDTO, @PathVariable Long taskId) {
         Task task = taskService.editTask(taskDTO, taskId);
         return ResponseEntity.ok(task);
     }
 
     @DeleteMapping("/{taskId}/delete")
-    void deleteTask(@PathVariable Long taskId){
+    void deleteTask(@PathVariable Long taskId) {
         taskService.deleteTask(taskId);
     }
 
     @GetMapping("/{teacherId}/get_by_teacher")
-    public ResponseEntity<List<TaskTeacherDTO>> getByTeacherId(@PathVariable Long teacherId){
+    public ResponseEntity<List<TaskTeacherDTO>> getByTeacherId(@PathVariable Long teacherId) {
         List<TaskTeacherDTO> tasks = taskService.getTasksByTeacherId(teacherId);
         return ResponseEntity.ok(tasks);
     }
 
     @GetMapping("/get_by_group_name")
-    public ResponseEntity<List<TaskStudentDTO>> getByGroupName(@RequestParam String groupName){
-        List<TaskStudentDTO> tasks = taskService.getTasksByGroupName(groupName);
+    public ResponseEntity<List<TaskStudentDTO>> getByGroupName(@RequestParam String groupName, HttpServletRequest request) {
+        List<TaskStudentDTO> tasks = taskService.getTasksByGroupName(groupName, userService.getMe(request).getId());
         return ResponseEntity.ok(tasks);
+    }
+
+    @PostMapping("/{taskId}/complete_task")
+    public void completeTask(@PathVariable Long taskId, HttpServletRequest request) {
+        taskService.completeTask(taskId, userService.getMe(request).getId());
     }
 }

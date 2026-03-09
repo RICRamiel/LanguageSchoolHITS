@@ -5,6 +5,8 @@ import com.hits.language_school_back.filter.GroupFilter;
 import com.hits.language_school_back.model.User;
 import com.hits.language_school_back.repository.GroupRepository;
 import com.hits.language_school_back.repository.UserRepository;
+import com.hits.language_school_back.filter.specifications.GroupSpecifications;
+import com.hits.language_school_back.repository.GroupRepository;
 import com.hits.language_school_back.service.GroupService;
 import com.hits.language_school_back.model.Group;
 import lombok.RequiredArgsConstructor;
@@ -14,8 +16,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-@RequiredArgsConstructor
 @Service
+@RequiredArgsConstructor
 public class GroupServiceImpl implements GroupService {
 
     private final GroupRepository groupRepository;
@@ -23,39 +25,58 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     public Group createGroup(GroupDTO groupDTO) {
-        return null;
+        Group group = new Group();
+        group.setDescription(groupDTO.getDescription());
+        group.setName(groupDTO.getName());
+        group.setDifficulty(groupDTO.getDifficulty());
+        group.setLanguage(groupDTO.getLanguage());
+        groupRepository.save(group);
+        return group;
     }
 
     @Override
     public Group editGroup(GroupDTO groupDTO, Long groupId) {
-        return null;
+        Group group = new Group();
+        group.setId(groupId);
+        group.setDescription(groupDTO.getDescription());
+        group.setName(groupDTO.getName());
+        group.setDifficulty(groupDTO.getDifficulty());
+        group.setLanguage(groupDTO.getLanguage());
+        groupRepository.save(group);
+        return group;
+    }
+
+    public Group getByName(String name){
+        return groupRepository.findByName(name);
     }
 
     @Override
     public void deleteGroup(Long groupId) {
-
+        groupRepository.deleteById(groupId);
     }
 
     @Override
     public List<Group> getGroups() {
-        return List.of();
+        return groupRepository.findAll();
     }
 
     @Override
     public List<Group> getGroupsByTeacherId(Long teacherId) {
-        return List.of();
+
+        return groupRepository.findByUserId(teacherId);
     }
 
     @Override
     public Group getByGroupId(Long groupId) {
-        return null;
+        return groupRepository.findById(groupId).orElseThrow();
     }
 
     @Override
     public List<Group> getGroupsWithFilters(GroupFilter groupFilter) {
-        return List.of();
+        return groupRepository.findAll(GroupSpecifications.withFilters(groupFilter));
     }
 
+    @Override
     public Group addStudentToGroup(Long groupId, Long studentId) {
 
         Group group = groupRepository.findById(groupId)

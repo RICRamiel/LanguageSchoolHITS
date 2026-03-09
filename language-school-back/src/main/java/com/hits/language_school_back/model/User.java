@@ -31,6 +31,9 @@ public class User implements UserDetails {
     private String password;
     private String grade;
 
+    @OneToMany
+    private List<Attachment> attachmentList;
+
     @ManyToMany
     @JoinTable(
             name = "user_groups",

@@ -4,10 +4,13 @@ import com.hits.language_school_back.config.MinioConfig;
 import com.hits.language_school_back.exception.ResourceNotFoundException;
 import com.hits.language_school_back.model.Attachment;
 import com.hits.language_school_back.model.Task;
+import com.hits.language_school_back.model.User;
 import com.hits.language_school_back.repository.AttachmentRepository;
 import com.hits.language_school_back.repository.TaskRepository;
+import com.hits.language_school_back.repository.UserRepository;
 import com.hits.language_school_back.service.AttachmentService;
 import com.hits.language_school_back.service.MinioService;
+import com.hits.language_school_back.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,11 +21,14 @@ import org.springframework.web.multipart.MultipartFile;
 public class AttachmentServiceImpl implements AttachmentService {
     private final AttachmentRepository attachmentRepository;
     private final TaskRepository taskRepository;
+    private final UserRepository userRepository;
     private final MinioService minioService;
     private final MinioConfig minioConfig;
 
     @Transactional
-    public Attachment uploadAttachment(Long taskId, MultipartFile file) {
+    public Attachment uploadAttachment(Long taskId, MultipartFile file, Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + taskId));
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Task not found: " + taskId));
 
@@ -33,6 +39,7 @@ public class AttachmentServiceImpl implements AttachmentService {
         attachment.setFileType(file.getContentType());
         attachment.setFileSize(file.getSize());
         attachment.setObjectKey(objectKey);
+        attachment.setUser(user);
         attachment.setBucketName(minioConfig.getBucket());
         attachment.setTask(task);
 
