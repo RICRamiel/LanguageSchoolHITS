@@ -5,17 +5,23 @@
   <app-card-content>
     <form (ngSubmit)="onSubmit()" class="admin-form" [formGroup]="form">
       <div class="form-row">
-        <app-label for="teacher-name">ФИО</app-label>
-        <app-input id="teacher-name" formControlName="fullName" placeholder="ФИО" />
+        <app-label for="teacher-firstName">Имя</app-label>
+        <app-input id="teacher-firstName" formControlName="firstName" placeholder="Имя" />
+      </div>
+      <div class="form-row">
+        <app-label for="teacher-lastName">Фамилия</app-label>
+        <app-input id="teacher-lastName" formControlName="lastName" placeholder="Фамилия" />
       </div>
       <div class="form-row">
         <app-label for="teacher-email">Email</app-label>
         <app-input id="teacher-email" type="email" formControlName="email" placeholder="email@school.com" />
       </div>
+      @if (!isEdit) {
       <div class="form-row">
-        <app-label for="teacher-languages">Языки</app-label>
-        <app-input id="teacher-languages" formControlName="languages" placeholder="Языки через запятую" />
+        <app-label for="teacher-password">Пароль</app-label>
+        <app-input id="teacher-password" type="password" formControlName="password" placeholder="Пароль (мин. 8 символов)" />
       </div>
+      }
       <div class="form-actions">
         <app-button type="submit" class="small">Сохранить</app-button>
         <app-button type="button" class="outline small" (click)="onCancel()">Отмена</app-button>

@@ -1,7 +1,22 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ButtonComponent } from '../../../shared/ui/button/button.component';
 import { GroupFormComponent } from '../group-form/group-form.component';
 import type { Group } from '../admin-page.models';
+import { GroupControllerService } from '../../../api/api/groupController.service';
+import type { GroupDTO } from '../../../api/model/groupDTO';
+import { catchError, EMPTY, finalize } from 'rxjs';
+
+type GroupApi = GroupDTO & { id?: number };
+
+function toGroup(item: GroupApi): Group {
+  return {
+    id: item.id ?? 0,
+    name: item.name ?? '',
+    language: item.language?.name ?? '',
+    teacherName: '—',
+    studentsCount: '—',
+  };
+}
 
 @Component({
   selector: 'app-groups-tab',
@@ -10,11 +25,13 @@ import type { Group } from '../admin-page.models';
   templateUrl: './groups-tab.component.html',
   styleUrl: './groups-tab.component.less',
 })
-export class GroupsTabComponent {
-  readonly groups = signal<Group[]>([
-    { id: 1, name: 'Английский B1', language: 'Английский', teacherName: 'Смирнова Е.В.', studentsCount: 12 },
-    { id: 2, name: 'Немецкий A2', language: 'Немецкий', teacherName: 'Петров А.С.', studentsCount: 8 },
-  ]);
+export class GroupsTabComponent implements OnInit {
+  private readonly groupApi = inject(GroupControllerService);
+
+  readonly groups = signal<Group[]>([]);
+  readonly loading = signal(false);
+  readonly saving = signal(false);
+  readonly error = signal<string | null>(null);
 
   showForm = signal(false);
   editingId = signal<number | null>(null);
@@ -24,6 +41,26 @@ export class GroupsTabComponent {
     if (id === null) return null;
     return this.groups().find(g => g.id === id) ?? null;
   });
+
+  ngOnInit(): void {
+    this.loadGroups();
+  }
+
+  loadGroups(): void {
+    this.loading.set(true);
+    this.error.set(null);
+    this.groupApi.getGroups()
+      .pipe(
+        finalize(() => this.loading.set(false)),
+        catchError(err => {
+          this.error.set(err?.message ?? 'Ошибка загрузки групп');
+          return EMPTY;
+        })
+      )
+      .subscribe({
+        next: items => this.groups.set((items as GroupApi[]).map(toGroup)),
+      });
+  }
 
   openAdd(): void {
     this.editingId.set(null);
@@ -35,17 +72,32 @@ export class GroupsTabComponent {
     this.showForm.set(true);
   }
 
-  onSave(value: { name: string; language: string; teacherName: string }): void {
+  onSave(value: { name: string; language: string }): void {
     const id = this.editingId();
-    if (id !== null) {
-      this.groups.update(list =>
-        list.map(g => (g.id === id ? { ...g, ...value } : g))
-      );
-    } else {
-      this.groups.update(list => [...list, { id: Date.now(), ...value, studentsCount: 0 }]);
-    }
-    this.showForm.set(false);
-    this.editingId.set(null);
+    this.saving.set(true);
+    this.error.set(null);
+
+    const body = { name: value.name, language: { name: value.language } };
+    const done = () => {
+      this.saving.set(false);
+      this.showForm.set(false);
+      this.editingId.set(null);
+      this.loadGroups();
+    };
+
+    const req = id !== null
+      ? this.groupApi.editGroup(id, body)
+      : this.groupApi.createGroup(body);
+
+    req.pipe(
+      finalize(() => this.saving.set(false)),
+      catchError(err => {
+        this.error.set(err?.message ?? (id !== null ? 'Ошибка сохранения' : 'Ошибка создания'));
+        return EMPTY;
+      })
+    ).subscribe({
+      next: () => done(),
+    });
   }
 
   onCancel(): void {
@@ -54,6 +106,18 @@ export class GroupsTabComponent {
   }
 
   deleteGroup(id: number): void {
-    this.groups.update(list => list.filter(g => g.id !== id));
+    this.saving.set(true);
+    this.error.set(null);
+    this.groupApi.deleteGroup(id)
+      .pipe(
+        finalize(() => this.saving.set(false)),
+        catchError(err => {
+          this.error.set(err?.message ?? 'Ошибка удаления');
+          return EMPTY;
+        })
+      )
+      .subscribe({
+        next: () => this.loadGroups(),
+      });
   }
 }

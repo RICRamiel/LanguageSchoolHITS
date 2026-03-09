@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { AuthTokenService } from '../../core/auth/auth-token.service';
 import { HeaderComponent } from '../../shared/ui/header/header.component';
 import { TabsComponent } from '../../shared/ui/tabs/tabs.component';
 import { GroupsTabComponent } from './groups-tab/groups-tab.component';
@@ -23,6 +24,7 @@ import { LanguagesTabComponent } from './languages-tab/languages-tab.component';
 })
 export class AdminPageComponent {
   private readonly router = inject(Router);
+  private readonly authToken = inject(AuthTokenService);
 
   readonly tabs = [
     { id: 'groups', label: 'Группы' },
@@ -38,6 +40,7 @@ export class AdminPageComponent {
   }
 
   onLogout(): void {
+    this.authToken.setToken(null);
     this.router.navigateByUrl('/');
   }
 }

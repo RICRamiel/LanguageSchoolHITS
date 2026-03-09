@@ -1,5 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { HeaderComponent } from '../../shared/ui/header/header.component';
+import { AuthTokenService } from '../../core/auth/auth-token.service';
 import { TabsComponent } from '../../shared/ui/tabs/tabs.component';
 import {
   CreateNotificationPayload,
@@ -27,6 +29,9 @@ import { CreateTaskModalComponent } from './components/create-task-modal/create-
   styleUrl: './teacher-page.component.less',
 })
 export class TeacherPageComponent {
+  private readonly router = inject(Router);
+  private readonly authToken = inject(AuthTokenService);
+
   tabs = [
     { id: 'tasks', label: 'Задания' },
     { id: 'notifications', label: 'Уведомления', badge: 3 },
@@ -115,6 +120,7 @@ export class TeacherPageComponent {
   }
 
   onLogout() {
-    console.log('logout');
+    this.authToken.setToken(null);
+    this.router.navigateByUrl('/');
   }
 }
