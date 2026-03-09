@@ -1,6 +1,7 @@
 package com.hits.language_school_back.service;
 
 import com.hits.language_school_back.config.MinioConfig;
+import com.hits.language_school_back.exception.ResourceNotFoundException;
 import com.hits.language_school_back.infrastructure.AttachmentServiceImpl;
 import com.hits.language_school_back.model.Attachment;
 import com.hits.language_school_back.model.Task;
@@ -14,7 +15,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Optional;
