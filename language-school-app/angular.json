@@ -65,6 +65,9 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": {
+            "allowedHosts": ["client.thallassianangel.su"]
+          },
           "configurations": {
             "production": {
               "buildTarget": "language-school-app:build:production"
