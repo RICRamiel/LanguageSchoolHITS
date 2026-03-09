@@ -3,6 +3,7 @@ package com.hits.language_school_back.controller;
 import com.hits.language_school_back.dto.TaskDTO;
 import com.hits.language_school_back.dto.TaskStudentDTO;
 import com.hits.language_school_back.dto.TaskTeacherDTO;
+import com.hits.language_school_back.mapper.TaskMapper;
 import com.hits.language_school_back.service.TaskService;
 import com.hits.language_school_back.model.Task;
 import com.hits.language_school_back.service.UserService;
@@ -20,17 +21,18 @@ public class TaskController {
 
     private final TaskService taskService;
     private final UserService userService;
+    private final TaskMapper taskMapper;
 
     @PostMapping("/create")
-    public ResponseEntity<Task> createTask(@RequestBody TaskDTO taskDTO, HttpServletRequest request) {
+    public ResponseEntity<TaskDTO> createTask(@RequestBody TaskDTO taskDTO, HttpServletRequest request) {
         Task task = taskService.createTask(taskDTO, userService.getMe(request));
-        return ResponseEntity.ok(task);
+        return ResponseEntity.ok(taskMapper.toDto(task));
     }
 
     @PutMapping("/{taskId}/edit")
-    public ResponseEntity<Task> editTask(@RequestBody TaskDTO taskDTO, @PathVariable Long taskId) {
+    public ResponseEntity<TaskDTO> editTask(@RequestBody TaskDTO taskDTO, @PathVariable Long taskId) {
         Task task = taskService.editTask(taskDTO, taskId);
-        return ResponseEntity.ok(task);
+        return ResponseEntity.ok(taskMapper.toDto(task));
     }
 
     @DeleteMapping("/{taskId}/delete")

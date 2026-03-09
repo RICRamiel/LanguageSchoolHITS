@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 public class TaskStudentMapper {
 
     private final TaskRepository taskRepository;
+    private final UserMapper userMapper;
 
     public TaskStudentDTO toDto(TaskStudent taskStudent) {
         if (taskStudent == null) {
@@ -30,7 +31,7 @@ public class TaskStudentMapper {
         dto.setDescription(task.getDescription());
         dto.setDeadline(task.getDeadline());
         dto.setTaskStatus(taskStudent.getTaskStatus());
-        dto.setTeacher(task.getUser());
+        dto.setTeacher(userMapper.userToUserDto(task.getUser()));
 
         if (task.getDeadline().isBefore(LocalDate.now()) && task.getTaskStatus() != TaskStatus.COMPLETE) {
             task.setTaskStatus(TaskStatus.OVERDUE);
@@ -38,7 +39,7 @@ public class TaskStudentMapper {
         }
 
         if (task.getUser() != null) {
-            dto.setTeacher(task.getUser());
+            dto.setTeacher(userMapper.userToUserDto(task.getUser()));
         }
 
         return dto;
