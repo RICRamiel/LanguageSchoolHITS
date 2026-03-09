@@ -1,6 +1,7 @@
 package com.hits.language_school_back.controller;
 
 import com.hits.language_school_back.dto.CommentDTO;
+import com.hits.language_school_back.mapper.CommentMapper;
 import com.hits.language_school_back.service.CommentService;
 import com.hits.language_school_back.model.Comment;
 import lombok.RequiredArgsConstructor;
@@ -14,17 +15,18 @@ import java.util.List;
 @RequestMapping("/comment")
 public class CommentController {
     private final CommentService commentService;
+    private final CommentMapper commentMapper;
 
     @PostMapping("/create")
-    public ResponseEntity<Comment> createComment(@RequestBody CommentDTO commentDTO){
+    public ResponseEntity<CommentDTO> createComment(@RequestBody CommentDTO commentDTO){
         Comment comment = commentService.createComment(commentDTO);
-        return ResponseEntity.ok(comment);
+        return ResponseEntity.ok(commentMapper.toDto(comment));
     }
 
     @PutMapping("/{commentId}/edit")
-    public ResponseEntity<Comment> editComment(@RequestBody CommentDTO commentDTO, @PathVariable Long commentId){
+    public ResponseEntity<CommentDTO> editComment(@RequestBody CommentDTO commentDTO, @PathVariable Long commentId){
         Comment comment = commentService.editComment(commentDTO, commentId);
-        return ResponseEntity.ok(comment);
+        return ResponseEntity.ok(commentMapper.toDto(comment));
     }
 
     @DeleteMapping("/{commentId}/delete")

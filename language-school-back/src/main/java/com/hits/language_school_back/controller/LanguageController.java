@@ -1,6 +1,7 @@
 package com.hits.language_school_back.controller;
 
 import com.hits.language_school_back.dto.LanguageDTO;
+import com.hits.language_school_back.mapper.LanguageMapper;
 import com.hits.language_school_back.service.LanguageService;
 import com.hits.language_school_back.model.Language;
 import lombok.RequiredArgsConstructor;
@@ -15,17 +16,18 @@ import java.util.List;
 public class LanguageController {
 
     private final LanguageService languageService;
+    private final LanguageMapper languageMapper;
 
     @PostMapping("/create")
-    ResponseEntity<Language> createLanguage(@RequestBody LanguageDTO languageDTO){
+    ResponseEntity<LanguageDTO> createLanguage(@RequestBody LanguageDTO languageDTO){
         Language language = languageService.createLanguage(languageDTO);
-        return ResponseEntity.ok(language);
+        return ResponseEntity.ok(languageMapper.toDto(language));
     }
 
     @PutMapping("/{languageId}/edit")
-    ResponseEntity<Language> editLanguageName(@RequestBody LanguageDTO languageDTO, @PathVariable Long languageId){
+    ResponseEntity<LanguageDTO> editLanguageName(@RequestBody LanguageDTO languageDTO, @PathVariable Long languageId){
         Language language = languageService.editLanguageName(languageDTO, languageId);
-        return ResponseEntity.ok(language);
+        return ResponseEntity.ok(languageMapper.toDto(language));
     }
 
     @DeleteMapping("/{languageId}/delete")
@@ -34,7 +36,7 @@ public class LanguageController {
     }
 
     @GetMapping("/get_all_languages")
-    ResponseEntity<List<Language>> getLanguages(){
-        return ResponseEntity.ok(languageService.getLanguages());
+    ResponseEntity<List<LanguageDTO>> getLanguages(){
+        return ResponseEntity.ok(languageService.getLanguages().stream().map(languageMapper::toDto).toList());
     }
 }
