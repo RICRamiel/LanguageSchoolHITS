@@ -20,16 +20,52 @@ services:
     networks:
       - language-school-network
 
-#  frontend:
-#    container_name: language-school-frontend
-#    build:
-#      context: .
-#      dockerfile: language-school-app/Dockerfile
-#    depends_on:
-#      backend:
-#        condition: service_started
-#    networks:
-#      - language-school-network
+  # frontend:
+  #   expose:
+  #     - "4200"
+  #   container_name: language-school-frontend
+  #   build:
+  #     context: .
+  #     dockerfile: language-school-app/Dockerfile
+  #   depends_on:
+  #     backend:
+  #       condition: service_started
+  #   networks:
+  #     - language-school-network
+
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres_language
+    environment:
+      POSTGRES_USER: c417110f943e48c5a62d45633bdf9ea2
+      POSTGRES_PASSWORD: 80ca53193cc6401fba4a426f75432d86
+      POSTGRES_DB: postgres
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "7896:5432"
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data/pgdata
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    command: >
+      postgres -c max_connections=1000
+               -c shared_buffers=256MB
+               -c effective_cache_size=768MB
+               -c maintenance_work_mem=64MB
+               -c checkpoint_completion_target=0.7
+               -c wal_buffers=16MB
+               -c default_statistics_target=100
+    restart: unless-stopped
+    networks:
+      - language-school-network
 
   minio:
     image: minio/minio:latest
@@ -79,6 +115,8 @@ services:
 
 volumes:
   minio_data:
+    driver: local
+  pgdata:
     driver: local
 
 networks:

@@ -1,7 +1,8 @@
 FROM node:22-alpine AS frontend-client-build
 WORKDIR /app
-COPY . .
-CMD ls -a
-RUN npm ci && npm run build
-EXPOSE 5173
-ENTRYPOINT ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+COPY language-school-app/package.json language-school-app/package-lock.json ./
+RUN npm install --ci
+COPY language-school-app/. .
+RUN npm run build -- --configuration=production --output-path=./dist/browser && npm install -g @angular/cli
+EXPOSE 4200
+ENTRYPOINT ["ng", "serve", "--host", "0.0.0.0"]
