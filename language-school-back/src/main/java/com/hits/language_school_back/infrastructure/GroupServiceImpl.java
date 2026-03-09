@@ -6,13 +6,11 @@ import com.hits.language_school_back.model.User;
 import com.hits.language_school_back.repository.GroupRepository;
 import com.hits.language_school_back.repository.UserRepository;
 import com.hits.language_school_back.filter.specifications.GroupSpecifications;
-import com.hits.language_school_back.repository.GroupRepository;
 import com.hits.language_school_back.service.GroupService;
 import com.hits.language_school_back.model.Group;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -63,7 +61,7 @@ public class GroupServiceImpl implements GroupService {
     @Override
     public List<Group> getGroupsByTeacherId(Long teacherId) {
 
-        return groupRepository.findByUserId(teacherId);
+        return groupRepository.findByUsersId(teacherId);
     }
 
     @Override
