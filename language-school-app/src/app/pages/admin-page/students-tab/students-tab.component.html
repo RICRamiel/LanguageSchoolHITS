@@ -1,15 +1,22 @@
 <section class="admin-section">
   <div class="admin-section__head">
     <h3 class="section-title">Студенты</h3>
-    <app-button type="button" (click)="openAdd()">Добавить студента</app-button>
+    <app-button type="button" (click)="openAdd()" [disabled]="saving()">Добавить студента</app-button>
   </div>
+  @if (error()) {
+    <p class="admin-error">{{ error() }}</p>
+  }
   @if (showForm()) {
     <app-student-form
       [initialValue]="editingStudent()"
+      [groups]="groups()"
       (save)="onSave($event)"
       (cancel)="onCancel()"
     />
   }
+  @if (loading()) {
+    <p class="admin-loading">Загрузка...</p>
+  } @else {
   <div class="admin-table-wrap">
     <table class="admin-table">
       <thead>
@@ -35,4 +42,5 @@
       </tbody>
     </table>
   </div>
+  }
 </section>

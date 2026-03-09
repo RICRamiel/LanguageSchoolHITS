@@ -5,17 +5,38 @@
   <app-card-content>
     <form (ngSubmit)="onSubmit()" class="admin-form" [formGroup]="form">
       <div class="form-row">
-        <app-label for="student-name">ФИО</app-label>
-        <app-input id="student-name" formControlName="fullName" placeholder="ФИО" />
+        <app-label for="student-firstName">Имя</app-label>
+        <app-input id="student-firstName" formControlName="firstName" placeholder="Имя" />
+      </div>
+      <div class="form-row">
+        <app-label for="student-lastName">Фамилия</app-label>
+        <app-input id="student-lastName" formControlName="lastName" placeholder="Фамилия" />
       </div>
       <div class="form-row">
         <app-label for="student-email">Email</app-label>
         <app-input id="student-email" type="email" formControlName="email" placeholder="email@example.com" />
       </div>
+      @if (!isEdit) {
+      <div class="form-row">
+        <app-label for="student-password">Пароль</app-label>
+        <app-input id="student-password" type="password" formControlName="password" placeholder="Пароль (мин. 8 символов)" />
+      </div>
       <div class="form-row">
         <app-label for="student-group">Группа</app-label>
-        <app-input id="student-group" formControlName="groupName" placeholder="Название группы" />
+        <select id="student-group" formControlName="groupId" class="form-select">
+          <option [ngValue]="null">Выберите группу</option>
+          @for (g of groups(); track g.id) {
+            <option [ngValue]="g.id">{{ g.name }}</option>
+          }
+        </select>
       </div>
+      }
+      @if (isEdit) {
+      <div class="form-row">
+        <app-label for="student-grade">Класс / Курс</app-label>
+        <app-input id="student-grade" formControlName="grade" placeholder="Например: 10А" />
+      </div>
+      }
       <div class="form-actions">
         <app-button type="submit" class="small">Сохранить</app-button>
         <app-button type="button" class="outline small" (click)="onCancel()">Отмена</app-button>

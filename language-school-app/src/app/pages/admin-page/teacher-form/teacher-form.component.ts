@@ -29,24 +29,36 @@ export class TeacherFormComponent {
   private readonly fb = inject(FormBuilder);
 
   readonly initialValue = input<Teacher | null>(null);
-  readonly save = output<Omit<Teacher, 'id'>>();
+  readonly save = output<{ firstName: string; lastName: string; email: string; password?: string }>();
   readonly cancel = output<void>();
 
   form = this.fb.nonNullable.group({
-    fullName: ['', Validators.required],
+    firstName: ['', Validators.required],
+    lastName: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
-    languages: ['', Validators.required],
+    password: [''],
   });
 
   constructor() {
     effect(() => {
       const v = this.initialValue();
       if (v) {
-        this.form.setValue({ fullName: v.fullName, email: v.email, languages: v.languages });
+        const parts = v.fullName.trim().split(/\s+/);
+        const lastName = parts[0] ?? '';
+        const firstName = parts.slice(1).join(' ') ?? '';
+        this.form.setValue({ firstName, lastName, email: v.email, password: '' });
+        this.form.get('email')?.disable();
+        this.form.get('password')?.disable();
       } else {
-        this.form.reset({ fullName: '', email: '', languages: '' });
+        this.form.reset({ firstName: '', lastName: '', email: '', password: '' });
+        this.form.get('email')?.enable();
+        this.form.get('password')?.enable();
       }
     });
+  }
+
+  get isEdit(): boolean {
+    return !!this.initialValue();
   }
 
   get title(): string {
@@ -58,7 +70,17 @@ export class TeacherFormComponent {
       this.form.markAllAsTouched();
       return;
     }
-    this.save.emit(this.form.getRawValue());
+    const raw = this.form.getRawValue();
+    if (this.isEdit) {
+      this.save.emit({ firstName: raw.firstName, lastName: raw.lastName, email: raw.email });
+    } else {
+      if (!raw.password?.trim()) {
+        this.form.get('password')?.setErrors({ required: true });
+        this.form.markAllAsTouched();
+        return;
+      }
+      this.save.emit({ ...raw, password: raw.password });
+    }
   }
 
   onCancel(): void {
