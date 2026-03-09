@@ -24,5 +24,10 @@ public class Group {
     private Language language;
 
     @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "group_users",
+            joinColumns = @JoinColumn(name = "group_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
     private List<User> users;
 }

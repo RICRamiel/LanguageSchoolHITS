@@ -21,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.BadCredentialsException;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.*;
 
@@ -73,7 +74,7 @@ class UserServiceTest {
         User u = user(1L, "x@x.com", Role.STUDENT);
         when(userRepository.findByEmail("x@x.com")).thenReturn(Optional.of(u));
 
-        User result = userService.loadUserByUsername("x@x.com");
+        UserDetails result = userService.loadUserByUsername("x@x.com");
 
         assertSame(u, result);
     }

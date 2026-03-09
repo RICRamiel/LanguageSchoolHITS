@@ -15,5 +15,5 @@ public class UserFullDTO {
     private String lastName;
     private String email;
     private List<Group> groups;
-    private Role userRole;
+    private Role role;
 }

@@ -53,7 +53,8 @@ class AuthServiceTest {
                 "Иван",
                 "Иванов",
                 "ivan@example.com",
-                "Qwerty12!"
+                "Qwerty12!",
+                "A1"
         );
     }
 
