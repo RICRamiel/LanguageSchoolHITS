@@ -1,6 +1,7 @@
 package com.hits.language_school_back.infrastructure;
 
 import com.hits.language_school_back.config.MinioConfig;
+import com.hits.language_school_back.exception.ResourceNotFoundException;
 import com.hits.language_school_back.model.Attachment;
 import com.hits.language_school_back.model.Task;
 import com.hits.language_school_back.repository.AttachmentRepository;
@@ -8,7 +9,6 @@ import com.hits.language_school_back.repository.TaskRepository;
 import com.hits.language_school_back.service.AttachmentService;
 import com.hits.language_school_back.service.MinioService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
