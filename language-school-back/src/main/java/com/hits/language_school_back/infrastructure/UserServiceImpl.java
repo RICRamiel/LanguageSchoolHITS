@@ -14,6 +14,8 @@ import com.hits.language_school_back.service.UserService;
 import com.hits.language_school_back.model.Group;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class UserServiceImpl implements UserService, UserDetailsService {
@@ -35,7 +38,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
         return userRepository.findByEmail(username)
                 .orElseThrow(() ->
-                        new UsernameNotFoundException("User not found: " + username));
+                        new NoSuchElementException("User not found: " + username));
     }
 
     @Override
@@ -109,8 +112,16 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     @Override
     public void deleteStudent(Long id) {
-        userRepository.deleteById(id);
-    }
+        log.debug("Attempting to delete student with id: {}", id);
+
+        User teacher = userRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.error("student not found with id: {}", id);
+                    return new NoSuchElementException("student not found with id: " + id);
+                });
+
+        userRepository.delete(teacher);
+        log.debug("Successfully deleted student with id: {}", id);    }
 
     // ---------- TEACHERS ----------
 
@@ -167,7 +178,16 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     @Override
     public void deleteTeacher(Long id) {
-        userRepository.deleteById(id);
+        log.debug("Attempting to delete teacher with id: {}", id);
+
+        User teacher = userRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.error("Teacher not found with id: {}", id);
+                    return new NoSuchElementException("Teacher not found with id: " + id);
+                });
+
+        userRepository.delete(teacher);
+        log.debug("Successfully deleted teacher with id: {}", id);
     }
 
     // ---------- USERS ----------
@@ -187,7 +207,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         String token = request.getHeader("Authorization");
 
         if (token == null || !token.startsWith("Bearer ")) {
-            throw new IllegalArgumentException("Invalid token");
+            throw new BadCredentialsException("Invalid token");
         }
 
         token = token.substring(7);
