@@ -42,6 +42,9 @@ public class User implements UserDetails {
     )
     private List<Group> groups;
 
+    @OneToMany
+    private List<Notification> createdNotifications;
+
     @ManyToMany(fetch = FetchType.LAZY)
     private List<Language> languages;
 

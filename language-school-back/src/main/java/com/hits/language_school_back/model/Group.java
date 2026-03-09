@@ -30,4 +30,7 @@ public class Group {
             inverseJoinColumns = @JoinColumn(name = "user_id")
     )
     private List<User> users;
+
+    @OneToMany
+    private List<Notification> notifications;
 }
