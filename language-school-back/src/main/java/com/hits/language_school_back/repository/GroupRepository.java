@@ -9,7 +9,7 @@ import java.util.List;
 
 @Repository
 public interface GroupRepository extends JpaRepository<Group, Long>, JpaSpecificationExecutor<Group> {
-    List<Group> findByUserId(Long teacherId);
+    List<Group> findByUsersId(Long teacherId);
 
     Group findByName(String s);
 }

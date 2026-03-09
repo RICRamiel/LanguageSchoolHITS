@@ -202,7 +202,7 @@ class GroupServiceTests {
         // Arrange
         Long teacherId = 1L;
         List<Group> groups = Arrays.asList(group1, group2);
-        when(groupRepository.findByUserId(teacherId)).thenReturn(groups);
+        when(groupRepository.findByUsersId(teacherId)).thenReturn(groups);
 
         // Act
         List<Group> result = groupService.getGroupsByTeacherId(teacherId);
@@ -211,7 +211,7 @@ class GroupServiceTests {
         assertThat(result).isNotNull();
         assertThat(result).hasSize(2);
         assertThat(result).containsExactly(group1, group2);
-        verify(groupRepository).findByUserId(teacherId);
+        verify(groupRepository).findByUsersId(teacherId);
     }
 
     @Test
