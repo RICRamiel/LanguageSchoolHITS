@@ -18,6 +18,6 @@ public class UserDTO {
     private String firstName;
     private String lastName;
     private String email;
-    private List<Group> groups;
+    private List<GroupDTO> groups;
     private Role role;
 }

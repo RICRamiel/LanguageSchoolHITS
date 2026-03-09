@@ -1,6 +1,5 @@
 package com.hits.language_school_back.dto;
 
-import com.hits.language_school_back.model.Comment;
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -12,5 +11,5 @@ public class TaskTeacherDTO {
     private String name;
     private String description;
     private LocalDate deadline;
-    private List<Comment> commentList;
+    private List<CommentDTO> commentList;
 }

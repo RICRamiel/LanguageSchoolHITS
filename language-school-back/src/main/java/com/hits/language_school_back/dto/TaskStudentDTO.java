@@ -1,7 +1,6 @@
 package com.hits.language_school_back.dto;
 
 import com.hits.language_school_back.enums.TaskStatus;
-import com.hits.language_school_back.model.User;
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -13,5 +12,5 @@ public class TaskStudentDTO {
     private String description;
     private LocalDate deadline;
     private TaskStatus taskStatus;
-    private User teacher;
+    private UserDTO teacher;
 }

@@ -2,8 +2,10 @@ package com.hits.language_school_back.infrastructure;
 
 import com.hits.language_school_back.dto.GroupDTO;
 import com.hits.language_school_back.filter.GroupFilter;
+import com.hits.language_school_back.model.Language;
 import com.hits.language_school_back.model.User;
 import com.hits.language_school_back.repository.GroupRepository;
+import com.hits.language_school_back.repository.LanguageRepository;
 import com.hits.language_school_back.repository.UserRepository;
 import com.hits.language_school_back.filter.specifications.GroupSpecifications;
 import com.hits.language_school_back.service.GroupService;
@@ -20,26 +22,31 @@ public class GroupServiceImpl implements GroupService {
 
     private final GroupRepository groupRepository;
     private final UserRepository userRepository;
+    private final LanguageRepository languageRepository;
 
     @Override
     public Group createGroup(GroupDTO groupDTO) {
+        Language language = languageRepository.findAllByName(groupDTO.getLanguage().getName()).get(0);
+
         Group group = new Group();
         group.setDescription(groupDTO.getDescription());
         group.setName(groupDTO.getName());
         group.setDifficulty(groupDTO.getDifficulty());
-        group.setLanguage(groupDTO.getLanguage());
+        group.setLanguage(language);
         groupRepository.save(group);
         return group;
     }
 
     @Override
     public Group editGroup(GroupDTO groupDTO, Long groupId) {
+        Language language = languageRepository.findAllByName(groupDTO.getLanguage().getName()).get(0);
+
         Group group = new Group();
         group.setId(groupId);
         group.setDescription(groupDTO.getDescription());
         group.setName(groupDTO.getName());
         group.setDifficulty(groupDTO.getDifficulty());
-        group.setLanguage(groupDTO.getLanguage());
+        group.setLanguage(language);
         groupRepository.save(group);
         return group;
     }

@@ -1,6 +1,7 @@
 package com.hits.language_school_back.infrastructure;
 
 import com.hits.language_school_back.config.JwtUtil;
+import com.hits.language_school_back.dto.GroupDTO;
 import com.hits.language_school_back.dto.UserDTO;
 import com.hits.language_school_back.dto.UserFullDTO;
 import com.hits.language_school_back.dto.users.StudentCreateDTO;
@@ -8,6 +9,8 @@ import com.hits.language_school_back.dto.users.StudentUpdateDTO;
 import com.hits.language_school_back.dto.users.TeacherCreateDTO;
 import com.hits.language_school_back.dto.users.TeacherUpdateDTO;
 import com.hits.language_school_back.enums.Role;
+import com.hits.language_school_back.mapper.GroupMapper;
+import com.hits.language_school_back.mapper.UserMapper;
 import com.hits.language_school_back.model.User;
 import com.hits.language_school_back.repository.UserRepository;
 import com.hits.language_school_back.service.UserService;
@@ -32,6 +35,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final GroupMapper groupMapper;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -242,7 +246,9 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         dto.setLastName(user.getLastName());
         dto.setEmail(user.getEmail());
         dto.setRole(user.getRole());
-        dto.setGroups(user.getGroups());
+
+
+        dto.setGroups(user.getGroups().stream().map(groupMapper::toDto).toList());
 
         return dto;
     }
