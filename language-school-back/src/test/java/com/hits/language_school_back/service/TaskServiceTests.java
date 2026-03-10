@@ -1,9 +1,8 @@
 package com.hits.language_school_back.service;
 
-import com.hits.language_school_back.dto.TaskDTO;
-import com.hits.language_school_back.dto.TaskStudentDTO;
-import com.hits.language_school_back.dto.TaskTeacherDTO;
-import com.hits.language_school_back.dto.UserFullDTO;
+import com.hits.language_school_back.dto.*;
+import com.hits.language_school_back.enums.Difficulty;
+import com.hits.language_school_back.enums.Role;
 import com.hits.language_school_back.enums.TaskStatus;
 import com.hits.language_school_back.infrastructure.TaskServiceImpl;
 import com.hits.language_school_back.mapper.TaskStudentMapper;
@@ -16,6 +15,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -56,13 +57,20 @@ class TaskServiceTests {
     @InjectMocks
     private TaskServiceImpl taskService;
 
+    @Captor
+    private ArgumentCaptor<Task> taskCaptor;
+
     private User teacher;
     private User student;
     private Group group;
+    private Language language;
     private Task task;
     private TaskStudent taskStudent;
     private TaskDTO taskDTO;
     private UserFullDTO userFullDTO;
+    private UserDTO teacherDTO;
+    private GroupAnswerDTO groupAnswerDTO;
+    private LanguageDTO languageDTO;
     private LocalDate now;
     private List<Attachment> attachments;
 
@@ -70,13 +78,46 @@ class TaskServiceTests {
     void setUp() {
         now = LocalDate.now();
 
+        // Setup Language
+        language = new Language();
+        language.setId(1L);
+        language.setName("English");
+
+        languageDTO = new LanguageDTO("English");
+
+        // Setup Group
+        group = new Group();
+        group.setId(1L);
+        group.setName("Group A");
+        group.setDescription("Test Group");
+        group.setDifficulty(Difficulty.BEGINNER);
+        group.setLanguage(language);
+
+        groupAnswerDTO = GroupAnswerDTO.builder()
+                .id(1L)
+                .name("Group A")
+                .description("Test Group")
+                .difficulty(Difficulty.BEGINNER)
+                .language(languageDTO)
+                .build();
+
         // Setup teacher
         teacher = new User();
         teacher.setId(1L);
         teacher.setFirstName("John");
         teacher.setLastName("Doe");
         teacher.setEmail("john.doe@example.com");
-        teacher.setAttachmentList(Arrays.asList());
+        teacher.setRole(Role.TEACHER);
+        teacher.setGroups(Arrays.asList(group));
+
+        teacherDTO = new UserDTO(
+                1L,
+                "John",
+                "Doe",
+                "john.doe@example.com",
+                Arrays.asList(groupAnswerDTO),
+                Role.TEACHER
+        );
 
         // Setup student
         student = new User();
@@ -84,24 +125,21 @@ class TaskServiceTests {
         student.setFirstName("Jane");
         student.setLastName("Smith");
         student.setEmail("jane.smith@example.com");
+        student.setRole(Role.STUDENT);
 
         attachments = Arrays.asList(new Attachment(), new Attachment());
         student.setAttachmentList(attachments);
 
-        // Setup group
-        group = new Group();
-        group.setName("Group A");
-        group.setDescription("Test Group");
-
         // Setup task
-        task = new Task();
-        task.setId(1L);
-        task.setName("Test Task");
-        task.setDescription("Test Description");
-        task.setDeadline(now.plusDays(5));
-        task.setTaskStatus(TaskStatus.PENDING);
-        task.setUser(teacher);
-        task.setGroup(group);
+        task = Task.builder()
+                .id(1L)
+                .name("Test Task")
+                .description("Test Description")
+                .deadline(now.plusDays(5))
+                .taskStatus(TaskStatus.PENDING)
+                .user(teacher)
+                .group(group)
+                .build();
 
         // Setup taskStudent
         taskStudent = new TaskStudent();
@@ -111,18 +149,22 @@ class TaskServiceTests {
         taskStudent.setAttachmentList(attachments);
         taskStudent.setTaskStatus(TaskStatus.PENDING);
 
-        // Setup DTOs
-        taskDTO = new TaskDTO();
-        taskDTO.setName("New Task");
-        taskDTO.setDescription("New Description");
-        taskDTO.setDeadline(now.plusDays(10));
-        taskDTO.setGroupName("Group A");
+        // Setup DTOs using builder
+        taskDTO = TaskDTO.builder()
+                .name("New Task")
+                .description("New Description")
+                .deadline(now.plusDays(10))
+                .groupName("Group A")
+                .build();
 
-        userFullDTO = new UserFullDTO();
-        userFullDTO.setId(1L);
-        userFullDTO.setFirstName("John");
-        userFullDTO.setLastName("Doe");
-        userFullDTO.setEmail("john.doe@example.com");
+        userFullDTO = UserFullDTO.builder()
+                .id(1L)
+                .firstName("John")
+                .lastName("Doe")
+                .email("john.doe@example.com")
+                .role(Role.TEACHER)
+                .groups(Arrays.asList(groupAnswerDTO))
+                .build();
     }
 
     // ==================== GET TASKS BY TEACHER ID ====================
@@ -133,7 +175,16 @@ class TaskServiceTests {
         // Arrange
         Long teacherId = 1L;
         List<Task> tasks = Arrays.asList(task);
-        List<TaskTeacherDTO> expectedDTOs = Arrays.asList(new TaskTeacherDTO());
+
+        TaskTeacherDTO expectedDTO = TaskTeacherDTO.builder()
+                .id(1L)
+                .name("Test Task")
+                .description("Test Description")
+                .deadline(now.plusDays(5))
+                .commentList(Arrays.asList())
+                .build();
+
+        List<TaskTeacherDTO> expectedDTOs = Arrays.asList(expectedDTO);
 
         when(taskRepository.findByUserId(teacherId)).thenReturn(tasks);
         when(taskTeacherMapper.toDtoList(tasks)).thenReturn(expectedDTOs);
@@ -144,6 +195,9 @@ class TaskServiceTests {
         // Assert
         assertThat(result).isEqualTo(expectedDTOs);
         assertThat(result).hasSize(1);
+        assertThat(result.get(0).getName()).isEqualTo("Test Task");
+        assertThat(result.get(0).getDescription()).isEqualTo("Test Description");
+
         verify(taskRepository).findByUserId(teacherId);
         verify(taskTeacherMapper).toDtoList(tasks);
     }
@@ -177,7 +231,17 @@ class TaskServiceTests {
         String groupName = "Group A";
         Long userId = 2L;
         List<TaskStudent> taskStudents = Arrays.asList(taskStudent);
-        List<TaskStudentDTO> expectedDTOs = Arrays.asList(new TaskStudentDTO());
+
+        TaskStudentDTO expectedDTO = TaskStudentDTO.builder()
+                .id(1L)
+                .name("Test Task")
+                .description("Test Description")
+                .deadline(now.plusDays(5))
+                .taskStatus(TaskStatus.PENDING)
+                .teacher(teacherDTO)
+                .build();
+
+        List<TaskStudentDTO> expectedDTOs = Arrays.asList(expectedDTO);
 
         when(taskStudentRepository.findByUserId(userId)).thenReturn(taskStudents);
         when(taskStudentMapper.toDtoList(taskStudents)).thenReturn(expectedDTOs);
@@ -188,6 +252,12 @@ class TaskServiceTests {
         // Assert
         assertThat(result).isEqualTo(expectedDTOs);
         assertThat(result).hasSize(1);
+        assertThat(result.get(0).getTeacher()).isEqualTo(teacherDTO);
+        assertThat(result.get(0).getTeacher().getFirstName()).isEqualTo("John");
+        assertThat(result.get(0).getTeacher().getRole()).isEqualTo(Role.TEACHER);
+        assertThat(result.get(0).getTeacher().getGroups()).hasSize(1);
+        assertThat(result.get(0).getTeacher().getGroups().get(0).getName()).isEqualTo("Group A");
+
         verify(taskStudentRepository).findByUserId(userId);
         verify(taskStudentMapper).toDtoList(taskStudents);
     }
@@ -233,6 +303,7 @@ class TaskServiceTests {
         assertThat(result.getTaskStatus()).isEqualTo(TaskStatus.PENDING);
         assertThat(result.getUser()).isEqualTo(teacher);
         assertThat(result.getGroup()).isEqualTo(group);
+        assertThat(result.getUser().getRole()).isEqualTo(Role.TEACHER);
 
         verify(userRepository).findById(userFullDTO.getId());
         verify(groupService).getByName(taskDTO.getGroupName());
@@ -243,12 +314,18 @@ class TaskServiceTests {
     @DisplayName("Should create task with OVERDUE status when deadline is in past")
     void createTask_WithPastDeadline_ShouldSetOverdueStatus() {
         // Arrange
-        taskDTO.setDeadline(now.minusDays(1));
+        TaskDTO pastDeadlineDTO = TaskDTO.builder()
+                .name("New Task")
+                .description("New Description")
+                .deadline(now.minusDays(1))
+                .groupName("Group A")
+                .build();
+
         when(userRepository.findById(anyLong())).thenReturn(Optional.of(teacher));
         when(groupService.getByName(anyString())).thenReturn(group);
 
         // Act
-        Task result = taskService.createTask(taskDTO, userFullDTO);
+        Task result = taskService.createTask(pastDeadlineDTO, userFullDTO);
 
         // Assert
         assertThat(result).isNotNull();
@@ -259,12 +336,18 @@ class TaskServiceTests {
     @DisplayName("Should create task with null status when deadline is today")
     void createTask_WithTodayDeadline_ShouldNotSetStatus() {
         // Arrange
-        taskDTO.setDeadline(now);
+        TaskDTO todayDeadlineDTO = TaskDTO.builder()
+                .name("New Task")
+                .description("New Description")
+                .deadline(now)
+                .groupName("Group A")
+                .build();
+
         when(userRepository.findById(anyLong())).thenReturn(Optional.of(teacher));
         when(groupService.getByName(anyString())).thenReturn(group);
 
         // Act
-        Task result = taskService.createTask(taskDTO, userFullDTO);
+        Task result = taskService.createTask(todayDeadlineDTO, userFullDTO);
 
         // Assert
         assertThat(result).isNotNull();
@@ -305,14 +388,15 @@ class TaskServiceTests {
     void editTask_WithAllFields_ShouldUpdateTask() {
         // Arrange
         Long taskId = 1L;
-        Task existingTask = new Task();
-        existingTask.setId(taskId);
-        existingTask.setName("Old Name");
-        existingTask.setDescription("Old Description");
-        existingTask.setDeadline(now.minusDays(5));
-        existingTask.setTaskStatus(TaskStatus.OVERDUE);
-        existingTask.setUser(teacher);
-        existingTask.setGroup(group);
+        Task existingTask = Task.builder()
+                .id(taskId)
+                .name("Old Name")
+                .description("Old Description")
+                .deadline(now.minusDays(5))
+                .taskStatus(TaskStatus.OVERDUE)
+                .user(teacher)
+                .group(group)
+                .build();
 
         when(taskRepository.findById(taskId)).thenReturn(Optional.of(existingTask));
         when(groupService.getByName(taskDTO.getGroupName())).thenReturn(group);
@@ -339,20 +423,22 @@ class TaskServiceTests {
     void editTask_WithOnlyName_ShouldUpdateOnlyName() {
         // Arrange
         Long taskId = 1L;
-        Task existingTask = new Task();
-        existingTask.setId(taskId);
-        existingTask.setName("Old Name");
-        existingTask.setDescription("Old Description");
-        existingTask.setDeadline(now.plusDays(5));
-        existingTask.setTaskStatus(TaskStatus.PENDING);
-        existingTask.setUser(teacher);
-        existingTask.setGroup(group);
+        Task existingTask = Task.builder()
+                .id(taskId)
+                .name("Old Name")
+                .description("Old Description")
+                .deadline(now.plusDays(5))
+                .taskStatus(TaskStatus.PENDING)
+                .user(teacher)
+                .group(group)
+                .build();
 
-        TaskDTO partialDTO = new TaskDTO();
-        partialDTO.setName("Updated Name");
-        partialDTO.setDescription(null);
-        partialDTO.setDeadline(now.plusDays(5));
-        partialDTO.setGroupName("Group A");
+        TaskDTO partialDTO = TaskDTO.builder()
+                .name("Updated Name")
+                .description(null)
+                .deadline(now.plusDays(5))
+                .groupName("Group A")
+                .build();
 
         when(taskRepository.findById(taskId)).thenReturn(Optional.of(existingTask));
         when(groupService.getByName(partialDTO.getGroupName())).thenReturn(group);
@@ -373,20 +459,22 @@ class TaskServiceTests {
     void editTask_WithOnlyDescription_ShouldUpdateOnlyDescription() {
         // Arrange
         Long taskId = 1L;
-        Task existingTask = new Task();
-        existingTask.setId(taskId);
-        existingTask.setName("Old Name");
-        existingTask.setDescription("Old Description");
-        existingTask.setDeadline(now.plusDays(5));
-        existingTask.setTaskStatus(TaskStatus.PENDING);
-        existingTask.setUser(teacher);
-        existingTask.setGroup(group);
+        Task existingTask = Task.builder()
+                .id(taskId)
+                .name("Old Name")
+                .description("Old Description")
+                .deadline(now.plusDays(5))
+                .taskStatus(TaskStatus.PENDING)
+                .user(teacher)
+                .group(group)
+                .build();
 
-        TaskDTO partialDTO = new TaskDTO();
-        partialDTO.setName(null);
-        partialDTO.setDescription("Updated Description");
-        partialDTO.setDeadline(now.plusDays(5));
-        partialDTO.setGroupName("Group A");
+        TaskDTO partialDTO = TaskDTO.builder()
+                .name(null)
+                .description("Updated Description")
+                .deadline(now.plusDays(5))
+                .groupName("Group A")
+                .build();
 
         when(taskRepository.findById(taskId)).thenReturn(Optional.of(existingTask));
         when(groupService.getByName(partialDTO.getGroupName())).thenReturn(group);
@@ -406,14 +494,15 @@ class TaskServiceTests {
     void editTask_WithCompleteStatus_ShouldNotChangeStatus() {
         // Arrange
         Long taskId = 1L;
-        Task existingTask = new Task();
-        existingTask.setId(taskId);
-        existingTask.setName("Old Name");
-        existingTask.setDescription("Old Description");
-        existingTask.setDeadline(now.minusDays(5));
-        existingTask.setTaskStatus(TaskStatus.COMPLETE);
-        existingTask.setUser(teacher);
-        existingTask.setGroup(group);
+        Task existingTask = Task.builder()
+                .id(taskId)
+                .name("Old Name")
+                .description("Old Description")
+                .deadline(now.minusDays(5))
+                .taskStatus(TaskStatus.COMPLETE)
+                .user(teacher)
+                .group(group)
+                .build();
 
         when(taskRepository.findById(taskId)).thenReturn(Optional.of(existingTask));
         when(groupService.getByName(taskDTO.getGroupName())).thenReturn(group);
@@ -448,11 +537,17 @@ class TaskServiceTests {
         Long taskId = 1L;
         Long userId = 2L;
 
-        task.setDeadline(now.plusDays(5));
-        task.setTaskStatus(TaskStatus.PENDING);
+        Task existingTask = Task.builder()
+                .id(taskId)
+                .name("Test Task")
+                .deadline(now.plusDays(5))
+                .taskStatus(TaskStatus.PENDING)
+                .user(teacher)
+                .group(group)
+                .build();
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(student));
-        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(existingTask));
 
         // Act
         taskService.completeTask(taskId, userId);
@@ -460,9 +555,6 @@ class TaskServiceTests {
         // Assert
         verify(userRepository).findById(userId);
         verify(taskRepository).findById(taskId);
-
-        // Note: completeTask doesn't save the taskStudent to repository in current implementation
-        // You might want to add verification for taskStudentRepository.save() if needed
     }
 
     @Test
@@ -472,11 +564,17 @@ class TaskServiceTests {
         Long taskId = 1L;
         Long userId = 2L;
 
-        task.setDeadline(now.minusDays(1));
-        task.setTaskStatus(TaskStatus.OVERDUE);
+        Task existingTask = Task.builder()
+                .id(taskId)
+                .name("Test Task")
+                .deadline(now.minusDays(1))
+                .taskStatus(TaskStatus.OVERDUE)
+                .user(teacher)
+                .group(group)
+                .build();
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(student));
-        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(existingTask));
 
         // Act
         taskService.completeTask(taskId, userId);
@@ -522,11 +620,17 @@ class TaskServiceTests {
         Long taskId = 1L;
         Long userId = 2L;
 
-        task.setDeadline(now.plusDays(5));
-        task.setTaskStatus(TaskStatus.PENDING);
+        Task existingTask = Task.builder()
+                .id(taskId)
+                .name("Test Task")
+                .deadline(now.plusDays(5))
+                .taskStatus(TaskStatus.PENDING)
+                .user(teacher)
+                .group(group)
+                .build();
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(student));
-        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(existingTask));
 
         // Act
         taskService.completeTask(taskId, userId);
@@ -534,8 +638,5 @@ class TaskServiceTests {
         // Assert
         verify(userRepository).findById(userId);
         verify(taskRepository).findById(taskId);
-
-        // The attachments from student should be set to taskStudent
-        // But since taskStudent is created locally and not saved, we can't verify directly
     }
 }

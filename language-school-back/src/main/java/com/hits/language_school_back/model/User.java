@@ -3,10 +3,7 @@ package com.hits.language_school_back.model;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.hits.language_school_back.enums.Role;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -17,8 +14,9 @@ import java.util.List;
 @Getter
 @Setter
 @Entity
-@AllArgsConstructor
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "users")
 public class User implements UserDetails {
     @Id

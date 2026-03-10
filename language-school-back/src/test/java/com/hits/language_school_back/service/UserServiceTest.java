@@ -100,7 +100,6 @@ class UserServiceTest {
         dto.setEmail("s@mail.com");
         dto.setFirstName("Student");
         dto.setPassword("pass");
-        dto.setGroups(List.of(groupA));
 
         when(userRepository.findByEmail(dto.getEmail())).thenReturn(Optional.of(new User()));
 

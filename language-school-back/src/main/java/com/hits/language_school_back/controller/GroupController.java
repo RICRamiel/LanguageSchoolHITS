@@ -1,5 +1,6 @@
 package com.hits.language_school_back.controller;
 
+import com.hits.language_school_back.dto.GroupAnswerDTO;
 import com.hits.language_school_back.dto.GroupDTO;
 import com.hits.language_school_back.enums.Difficulty;
 import com.hits.language_school_back.filter.GroupFilter;
@@ -21,25 +22,25 @@ public class GroupController {
     private final GroupMapper groupMapper;
 
     @PostMapping("/create")
-    public ResponseEntity<GroupDTO> createGroup(@RequestBody GroupDTO groupDTO) {
+    public ResponseEntity<GroupAnswerDTO> createGroup(@RequestBody GroupDTO groupDTO) {
         Group group = groupService.createGroup(groupDTO);
         return ResponseEntity.ok(groupMapper.toDto(group));
     }
 
     @PutMapping("/{groupId}/edit")
-    public ResponseEntity<GroupDTO> editGroup(@RequestBody GroupDTO groupDTO, @PathVariable Long groupId) {
+    public ResponseEntity<GroupAnswerDTO> editGroup(@RequestBody GroupDTO groupDTO, @PathVariable Long groupId) {
         Group group = groupService.editGroup(groupDTO, groupId);
         return ResponseEntity.ok(groupMapper.toDto(group));
     }
 
     @PostMapping("/{groupId}/add/{studentId}")
-    public ResponseEntity<GroupDTO> addStudentToGroup(@PathVariable Long groupId, @PathVariable Long studentId) {
+    public ResponseEntity<GroupAnswerDTO> addStudentToGroup(@PathVariable Long groupId, @PathVariable Long studentId) {
         Group group = groupService.addStudentToGroup(groupId, studentId);
         return ResponseEntity.ok(groupMapper.toDto(group));
     }
 
     @DeleteMapping("/{groupId}/add/{studentId}")
-    public ResponseEntity<GroupDTO> removeStudentFromGroup(@PathVariable Long groupId, @PathVariable Long studentId) {
+    public ResponseEntity<GroupAnswerDTO> removeStudentFromGroup(@PathVariable Long groupId, @PathVariable Long studentId) {
         Group group = groupService.removeStudentFromGroup(groupId, studentId);
         return ResponseEntity.ok(groupMapper.toDto(group));
     }
@@ -50,25 +51,25 @@ public class GroupController {
     }
 
     @GetMapping("/get_all_groups")
-    ResponseEntity<List<GroupDTO>> getGroups() {
+    ResponseEntity<List<GroupAnswerDTO>> getGroups() {
         List<Group> groups = groupService.getGroups();
         return ResponseEntity.ok(groups.stream().map(groupMapper::toDto).toList());
     }
 
     @GetMapping("/{teacherId}/get_groups_by_teacher")
-    ResponseEntity<List<GroupDTO>> getGroupsByTeacherId(@PathVariable Long teacherId) {
+    ResponseEntity<List<GroupAnswerDTO>> getGroupsByTeacherId(@PathVariable Long teacherId) {
         List<Group> groups = groupService.getGroupsByTeacherId(teacherId);
         return ResponseEntity.ok(groups.stream().map(groupMapper::toDto).toList());
     }
 
     @GetMapping("/{groupId}/get_group_by_id")
-    ResponseEntity<GroupDTO> getByGroupId(@PathVariable Long groupId) {
+    ResponseEntity<GroupAnswerDTO> getByGroupId(@PathVariable Long groupId) {
         Group group = groupService.getByGroupId(groupId);
         return ResponseEntity.ok(groupMapper.toDto(group));
     }
 
     @GetMapping("/get-groups-with-filters")
-    ResponseEntity<List<GroupDTO>> getWithFilters(@RequestParam(required = false) String name,
+    ResponseEntity<List<GroupAnswerDTO>> getWithFilters(@RequestParam(required = false) String name,
                                                @RequestParam(required = false) Difficulty difficulty,
                                                @RequestParam(required = false) String language) {
         GroupFilter groupFilter = new GroupFilter(name, difficulty, language);
