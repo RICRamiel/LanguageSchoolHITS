@@ -24,6 +24,7 @@ export type NotificationItem = {
 export class NotificationListComponent {
   readonly notifications = input<NotificationItem[]>([]);
   readonly notificationRead = output<number>();
+  readonly notificationOpen = output<number>();
 
   readonly unreadCount = computed(
     () => this.notifications().filter((item) => item.isUnread).length,
@@ -31,5 +32,6 @@ export class NotificationListComponent {
 
   markAsRead(notificationId: number) {
     this.notificationRead.emit(notificationId);
+    this.notificationOpen.emit(notificationId);
   }
 }

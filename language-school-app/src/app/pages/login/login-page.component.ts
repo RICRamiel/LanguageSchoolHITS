@@ -1,13 +1,11 @@
-import { Component, inject, signal } from '@angular/core';
+﻿import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ButtonComponent } from '../../shared/ui/button/button.component';
 import { LabelComponent } from '../../shared/ui/label/label.component';
 import { LoginCardComponent } from '../../features/login/login-card.component';
 import { InputComponent } from '../../shared/ui/input/input.component';
-import { AuthControllerService } from '../../api/api/authController.service';
-import { AuthTokenService } from '../../core/auth/auth-token.service';
-import { catchError, EMPTY, finalize } from 'rxjs';
+import { AuthService } from '../../core/auth/auth.service';
 
 @Component({
   selector: 'app-login-page',
@@ -25,16 +23,14 @@ import { catchError, EMPTY, finalize } from 'rxjs';
 export class LoginPageComponent {
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
-  private readonly authController = inject(AuthControllerService);
-  private readonly authToken = inject(AuthTokenService);
+  private readonly authService = inject(AuthService);
 
   readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required]],
   });
-
-  readonly loading = signal(false);
-  readonly error = signal<string | null>(null);
+  isLoading = false;
+  errorMessage = '';
 
   onLogin(event: Event): void {
     event.preventDefault();
@@ -43,23 +39,20 @@ export class LoginPageComponent {
       return;
     }
 
-    this.loading.set(true);
-    this.error.set(null);
+    this.isLoading = true;
+    this.errorMessage = '';
 
-    const { email, password } = this.form.getRawValue();
-    this.authController.login({ email, password })
-      .pipe(
-        finalize(() => this.loading.set(false)),
-        catchError(err => {
-          this.error.set(err?.error?.message ?? err?.message ?? 'Неверный email или пароль');
-          return EMPTY;
-        })
-      )
-      .subscribe({
-        next: res => {
-          this.authToken.setToken(res.token);
-          this.router.navigateByUrl('/admin');
-        },
-      });
+    this.authService.login(this.form.getRawValue()).subscribe({
+      next: (result) => {
+        void this.router.navigateByUrl(result.redirectPath);
+      },
+      error: () => {
+        this.errorMessage = 'Не удалось выполнить вход. Проверьте email и пароль.';
+        this.isLoading = false;
+      },
+      complete: () => {
+        this.isLoading = false;
+      },
+    });
   }
 }

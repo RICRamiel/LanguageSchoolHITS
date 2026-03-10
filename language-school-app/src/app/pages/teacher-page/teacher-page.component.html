@@ -42,4 +42,19 @@
   @if (isTaskModalOpen) {
     <app-create-task-modal (close)="closeCreateTaskModal()" (submit)="submitTask($event)" />
   }
+
+  @if (isTaskDetailsModalOpen && selectedTask) {
+    <app-task-details-modal
+      [task]="selectedTask"
+      [activeSection]="selectedTaskSection"
+      (close)="closeTaskDetailsModal()"
+    />
+  }
+
+  @if (isNotificationDetailsModalOpen && selectedNotification) {
+    <app-notification-details-modal
+      [notification]="selectedNotification"
+      (close)="closeNotificationDetailsModal()"
+    />
+  }
 </div>

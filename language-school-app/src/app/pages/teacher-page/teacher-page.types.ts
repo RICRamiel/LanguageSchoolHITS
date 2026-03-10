@@ -1,3 +1,23 @@
+export type TeacherTaskDetailsSection = 'overview' | 'submissions' | 'comments';
+
+export type TaskDetailsOpenPayload = {
+  title: string;
+  section: TeacherTaskDetailsSection;
+};
+
+export type TeacherTaskSubmission = {
+  studentName: string;
+  fileName: string;
+  submittedAt: string;
+  content: string;
+};
+
+export type TeacherTaskComment = {
+  studentName: string;
+  text: string;
+  createdAt: string;
+};
+
 export type TeacherTask = {
   title: string;
   description: string;
@@ -5,6 +25,8 @@ export type TeacherTask = {
   submissions: string;
   comments: string;
   group: string;
+  attachedWorks: TeacherTaskSubmission[];
+  taskComments: TeacherTaskComment[];
 };
 
 export type TeacherNotification = {
