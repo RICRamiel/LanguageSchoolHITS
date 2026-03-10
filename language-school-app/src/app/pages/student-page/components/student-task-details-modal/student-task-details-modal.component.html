@@ -1,0 +1,22 @@
+<div class="modal-overlay" (click)="close.emit()">
+  <section class="modal" (click)="$event.stopPropagation()">
+    <button class="modal__close" type="button" (click)="close.emit()">×</button>
+    <h3 class="modal__title">{{ task().title }}</h3>
+    <p class="modal__subtitle">Преподаватель: {{ task().teacher }}</p>
+
+    <p class="modal__text">{{ task().description }}</p>
+
+    <dl class="modal__meta-list">
+      <div class="modal__meta-row">
+        <dt>Срок:</dt>
+        <dd>{{ task().dueText }}</dd>
+      </div>
+      @if (task().pillText) {
+        <div class="modal__meta-row">
+          <dt>Статус:</dt>
+          <dd>{{ task().pillText }}</dd>
+        </div>
+      }
+    </dl>
+  </section>
+</div>

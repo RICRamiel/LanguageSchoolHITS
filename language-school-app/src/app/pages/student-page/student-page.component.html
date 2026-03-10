@@ -1,9 +1,8 @@
 <div class="student-page">
-
   <app-header
-    fullName="Иванов Иван Иванович"
-    email="ivanov@example.com"
-    badge="B2"
+    [fullName]="fullName"
+    [email]="email"
+    [badge]="groupName"
     (logout)="onLogout()"
   />
 
@@ -15,7 +14,7 @@
     ></app-tabs>
     @if (activeTab === 'tasks') {
       <div class="task-list">
-        @for (t of tasks; track t.title) {
+        @for (t of tasks; track t.id) {
           <app-task-card
             [title]="t.title"
             [pillText]="t.pillText"
@@ -23,7 +22,7 @@
             [teacher]="t.teacher"
             [description]="t.description"
             [dueText]="t.dueText"
-            (details)="openTaskDetails(t.title)"
+            (details)="openTaskDetails(t.id)"
           />
         }
       </div>
@@ -34,4 +33,9 @@
       />
     }
   </div>
+
+  @if (isTaskDetailsModalOpen && selectedTask) {
+    <app-student-task-details-modal [task]="selectedTask" (close)="closeTaskDetailsModal()" />
+  }
+
 </div>

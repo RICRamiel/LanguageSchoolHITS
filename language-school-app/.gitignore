@@ -16,7 +16,6 @@ yarn-error.log
 .project
 .classpath
 .c9/
-*.launch
 .settings/
 *.sublime-workspace
 
@@ -38,6 +37,9 @@ yarn-error.log
 testem.log
 /typings
 __screenshots__/
+
+# Local secrets
+.secrets
 
 # System files
 .DS_Store
