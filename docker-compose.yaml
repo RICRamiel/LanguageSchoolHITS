@@ -20,18 +20,18 @@ services:
     networks:
       - language-school-network
 
-  # frontend:
-  #   expose:
-  #     - "4200"
-  #   container_name: language-school-frontend
-  #   build:
-  #     context: .
-  #     dockerfile: language-school-app/Dockerfile
-  #   depends_on:
-  #     backend:
-  #       condition: service_started
-  #   networks:
-  #     - language-school-network
+  frontend:
+     expose:
+       - "4200"
+     container_name: language-school-frontend
+     build:
+       context: .
+       dockerfile: language-school-app/Dockerfile
+     depends_on:
+       backend:
+         condition: service_started
+     networks:
+       - language-school-network
 
 
   postgres:
