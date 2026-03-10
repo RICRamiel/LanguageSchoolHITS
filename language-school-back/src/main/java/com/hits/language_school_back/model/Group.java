@@ -9,8 +9,9 @@ import java.util.List;
 @Getter
 @Setter
 @Entity
-@AllArgsConstructor
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "groups")
 public class Group {
     @Id

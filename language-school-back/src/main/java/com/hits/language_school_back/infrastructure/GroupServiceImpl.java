@@ -26,7 +26,11 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     public Group createGroup(GroupDTO groupDTO) {
-        Language language = languageRepository.findAllByName(groupDTO.getLanguage().getName()).get(0);
+        Language language = languageRepository.findAllByName(groupDTO.getLanguage().getName()).getFirst();
+
+        if(language == null){
+            language = languageRepository.findAll().getFirst();
+        }
 
         Group group = new Group();
         group.setDescription(groupDTO.getDescription());
@@ -39,7 +43,11 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     public Group editGroup(GroupDTO groupDTO, Long groupId) {
-        Language language = languageRepository.findAllByName(groupDTO.getLanguage().getName()).get(0);
+        Language language = languageRepository.findAllByName(groupDTO.getLanguage().getName()).getFirst();
+
+        if(language == null){
+            language = languageRepository.findAll().getFirst();
+        }
 
         Group group = new Group();
         group.setId(groupId);
