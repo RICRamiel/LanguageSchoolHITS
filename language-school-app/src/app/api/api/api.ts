@@ -1,0 +1,17 @@
+export * from './attachmentController.service';
+import { AttachmentControllerService } from './attachmentController.service';
+export * from './authController.service';
+import { AuthControllerService } from './authController.service';
+export * from './commentController.service';
+import { CommentControllerService } from './commentController.service';
+export * from './groupController.service';
+import { GroupControllerService } from './groupController.service';
+export * from './languageController.service';
+import { LanguageControllerService } from './languageController.service';
+export * from './notificationController.service';
+import { NotificationControllerService } from './notificationController.service';
+export * from './taskController.service';
+import { TaskControllerService } from './taskController.service';
+export * from './userController.service';
+import { UserControllerService } from './userController.service';
+export const APIS = [AttachmentControllerService, AuthControllerService, CommentControllerService, GroupControllerService, LanguageControllerService, NotificationControllerService, TaskControllerService, UserControllerService];

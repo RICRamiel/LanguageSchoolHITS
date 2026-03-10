@@ -3,7 +3,7 @@ export interface Group {
   name: string;
   language: string;
   teacherName: string;
-  studentsCount: number;
+  studentsCount: number | string;
 }
 
 export interface Student {

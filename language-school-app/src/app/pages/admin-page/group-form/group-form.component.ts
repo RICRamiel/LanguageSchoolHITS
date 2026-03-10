@@ -29,22 +29,21 @@ export class GroupFormComponent {
   private readonly fb = inject(FormBuilder);
 
   readonly initialValue = input<Group | null>(null);
-  readonly save = output<{ name: string; language: string; teacherName: string }>();
+  readonly save = output<{ name: string; language: string }>();
   readonly cancel = output<void>();
 
   form = this.fb.nonNullable.group({
     name: ['', Validators.required],
     language: ['', Validators.required],
-    teacherName: ['', Validators.required],
   });
 
   constructor() {
     effect(() => {
       const v = this.initialValue();
       if (v) {
-        this.form.setValue({ name: v.name, language: v.language, teacherName: v.teacherName });
+        this.form.setValue({ name: v.name, language: v.language });
       } else {
-        this.form.reset({ name: '', language: '', teacherName: '' });
+        this.form.reset({ name: '', language: '' });
       }
     });
   }

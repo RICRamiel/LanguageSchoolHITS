@@ -1,5 +1,5 @@
 import { Component, input, output } from '@angular/core';
-import { TeacherTask } from '../../teacher-page.types';
+import { TaskDetailsOpenPayload, TeacherTask } from '../../teacher-page.types';
 
 @Component({
   selector: 'app-teacher-task-list',
@@ -11,5 +11,5 @@ import { TeacherTask } from '../../teacher-page.types';
 export class TeacherTaskListComponent {
   readonly tasks = input<TeacherTask[]>([]);
   readonly createTask = output<void>();
-  readonly openTaskDetails = output<string>();
+  readonly openTaskDetails = output<TaskDetailsOpenPayload>();
 }

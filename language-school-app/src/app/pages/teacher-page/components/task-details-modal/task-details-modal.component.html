@@ -1,0 +1,89 @@
+<div class="modal-overlay" (click)="close.emit()">
+  <section class="modal" (click)="$event.stopPropagation()">
+    <button class="modal__close" type="button" (click)="close.emit()">×</button>
+    <h3 class="modal__title">{{ task().title }}</h3>
+    <p class="modal__subtitle">{{ task().group }}</p>
+
+    <nav class="modal__tabs">
+      <button
+        class="modal__tab"
+        type="button"
+        [class.modal__tab--active]="selectedSection() === 'overview'"
+        (click)="setSection('overview')"
+      >
+        Обзор
+      </button>
+      <button
+        class="modal__tab"
+        type="button"
+        [class.modal__tab--active]="selectedSection() === 'submissions'"
+        (click)="setSection('submissions')"
+      >
+        Работы
+      </button>
+      <button
+        class="modal__tab"
+        type="button"
+        [class.modal__tab--active]="selectedSection() === 'comments'"
+        (click)="setSection('comments')"
+      >
+        Комментарии
+      </button>
+    </nav>
+
+    @if (selectedSection() === 'overview') {
+      <p class="modal__text">{{ task().description }}</p>
+      <button class="modal__download" type="button" (click)="downloadTask()">Скачать задание</button>
+
+      <dl class="modal__meta-list">
+        <div class="modal__meta-row">
+          <dt>Срок:</dt>
+          <dd>{{ task().dueDate }}</dd>
+        </div>
+        <div class="modal__meta-row">
+          <dt>Работ:</dt>
+          <dd>{{ task().submissions }}</dd>
+        </div>
+        <div class="modal__meta-row">
+          <dt>Комментарии:</dt>
+          <dd>{{ task().comments }}</dd>
+        </div>
+      </dl>
+    } @else if (selectedSection() === 'submissions') {
+      <div class="modal__list">
+        @if (task().attachedWorks.length) {
+          @for (work of task().attachedWorks; track work.fileName) {
+            <article class="modal__item">
+              <p class="modal__item-title">{{ work.fileName }}</p>
+              <p class="modal__item-meta">{{ work.studentName }}</p>
+              <p class="modal__item-meta">{{ work.submittedAt }}</p>
+              <button
+                class="modal__download modal__download--small"
+                type="button"
+                (click)="downloadSubmission(work.fileName, work.content)"
+              >
+                Скачать
+              </button>
+            </article>
+          }
+        } @else {
+          <p class="modal__empty">Прикрепленных работ пока нет.</p>
+        }
+      </div>
+    } @else {
+      <div class="modal__list">
+        @if (task().taskComments.length) {
+          @for (comment of task().taskComments; track comment.studentName + comment.createdAt) {
+            <article class="modal__item">
+              <p class="modal__item-title">{{ comment.studentName }}</p>
+              <p class="modal__item-meta">{{ comment.createdAt }}</p>
+              <p class="modal__item-text">{{ comment.text }}</p>
+            </article>
+          }
+        } @else {
+          <p class="modal__empty">Комментариев пока нет.</p>
+        }
+      </div>
+    }
+  </section>
+</div>

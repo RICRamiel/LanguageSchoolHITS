@@ -6,6 +6,7 @@ import { GroupsTabComponent } from './groups-tab/groups-tab.component';
 import { StudentsTabComponent } from './students-tab/students-tab.component';
 import { TeachersTabComponent } from './teachers-tab/teachers-tab.component';
 import { LanguagesTabComponent } from './languages-tab/languages-tab.component';
+import { AuthService } from '../../core/auth/auth.service';
 
 @Component({
   selector: 'app-admin-page',
@@ -23,6 +24,7 @@ import { LanguagesTabComponent } from './languages-tab/languages-tab.component';
 })
 export class AdminPageComponent {
   private readonly router = inject(Router);
+  private readonly authService = inject(AuthService);
 
   readonly tabs = [
     { id: 'groups', label: 'Группы' },
@@ -38,6 +40,10 @@ export class AdminPageComponent {
   }
 
   onLogout(): void {
-    this.router.navigateByUrl('/');
+    this.authService.logout().subscribe({
+      next: () => {
+        void this.router.navigateByUrl('/');
+      },
+    });
   }
 }
