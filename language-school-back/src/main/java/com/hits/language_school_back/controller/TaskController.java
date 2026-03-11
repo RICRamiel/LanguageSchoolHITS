@@ -52,6 +52,12 @@ public class TaskController {
         return ResponseEntity.ok(tasks);
     }
 
+    @GetMapping("/get_by_group_name_real")
+    public ResponseEntity<List<TaskStudentDTO>> getByGroupNameNew(@RequestParam String groupName) {
+        List<TaskStudentDTO> tasks = taskService.getTasksByGroupNameReal(groupName);
+        return ResponseEntity.ok(tasks);
+    }
+
     @PostMapping("/{taskId}/complete_task")
     public void completeTask(@PathVariable Long taskId, HttpServletRequest request) {
         taskService.completeTask(taskId, userService.getMe(request).getId());

@@ -16,4 +16,6 @@ public interface TaskService {
     Task editTask(TaskDTO taskDTO, Long taskId);
 
     void completeTask(Long taskId, Long userId);
+
+    List<TaskStudentDTO> getTasksByGroupNameReal(String groupName);
 }
