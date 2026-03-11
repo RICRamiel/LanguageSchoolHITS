@@ -36,7 +36,7 @@ public class Task {
     @JoinColumn(name = "group_name")
     private Group group;
 
-    @OneToMany(fetch = FetchType.EAGER)
+    @OneToMany(fetch = FetchType.EAGER, mappedBy = "task")
     private List<Comment> commentList;
 
     @OneToMany(fetch = FetchType.EAGER)
