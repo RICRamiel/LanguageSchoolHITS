@@ -26,6 +26,10 @@ public class Attachment {
     private String bucketName;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "task_id", nullable = false)
+    @JoinColumn(name = "task_id")
     private Task task;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "notification_id")
+    private Notification notification;
 }
