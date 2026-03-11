@@ -61,6 +61,17 @@ public class TaskServiceImpl implements TaskService {
         }
         task.setName(taskDTO.getName());
         task.setGroup(groupService.getByName(taskDTO.getGroupName()));
+        Task saveTask = taskRepository.save(task);
+        List<User> users = task.getGroup().getUsers();
+
+        users.forEach(user1 -> {
+            TaskStudent taskStudent = new TaskStudent();
+            taskStudent.setTaskStatus(saveTask.getTaskStatus());
+            taskStudent.setUserId(user1.getId());
+            taskStudent.setTaskId(saveTask.getId());
+            taskStudentRepository.save(taskStudent);
+        });
+
         return taskRepository.save(task);
     }
 
