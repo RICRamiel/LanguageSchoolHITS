@@ -1,14 +1,14 @@
-<div class="teacher-page">
+﻿<div class="teacher-page">
   <app-header
-    fullName="Смирнова Елена Владимировна"
-    email="smirnova@example.com"
-    badge="Senior"
+    [fullName]="fullName"
+    [email]="email"
+    [badge]="badge"
     (logout)="onLogout()"
   />
 
   <main class="teacher-content">
     <section class="teacher-panel">
-      <h2 class="teacher-panel__title">Панель преподавателя</h2>
+      <h2 class="teacher-panel__title">Панель учителя</h2>
 
       <app-tabs
         [tabs]="tabs"
@@ -34,13 +34,18 @@
 
   @if (isNotificationModalOpen) {
     <app-create-notification-modal
+      [groups]="groups"
       (close)="closeCreateNotificationModal()"
       (submit)="submitNotification($event)"
     />
   }
 
   @if (isTaskModalOpen) {
-    <app-create-task-modal (close)="closeCreateTaskModal()" (submit)="submitTask($event)" />
+    <app-create-task-modal
+      [groups]="groups"
+      (close)="closeCreateTaskModal()"
+      (submit)="submitTask($event)"
+    />
   }
 
   @if (isTaskDetailsModalOpen && selectedTask) {

@@ -10,6 +10,14 @@ export const OPENAPI_PATHS = {
   users: {
     me: '/api/users/me',
   },
+  teacher: {
+    tasksByTeacher: (teacherId: number) => `/task/${teacherId}/get_by_teacher`,
+    createTask: '/task/create',
+    groupsByTeacher: (teacherId: number) => `/group/${teacherId}/get_groups_by_teacher`,
+    commentsByTask: (taskId: number) => `/comment/${taskId}/get`,
+    notificationsByGroup: (groupId: number) => `/notification/by-group/${groupId}`,
+    createNotification: '/notification/create',
+  },
 } as const;
 
 function normalizeBaseUrl(url: string): string {

@@ -11,5 +11,5 @@ import { TeacherNotification } from '../../teacher-page.types';
 export class TeacherNotificationsComponent {
   readonly notifications = input<TeacherNotification[]>([]);
   readonly createNotification = output<void>();
-  readonly openNotification = output<number>();
+  readonly openNotification = output<string>();
 }
