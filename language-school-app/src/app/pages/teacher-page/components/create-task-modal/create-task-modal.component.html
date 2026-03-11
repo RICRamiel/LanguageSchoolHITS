@@ -32,18 +32,19 @@
       (input)="dueDate = $any($event.target).value"
     />
 
-    <label class="modal__label" for="task-group">ID группы</label>
-    <select>
-    <input
-      id="task-group"
-      class="modal__input"
-      [value]="groupId"
-      (change)="groupId = $any($event.target).value"
-    >
-      @for (group of groups(); track group.id) {
-        <option [value]="group.id">{{ group.name }}</option>
-      }
-    </select>
+    <label class="modal__label" for="task-group">Группа</label>
+    <div class="modal__select-wrap">
+      <select
+        id="task-group"
+        class="modal__select"
+        [value]="groupId"
+        (change)="groupId = $any($event.target).value"
+      >
+        @for (group of groups(); track group.id) {
+          <option [value]="group.id">{{ group.name }} (ID: {{ group.id }})</option>
+        }
+      </select>
+    </div>
 
     <div class="modal__actions">
       <button class="modal__btn modal__btn--ghost" type="button" (click)="close.emit()">Отменить</button>
