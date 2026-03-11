@@ -90,13 +90,13 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public Group addStudentToGroup(Long groupId, Long studentId) {
+    public Group addUserToGroup(Long groupId, Long studentId) {
 
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new NoSuchElementException("Group not found"));
 
         User student = userRepository.findById(studentId)
-                .orElseThrow(() -> new NoSuchElementException("Student not found"));
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
 
         group.getUsers().add(student);
         student.getGroups().add(group);
@@ -105,7 +105,7 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public Group removeStudentFromGroup(Long groupId, Long studentId) {
+    public Group removeUserFromGroup(Long groupId, Long studentId) {
 
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new NoSuchElementException("Group not found"));

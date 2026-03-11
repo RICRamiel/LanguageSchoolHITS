@@ -28,7 +28,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -310,14 +309,14 @@ class GroupServiceTests {
 
     @Test
     @DisplayName("Should add student to group")
-    void addStudentToGroup_ShouldAddStudentAndReturnGroup() {
+    void addUserToGroup_ShouldAddUserAndReturnGroup() {
         // Arrange
         when(groupRepository.findById(groupId)).thenReturn(Optional.of(group1));
         when(userRepository.findById(studentId)).thenReturn(Optional.of(student));
         when(groupRepository.save(any(Group.class))).thenReturn(group1);
 
         // Act
-        Group result = groupService.addStudentToGroup(groupId, studentId);
+        Group result = groupService.addUserToGroup(groupId, studentId);
 
         // Assert
         assertThat(result).isNotNull();
@@ -331,12 +330,12 @@ class GroupServiceTests {
 
     @Test
     @DisplayName("Should throw exception when adding student to non-existent group")
-    void addStudentToGroup_WithNonExistentGroup_ShouldThrowException() {
+    void addUserToGroup_WithNonExistentGroup_ShouldThrowException() {
         // Arrange
         when(groupRepository.findById(groupId)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThatThrownBy(() -> groupService.addStudentToGroup(groupId, studentId))
+        assertThatThrownBy(() -> groupService.addUserToGroup(groupId, studentId))
                 .isInstanceOf(NoSuchElementException.class)
                 .hasMessageContaining("Group not found");
 
@@ -347,15 +346,15 @@ class GroupServiceTests {
 
     @Test
     @DisplayName("Should throw exception when adding non-existent student to group")
-    void addStudentToGroup_WithNonExistentStudent_ShouldThrowException() {
+    void addUserToGroup_WithNonExistentUser_ShouldThrowException() {
         // Arrange
         when(groupRepository.findById(groupId)).thenReturn(Optional.of(group1));
         when(userRepository.findById(studentId)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThatThrownBy(() -> groupService.addStudentToGroup(groupId, studentId))
+        assertThatThrownBy(() -> groupService.addUserToGroup(groupId, studentId))
                 .isInstanceOf(NoSuchElementException.class)
-                .hasMessageContaining("Student not found");
+                .hasMessageContaining("User not found");
 
         verify(groupRepository).findById(groupId);
         verify(userRepository).findById(studentId);
@@ -366,7 +365,7 @@ class GroupServiceTests {
 
     @Test
     @DisplayName("Should remove student from group")
-    void removeStudentFromGroup_ShouldRemoveStudentAndReturnGroup() {
+    void removeUserFromGroup_ShouldRemoveUserAndReturnGroup() {
         // Arrange
         group1.getUsers().add(student);
         student.getGroups().add(group1);
@@ -376,7 +375,7 @@ class GroupServiceTests {
         when(groupRepository.save(any(Group.class))).thenReturn(group1);
 
         // Act
-        Group result = groupService.removeStudentFromGroup(groupId, studentId);
+        Group result = groupService.removeUserFromGroup(groupId, studentId);
 
         // Assert
         assertThat(result).isNotNull();
@@ -389,8 +388,8 @@ class GroupServiceTests {
     }
 
     @Test
-    @DisplayName("Should handle removing student when group has null users list")
-    void removeStudentFromGroup_WithNullUsersList_ShouldHandleGracefully() {
+    @DisplayName("Should handle removing user when group has null users list")
+    void removeUserFromGroup_WithNullUsersList_ShouldHandleGracefully() {
         // Arrange
         group1.setUsers(null);
         student.getGroups().add(group1);
@@ -400,7 +399,7 @@ class GroupServiceTests {
         when(groupRepository.save(any(Group.class))).thenReturn(group1);
 
         // Act
-        Group result = groupService.removeStudentFromGroup(groupId, studentId);
+        Group result = groupService.removeUserFromGroup(groupId, studentId);
 
         // Assert
         assertThat(result).isNotNull();
@@ -413,12 +412,12 @@ class GroupServiceTests {
 
     @Test
     @DisplayName("Should throw exception when removing student from non-existent group")
-    void removeStudentFromGroup_WithNonExistentGroup_ShouldThrowException() {
+    void removeUserFromGroup_WithNonExistentGroup_ShouldThrowException() {
         // Arrange
         when(groupRepository.findById(groupId)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThatThrownBy(() -> groupService.removeStudentFromGroup(groupId, studentId))
+        assertThatThrownBy(() -> groupService.removeUserFromGroup(groupId, studentId))
                 .isInstanceOf(NoSuchElementException.class)
                 .hasMessageContaining("Group not found");
     }
@@ -431,7 +430,7 @@ class GroupServiceTests {
         when(userRepository.findById(studentId)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThatThrownBy(() -> groupService.removeStudentFromGroup(groupId, studentId))
+        assertThatThrownBy(() -> groupService.removeUserFromGroup(groupId, studentId))
                 .isInstanceOf(NoSuchElementException.class)
                 .hasMessageContaining("Student not found");
     }
