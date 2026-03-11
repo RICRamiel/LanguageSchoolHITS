@@ -5,6 +5,7 @@ import { catchError, map, mergeMap, Observable, of, tap, throwError } from 'rxjs
 import { LoginRequest, LoginResponse, LoginResult } from './auth.models';
 import { OPENAPI_PATHS, withOpenApiBase } from '../api/openapi.config';
 import { UserMeResponse } from '../user/user.models';
+import { UserService } from '../user/user.service';
 
 const TOKEN_KEY = 'auth_token';
 
@@ -12,6 +13,7 @@ const TOKEN_KEY = 'auth_token';
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly userService = inject(UserService);
 
   login(payload: LoginRequest): Observable<LoginResult> {
     return this.http
@@ -33,10 +35,13 @@ export class AuthService {
         }),
         mergeMap((token) =>
           this.http.get<UserMeResponse>(withOpenApiBase(OPENAPI_PATHS.users.me)).pipe(
-            map((me) => ({
-              token,
-              redirectPath: this.resolveRedirectPath(me.role),
-            })),
+            map((me) => {
+              this.userService.setCachedMe(me);
+              return {
+                token,
+                redirectPath: this.resolveRedirectPath(me.role),
+              };
+            }),
             catchError(() =>
               of({
                 token,
@@ -53,6 +58,7 @@ export class AuthService {
       .post(withOpenApiBase(OPENAPI_PATHS.auth.logout), {}, { responseType: 'text' })
       .pipe(
         tap(() => {
+          this.userService.clearCachedMe();
           if (isPlatformBrowser(this.platformId)) {
             localStorage.removeItem(TOKEN_KEY);
           }
