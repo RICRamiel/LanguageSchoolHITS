@@ -33,15 +33,15 @@ public class GroupController {
         return ResponseEntity.ok(groupMapper.toDto(group));
     }
 
-    @PostMapping("/{groupId}/add/{studentId}")
-    public ResponseEntity<GroupAnswerDTO> addStudentToGroup(@PathVariable Long groupId, @PathVariable Long studentId) {
-        Group group = groupService.addStudentToGroup(groupId, studentId);
+    @PostMapping("/{groupId}/add/{userId}")
+    public ResponseEntity<GroupAnswerDTO> addStudentToGroup(@PathVariable Long groupId, @PathVariable Long userId) {
+        Group group = groupService.addUserToGroup(groupId, userId);
         return ResponseEntity.ok(groupMapper.toDto(group));
     }
 
-    @DeleteMapping("/{groupId}/add/{studentId}")
-    public ResponseEntity<GroupAnswerDTO> removeStudentFromGroup(@PathVariable Long groupId, @PathVariable Long studentId) {
-        Group group = groupService.removeStudentFromGroup(groupId, studentId);
+    @DeleteMapping("/{groupId}/add/{userId}")
+    public ResponseEntity<GroupAnswerDTO> removeStudentFromGroup(@PathVariable Long groupId, @PathVariable Long userId) {
+        Group group = groupService.removeUserFromGroup(groupId, userId);
         return ResponseEntity.ok(groupMapper.toDto(group));
     }
 
