@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { catchError, finalize, forkJoin, map, of, switchMap } from 'rxjs';
+import { catchError, finalize, forkJoin, map, of, switchMap, timeout } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { UserService } from '../../core/user/user.service';
 import { HeaderComponent } from '../../shared/ui/header/header.component';
@@ -107,14 +107,14 @@ export class StudentPageComponent implements OnInit {
 
     this.selectedTask = task;
     this.isTaskDetailsModalOpen = true;
-    this.uploadedFileLink = null;
+    this.clearUploadedFileLink();
     this.loadTaskComments(taskId);
   }
 
   closeTaskDetailsModal() {
     this.selectedTask = null;
     this.isTaskDetailsModalOpen = false;
-    this.uploadedFileLink = null;
+    this.clearUploadedFileLink();
     this.uploadInProgress = false;
     this.completeInProgress = false;
     this.commentsLoading = false;
@@ -134,24 +134,33 @@ export class StudentPageComponent implements OnInit {
     this.attachmentApi
       .uploadAttachment(taskId, file)
       .pipe(
+        timeout(15000),
         switchMap((response) => {
           const attachmentId = this.extractAttachmentId(response);
           if (!attachmentId) {
             return of(null as string | null);
           }
-          return this.attachmentApi.getDownloadLink(attachmentId).pipe(
-            catchError(() => of(null as string | null)),
-          );
+          return this.http
+            .get(withOpenApiBase(OPENAPI_PATHS.attachments.download(attachmentId)), {
+              responseType: 'blob',
+            })
+            .pipe(
+              timeout(15000),
+              map((blob) => URL.createObjectURL(blob)),
+              catchError(() => of(null as string | null)),
+            );
         }),
+        catchError(() => of(null as string | null)),
         finalize(() => {
           this.uploadInProgress = false;
           this.cdr.detectChanges();
         }),
       )
       .subscribe({
-        next: (downloadLink) => {
-          if (downloadLink) {
-            this.uploadedFileLink = downloadLink;
+        next: (downloadUrl) => {
+          if (downloadUrl) {
+            this.clearUploadedFileLink();
+            this.uploadedFileLink = downloadUrl;
           }
         },
       });
@@ -169,13 +178,18 @@ export class StudentPageComponent implements OnInit {
     this.taskApi
       .completeTask(taskId)
       .pipe(
+        timeout(15000),
+        catchError(() => of(false)),
         finalize(() => {
           this.completeInProgress = false;
           this.cdr.detectChanges();
         }),
       )
       .subscribe({
-        next: () => {
+        next: (result) => {
+          if (result === false) {
+            return;
+          }
           this.tasks = this.tasks.map((task) =>
             task.id === taskId
               ? { ...task, pillText: RU.completed, pillVariant: 'success' }
@@ -523,5 +537,12 @@ export class StudentPageComponent implements OnInit {
     }
 
     return null;
+  }
+
+  private clearUploadedFileLink(): void {
+    if (this.uploadedFileLink?.startsWith('blob:')) {
+      URL.revokeObjectURL(this.uploadedFileLink);
+    }
+    this.uploadedFileLink = null;
   }
 }

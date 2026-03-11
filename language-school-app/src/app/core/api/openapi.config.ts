@@ -19,6 +19,9 @@ export const OPENAPI_PATHS = {
     create: '/comment/create',
     byTask: (taskId: number) => `/comment/${taskId}/get`,
   },
+  attachments: {
+    download: (attachmentId: number) => `/attachments/${attachmentId}/download`,
+  },
   tasks: {
     byGroupName: (groupName: string) =>
       `/task/get_by_group_name?groupName=${encodeURIComponent(groupName)}`,
