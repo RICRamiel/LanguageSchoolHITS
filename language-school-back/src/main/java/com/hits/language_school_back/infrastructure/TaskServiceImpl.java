@@ -9,6 +9,7 @@ import com.hits.language_school_back.enums.TaskStatus;
 import com.hits.language_school_back.mapper.TaskStudentMapper;
 import com.hits.language_school_back.mapper.TaskTeacherMapper;
 import com.hits.language_school_back.mapper.UserMapper;
+import com.hits.language_school_back.model.Group;
 import com.hits.language_school_back.model.TaskStudent;
 import com.hits.language_school_back.model.User;
 import com.hits.language_school_back.repository.TaskRepository;
@@ -60,7 +61,7 @@ public class TaskServiceImpl implements TaskService {
         }
         task.setName(taskDTO.getName());
         task.setGroup(groupService.getByName(taskDTO.getGroupName()));
-        return task;
+        return taskRepository.save(task);
     }
 
     @Override
