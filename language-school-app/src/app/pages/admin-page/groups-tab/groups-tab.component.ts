@@ -1,4 +1,4 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ButtonComponent } from '../../../shared/ui/button/button.component';
 import { GroupFormComponent } from '../group-form/group-form.component';
 import type { Group } from '../admin-page.models';
@@ -22,6 +22,7 @@ function toGroup(item: GroupApi): Group {
   selector: 'app-groups-tab',
   standalone: true,
   imports: [ButtonComponent, GroupFormComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './groups-tab.component.html',
   styleUrl: './groups-tab.component.less',
 })

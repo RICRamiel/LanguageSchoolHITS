@@ -2,15 +2,12 @@
   <div class="tasks-section__header">
     <h3 class="tasks-section__title">Список заданий</h3>
     <button class="tasks-section__create" type="button" (click)="createTask.emit()">
-      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-      </svg>
       Создать задание
     </button>
   </div>
 
   <div class="tasks-list">
-    @for (task of tasks(); track task.title) {
+    @for (task of tasks(); track task.id) {
       <article class="task-card">
         <div class="task-card__top">
           <h4 class="task-card__title">{{ task.title }}</h4>
@@ -31,7 +28,7 @@
             <button
               class="meta-item meta-item--action"
               type="button"
-              (click)="openTaskDetails.emit({ title: task.title, section: 'submissions' })"
+              (click)="openTaskDetails.emit({ taskId: task.id, section: 'submissions' })"
             >
               <svg class="meta-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path
@@ -46,7 +43,7 @@
             <button
               class="meta-item meta-item--action"
               type="button"
-              (click)="openTaskDetails.emit({ title: task.title, section: 'comments' })"
+              (click)="openTaskDetails.emit({ taskId: task.id, section: 'comments' })"
             >
               <svg class="meta-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path
@@ -63,7 +60,7 @@
           <button
             class="task-card__details"
             type="button"
-            (click)="openTaskDetails.emit({ title: task.title, section: 'overview' })"
+            (click)="openTaskDetails.emit({ taskId: task.id, section: 'overview' })"
           >
             <svg class="btn-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path

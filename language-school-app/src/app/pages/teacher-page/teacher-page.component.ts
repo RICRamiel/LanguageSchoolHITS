@@ -1,11 +1,14 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { Router } from '@angular/router';
+import { catchError, forkJoin, of, switchMap, tap } from 'rxjs';
 import { HeaderComponent } from '../../shared/ui/header/header.component';
 import { TabsComponent } from '../../shared/ui/tabs/tabs.component';
 import {
   CreateNotificationPayload,
   CreateTaskPayload,
   TaskDetailsOpenPayload,
+  TeacherGroup,
+  TeacherTaskComment,
   TeacherTaskDetailsSection,
   TeacherNotification,
   TeacherTask,
@@ -17,6 +20,8 @@ import { CreateTaskModalComponent } from './components/create-task-modal/create-
 import { TaskDetailsModalComponent } from './components/task-details-modal/task-details-modal.component';
 import { NotificationDetailsModalComponent } from './components/notification-details-modal/notification-details-modal.component';
 import { AuthService } from '../../core/auth/auth.service';
+import { UserService } from '../../core/user/user.service';
+import { TeacherService } from '../../core/teacher/teacher.service';
 
 @Component({
   selector: 'app-teacher-page',
@@ -31,17 +36,24 @@ import { AuthService } from '../../core/auth/auth.service';
     TaskDetailsModalComponent,
     NotificationDetailsModalComponent,
   ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './teacher-page.component.html',
   styleUrl: './teacher-page.component.less',
 })
-export class TeacherPageComponent {
+export class TeacherPageComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
+  private readonly userService = inject(UserService);
+  private readonly teacherService = inject(TeacherService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
-  tabs = [
-    { id: 'tasks', label: 'Задания' },
-    { id: 'notifications', label: 'Уведомления', badge: 3 },
-  ];
+  private teacherId: number | null = null;
+
+  fullName = '';
+  email = '';
+  badge = 'Teacher';
+
+  tabs = this.buildTabs(0);
 
   activeTab = 'tasks';
   isTaskModalOpen = false;
@@ -52,140 +64,57 @@ export class TeacherPageComponent {
   selectedTaskSection: TeacherTaskDetailsSection = 'overview';
   selectedNotification: TeacherNotification | null = null;
 
-  tasks: TeacherTask[] = [
-    {
-      title: 'Эссе по грамматике',
-      description: 'Написать эссе на тему Present Perfect',
-      dueDate: '20 февраля 2026',
-      submissions: '12 работ',
-      comments: '5 комментариев',
-      group: 'Группа А-101',
-      attachedWorks: [
-        {
-          studentName: 'Иван Петров',
-          fileName: 'essay-present-perfect-petrov.docx',
-          submittedAt: '18 февраля 2026, 16:20',
-          content: 'Эссе Ивана Петрова по теме Present Perfect.',
-        },
-        {
-          studentName: 'Мария Сидорова',
-          fileName: 'present-perfect-essay-sidorova.pdf',
-          submittedAt: '19 февраля 2026, 11:05',
-          content: 'Эссе Марии Сидоровой по теме Present Perfect.',
-        },
-      ],
-      taskComments: [
-        {
-          studentName: 'Иван Петров',
-          text: 'Можно ли использовать примеры из интервью?',
-          createdAt: '18 февраля 2026, 18:03',
-        },
-        {
-          studentName: 'Мария Сидорова',
-          text: 'Нужно ли оформлять список источников?',
-          createdAt: '19 февраля 2026, 12:44',
-        },
-      ],
-    },
-    {
-      title: 'Устное задание',
-      description: 'Подготовить 3-минутный монолог о своем хобби',
-      dueDate: '25 февраля 2026',
-      submissions: '8 работ',
-      comments: '3 комментариев',
-      group: 'Группа Б-202',
-      attachedWorks: [
-        {
-          studentName: 'Анна Волкова',
-          fileName: 'hobby-monologue-volkova.mp4',
-          submittedAt: '23 февраля 2026, 20:15',
-          content: 'Ссылка на видео-монолог Анны Волковой о хобби.',
-        },
-      ],
-      taskComments: [
-        {
-          studentName: 'Анна Волкова',
-          text: 'Можно ли сдавать аудио вместо видео?',
-          createdAt: '23 февраля 2026, 19:01',
-        },
-      ],
-    },
-  ];
+  groups: TeacherGroup[] = [];
+  tasks: TeacherTask[] = [];
+  notifications: TeacherNotification[] = [];
 
-  notifications: TeacherNotification[] = [
-    {
-      id: 1,
-      title: 'Новая работа от группы А-101',
-      text: 'Поступила новая работа по заданию "Эссе по грамматике".',
-      date: '1 марта 2026',
-    },
-    {
-      id: 2,
-      title: 'Комментарий к заданию',
-      text: 'Студент оставил уточняющий вопрос к устному заданию.',
-      date: '2 марта 2026',
-    },
-    {
-      id: 3,
-      title: 'Напоминание о дедлайне',
-      text: 'Через 2 дня заканчивается срок сдачи задания.',
-      date: '3 марта 2026',
-    },
-  ];
+  ngOnInit(): void {
+    this.loadTeacherDashboard();
+  }
 
-  onTabChange(tabId: string) {
+  onTabChange(tabId: string): void {
     this.activeTab = tabId;
   }
 
-  onCreateTask() {
+  onCreateTask(): void {
     this.isTaskModalOpen = true;
   }
 
-  closeCreateTaskModal() {
+  closeCreateTaskModal(): void {
     this.isTaskModalOpen = false;
   }
 
-  submitTask(payload: CreateTaskPayload) {
-    this.tasks = [
-      {
-        title: payload.title,
-        description: payload.description,
-        dueDate: this.formatIsoDate(payload.dueDate),
-        submissions: '0 работ',
-        comments: '0 комментариев',
-        group: `Группа ${payload.groupId}`,
-        attachedWorks: [],
-        taskComments: [],
+  submitTask(payload: CreateTaskPayload): void {
+    this.teacherService.createTask(payload).subscribe({
+      next: (task) => {
+        this.tasks = [task, ...this.tasks];
+        this.closeCreateTaskModal();
+        this.cdr.detectChanges();
       },
-      ...this.tasks,
-    ];
-    this.closeCreateTaskModal();
+    });
   }
 
-  openCreateNotificationModal() {
+  openCreateNotificationModal(): void {
     this.isNotificationModalOpen = true;
   }
 
-  closeCreateNotificationModal() {
+  closeCreateNotificationModal(): void {
     this.isNotificationModalOpen = false;
   }
 
-  submitNotification(payload: CreateNotificationPayload) {
-    const nextId = Math.max(0, ...this.notifications.map((item) => item.id)) + 1;
-    this.notifications = [
-      {
-        id: nextId,
-        title: payload.title,
-        text: payload.content,
-        date: this.formatToday(),
+  submitNotification(payload: CreateNotificationPayload): void {
+    this.teacherService.createNotification(payload).subscribe({
+      next: (notification) => {
+        this.notifications = [notification, ...this.notifications];
+        this.tabs = this.buildTabs(this.notifications.length);
+        this.closeCreateNotificationModal();
+        this.cdr.detectChanges();
       },
-      ...this.notifications,
-    ];
-    this.closeCreateNotificationModal();
+    });
   }
 
-  onOpenTaskDetails(payload: TaskDetailsOpenPayload) {
-    const task = this.tasks.find((item) => item.title === payload.title);
+  onOpenTaskDetails(payload: TaskDetailsOpenPayload): void {
+    const task = this.tasks.find((item) => item.id === payload.taskId);
     if (!task) {
       return;
     }
@@ -193,9 +122,33 @@ export class TeacherPageComponent {
     this.selectedTask = task;
     this.selectedTaskSection = payload.section;
     this.isTaskDetailsModalOpen = true;
+
+    if (task.id > 0) {
+      this.teacherService.getTaskComments(task.id).subscribe({
+        next: (comments) => {
+          this.applyTaskComments(task.id, comments);
+        },
+      });
+    }
   }
 
-  onOpenNotification(notificationId: number) {
+  onSubmitTaskComment(text: string): void {
+    const taskId = this.selectedTask?.id;
+    if (!taskId || taskId <= 0 || !this.teacherId) {
+      return;
+    }
+
+    this.teacherService
+      .createComment(taskId, this.teacherId, text)
+      .pipe(switchMap(() => this.teacherService.getTaskComments(taskId)))
+      .subscribe({
+        next: (comments) => {
+          this.applyTaskComments(taskId, comments);
+        },
+      });
+  }
+
+  onOpenNotification(notificationId: string): void {
     const notification = this.notifications.find((item) => item.id === notificationId);
     if (!notification) {
       return;
@@ -205,18 +158,18 @@ export class TeacherPageComponent {
     this.isNotificationDetailsModalOpen = true;
   }
 
-  closeTaskDetailsModal() {
+  closeTaskDetailsModal(): void {
     this.selectedTask = null;
     this.selectedTaskSection = 'overview';
     this.isTaskDetailsModalOpen = false;
   }
 
-  closeNotificationDetailsModal() {
+  closeNotificationDetailsModal(): void {
     this.selectedNotification = null;
     this.isNotificationDetailsModalOpen = false;
   }
 
-  onLogout() {
+  onLogout(): void {
     this.authService.logout().subscribe({
       next: () => {
         void this.router.navigateByUrl('/');
@@ -224,28 +177,91 @@ export class TeacherPageComponent {
     });
   }
 
-  private formatIsoDate(isoDate: string): string {
-    if (!isoDate) {
-      return '';
-    }
+  private loadTeacherDashboard(): void {
+    this.userService
+      .getMe()
+      .pipe(
+        tap((profile) => {
+          this.teacherId = profile.id;
+          this.fullName = [profile.lastName, profile.firstName].filter(Boolean).join(' ').trim();
+          this.email = profile.email;
+        }),
+        switchMap((profile) => {
+          const fallbackGroups: TeacherGroup[] = (profile.groups ?? [])
+            .map((group) => ({
+              id: Number(group.id),
+              name: (group.name ?? '').trim(),
+            }))
+            .filter((group) => Number.isFinite(group.id) && group.id > 0 && Boolean(group.name));
 
-    const date = new Date(isoDate);
-    if (Number.isNaN(date.getTime())) {
-      return isoDate;
-    }
+          const groups$ = this.teacherService
+            .getGroupsByTeacher(profile.id)
+            .pipe(catchError(() => of(fallbackGroups)));
 
-    return new Intl.DateTimeFormat('ru-RU', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    }).format(date);
+          const tasks$ = this.teacherService
+            .getTasksByTeacher(profile.id)
+            .pipe(catchError(() => of([] as TeacherTask[])));
+
+          return forkJoin({ groups: groups$, tasks: tasks$ }).pipe(
+            switchMap(({ groups, tasks }) =>
+              this.teacherService.getNotificationsByGroupIds(groups.map((group) => group.id)).pipe(
+                catchError(() => of([] as TeacherNotification[])),
+                switchMap((notifications) =>
+                  of({
+                    groups,
+                    tasks,
+                    notifications,
+                  }),
+                ),
+              ),
+            ),
+          );
+        }),
+      )
+      .subscribe({
+        next: ({ groups, tasks, notifications }) => {
+          this.groups = groups;
+          this.tasks = tasks;
+          this.notifications = notifications;
+          this.tabs = this.buildTabs(notifications.length);
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.groups = [];
+          this.tasks = [];
+          this.notifications = [];
+          this.tabs = this.buildTabs(0);
+          this.cdr.detectChanges();
+        },
+      });
   }
 
-  private formatToday(): string {
-    return new Intl.DateTimeFormat('ru-RU', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    }).format(new Date());
+  private buildTabs(notificationCount: number) {
+    return [
+      { id: 'tasks', label: 'Задания' },
+      { id: 'notifications', label: 'Уведомления', badge: notificationCount },
+    ];
+  }
+
+  private applyTaskComments(taskId: number, comments: TeacherTaskComment[]): void {
+    this.tasks = this.tasks.map((item) =>
+      item.id === taskId
+        ? {
+            ...item,
+            taskComments: comments,
+            comments: `${comments.length} comments`,
+          }
+        : item,
+    );
+
+    if (this.selectedTask?.id === taskId) {
+      this.selectedTask = {
+        ...this.selectedTask,
+        taskComments: comments,
+        comments: `${comments.length} comments`,
+      };
+    }
   }
 }
+
+

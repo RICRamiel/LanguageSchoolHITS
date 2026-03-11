@@ -29,13 +29,24 @@
     } @else {
       <app-notification-list
         [notifications]="notifications"
-        (notificationRead)="markNotificationAsRead($event)"
       />
     }
   </div>
 
   @if (isTaskDetailsModalOpen && selectedTask) {
-    <app-student-task-details-modal [task]="selectedTask" (close)="closeTaskDetailsModal()" />
+    <app-student-task-details-modal
+      [task]="selectedTask"
+      [uploadInProgress]="uploadInProgress"
+      [completeInProgress]="completeInProgress"
+      [uploadedFileLink]="uploadedFileLink"
+      [commentsLoading]="commentsLoading"
+      [commentSubmitting]="commentSubmitting"
+      [comments]="taskComments"
+      (uploadFile)="onUploadTaskFile($event)"
+      (completeTask)="onCompleteTask()"
+      (submitComment)="onSubmitComment($event)"
+      (close)="closeTaskDetailsModal()"
+    />
   }
 
 </div>

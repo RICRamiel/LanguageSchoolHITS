@@ -10,6 +10,25 @@ export const OPENAPI_PATHS = {
   users: {
     me: '/api/users/me',
   },
+  notifications: {
+    byGroup: (groupId: number) => `/notification/by-group/${groupId}`,
+    forStudent: (studentId: number) => `/notification/for-students/${studentId}`,
+    create: '/notification/create',
+  },
+  comments: {
+    create: '/comment/create',
+    byTask: (taskId: number) => `/comment/${taskId}/get`,
+  },
+  tasks: {
+    byGroupName: (groupName: string) =>
+      `/task/get_by_group_name?groupName=${encodeURIComponent(groupName)}`,
+  },
+  teacher: {
+    tasksByTeacher: (teacherId: number) => `/task/${teacherId}/get_by_teacher`,
+    createTask: '/task/create',
+    groupsByTeacher: (teacherId: number) => `/group/${teacherId}/get_groups_by_teacher`,
+    commentsByTask: (taskId: number) => `/comment/${taskId}/get`,
+  },
 } as const;
 
 function normalizeBaseUrl(url: string): string {

@@ -1,4 +1,4 @@
-import { Component, effect, inject, input, output } from '@angular/core';
+import { Component, effect, inject, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators, FormsModule } from '@angular/forms';
 import { ButtonComponent } from '../../../shared/ui/button/button.component';
 import { InputComponent } from '../../../shared/ui/input/input.component';
@@ -33,6 +33,7 @@ export interface StudentFormValue {
     CardTitleComponent,
     CardContentComponent,
   ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './student-form.component.html',
   styleUrl: './student-form.component.less',
 })

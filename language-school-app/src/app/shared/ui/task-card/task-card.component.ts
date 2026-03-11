@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { ButtonComponent } from '../button/button.component';
 
 type PillVariant = 'success' | 'neutral';
@@ -7,6 +7,7 @@ type PillVariant = 'success' | 'neutral';
   selector: 'app-task-card',
   standalone: true,
   imports: [ButtonComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './task-card.component.html',
   styleUrl: './task-card.component.less',
 })

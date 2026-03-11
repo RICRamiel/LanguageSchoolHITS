@@ -29,3 +29,98 @@
   margin: 0;
   color: #111827;
 }
+
+.modal__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.modal__action-btn {
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #fff;
+  color: #111827;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.modal__action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.modal__action-btn--primary {
+  border-color: #111827;
+  background: #111827;
+  color: #fff;
+}
+
+.modal__download-link {
+  display: inline-block;
+  margin-top: 14px;
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.modal__comments {
+  margin-top: 20px;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 16px;
+}
+
+.modal__comments-title {
+  margin: 0 0 12px;
+  font-size: 16px;
+  color: #111827;
+}
+
+.modal__comments-state {
+  margin: 0 0 10px;
+  color: #6b7280;
+}
+
+.modal__comments-list {
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modal__comment-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #f9fafb;
+}
+
+.modal__comment-author {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.modal__comment-text {
+  margin: 0;
+  color: #111827;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.modal__comment-input {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  color: #111827;
+  resize: vertical;
+  margin-bottom: 10px;
+}
