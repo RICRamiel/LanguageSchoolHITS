@@ -1,10 +1,11 @@
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { ButtonComponent } from '../button/button.component';
 
 @Component({
   selector: 'app-header',
   standalone: true,
   imports: [ButtonComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './header.component.html',
   styleUrl: './header.component.less',
 })

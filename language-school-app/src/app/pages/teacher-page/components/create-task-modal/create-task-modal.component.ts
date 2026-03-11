@@ -1,10 +1,11 @@
-import { Component, effect, input, output } from '@angular/core';
+import { Component, effect, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { CreateTaskPayload, TeacherGroup } from '../../teacher-page.types';
 
 @Component({
   selector: 'app-create-task-modal',
   standalone: true,
   imports: [],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './create-task-modal.component.html',
   styleUrl: './create-task-modal.component.less',
 })

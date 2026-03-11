@@ -11,8 +11,11 @@ import {
 } from './teacher.models';
 
 type TeacherComment = {
+  id?: number;
   text?: string;
   userId?: number;
+  taskId?: number;
+  privateStatus?: boolean;
 };
 
 type TeacherTaskResponse = {
@@ -84,6 +87,27 @@ export class TeacherService {
       );
   }
 
+  createComment(
+    taskId: number,
+    userId: number,
+    text: string,
+  ): Observable<TeacherTask['taskComments'][number]> {
+    return this.http
+      .post<TeacherComment>(withOpenApiBase(OPENAPI_PATHS.comments.create), {
+        text,
+        userId,
+        taskId,
+        privateStatus: false,
+      })
+      .pipe(
+        map((comment) => ({
+          studentName: comment?.userId ? `User #${comment.userId}` : 'Student',
+          text: (comment?.text ?? text).trim(),
+          createdAt: '',
+        })),
+      );
+  }
+
   createTask(payload: CreateTaskPayload): Observable<TeacherTask> {
     return this.http
       .post<TeacherTaskResponse>(withOpenApiBase(OPENAPI_PATHS.teacher.createTask), {
@@ -109,7 +133,7 @@ export class TeacherService {
     return forkJoin(
       uniqueGroupIds.map((groupId) =>
         this.http.get<TeacherNotificationResponse[]>(
-          withOpenApiBase(OPENAPI_PATHS.teacher.notificationsByGroup(groupId)),
+          withOpenApiBase(OPENAPI_PATHS.notifications.byGroup(groupId)),
         ),
       ),
     ).pipe(
@@ -132,7 +156,7 @@ export class TeacherService {
 
   createNotification(payload: CreateNotificationPayload): Observable<TeacherNotification> {
     return this.http
-      .post<TeacherNotificationResponse>(withOpenApiBase(OPENAPI_PATHS.teacher.createNotification), {
+      .post<TeacherNotificationResponse>(withOpenApiBase(OPENAPI_PATHS.notifications.create), {
         text: payload.content,
         groupId: payload.groupId,
       })

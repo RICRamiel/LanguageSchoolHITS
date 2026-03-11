@@ -1,4 +1,4 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ButtonComponent } from '../../../shared/ui/button/button.component';
 import { TeacherFormComponent } from '../teacher-form/teacher-form.component';
 import type { Teacher } from '../admin-page.models';
@@ -20,6 +20,7 @@ function toTeacher(item: UserDTO): Teacher {
   selector: 'app-teachers-tab',
   standalone: true,
   imports: [ButtonComponent, TeacherFormComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './teachers-tab.component.html',
   styleUrl: './teachers-tab.component.less',
 })

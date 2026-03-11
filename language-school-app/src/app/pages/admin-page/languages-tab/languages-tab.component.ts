@@ -1,4 +1,4 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ButtonComponent } from '../../../shared/ui/button/button.component';
 import { LanguageFormComponent } from '../language-form/language-form.component';
 import type { Language } from '../admin-page.models';
@@ -15,6 +15,7 @@ function toLanguage(item: LanguageApi): Language {
   selector: 'app-languages-tab',
   standalone: true,
   imports: [ButtonComponent, LanguageFormComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './languages-tab.component.html',
   styleUrl: './languages-tab.component.less',
 })

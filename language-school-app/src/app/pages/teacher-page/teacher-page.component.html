@@ -52,6 +52,7 @@
     <app-task-details-modal
       [task]="selectedTask"
       [activeSection]="selectedTaskSection"
+      (submitComment)="onSubmitTaskComment($event)"
       (close)="closeTaskDetailsModal()"
     />
   }

@@ -1,4 +1,4 @@
-import { Component, effect, inject, input, output } from '@angular/core';
+import { Component, effect, inject, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ButtonComponent } from '../../../shared/ui/button/button.component';
 import { InputComponent } from '../../../shared/ui/input/input.component';
@@ -22,6 +22,7 @@ import type { Language } from '../admin-page.models';
     CardTitleComponent,
     CardContentComponent,
   ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './language-form.component.html',
   styleUrl: './language-form.component.less',
 })

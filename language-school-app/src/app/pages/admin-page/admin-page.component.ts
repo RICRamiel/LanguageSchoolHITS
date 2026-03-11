@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { Router } from '@angular/router';
 import { HeaderComponent } from '../../shared/ui/header/header.component';
 import { TabsComponent } from '../../shared/ui/tabs/tabs.component';
@@ -19,6 +19,7 @@ import { AuthService } from '../../core/auth/auth.service';
     TeachersTabComponent,
     LanguagesTabComponent,
   ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './admin-page.component.html',
   styleUrl: './admin-page.component.less',
 })

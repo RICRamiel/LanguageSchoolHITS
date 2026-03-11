@@ -1,4 +1,4 @@
-﻿import { Component, inject } from '@angular/core';
+﻿import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { Router } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ButtonComponent } from '../../shared/ui/button/button.component';
@@ -17,6 +17,7 @@ import { AuthService } from '../../core/auth/auth.service';
     LoginCardComponent,
     InputComponent,
   ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './login-page.component.html',
   styleUrl: './login-page.component.less',
 })

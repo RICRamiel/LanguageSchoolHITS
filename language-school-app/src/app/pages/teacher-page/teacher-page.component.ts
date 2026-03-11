@@ -1,6 +1,6 @@
-﻿import { Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { Router } from '@angular/router';
-import { forkJoin, switchMap, tap } from 'rxjs';
+import { catchError, forkJoin, of, switchMap, tap } from 'rxjs';
 import { HeaderComponent } from '../../shared/ui/header/header.component';
 import { TabsComponent } from '../../shared/ui/tabs/tabs.component';
 import {
@@ -8,6 +8,7 @@ import {
   CreateTaskPayload,
   TaskDetailsOpenPayload,
   TeacherGroup,
+  TeacherTaskComment,
   TeacherTaskDetailsSection,
   TeacherNotification,
   TeacherTask,
@@ -35,6 +36,7 @@ import { TeacherService } from '../../core/teacher/teacher.service';
     TaskDetailsModalComponent,
     NotificationDetailsModalComponent,
   ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './teacher-page.component.html',
   styleUrl: './teacher-page.component.less',
 })
@@ -43,6 +45,7 @@ export class TeacherPageComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly userService = inject(UserService);
   private readonly teacherService = inject(TeacherService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   private teacherId: number | null = null;
 
@@ -86,6 +89,7 @@ export class TeacherPageComponent implements OnInit {
       next: (task) => {
         this.tasks = [task, ...this.tasks];
         this.closeCreateTaskModal();
+        this.cdr.detectChanges();
       },
     });
   }
@@ -104,6 +108,7 @@ export class TeacherPageComponent implements OnInit {
         this.notifications = [notification, ...this.notifications];
         this.tabs = this.buildTabs(this.notifications.length);
         this.closeCreateNotificationModal();
+        this.cdr.detectChanges();
       },
     });
   }
@@ -121,26 +126,26 @@ export class TeacherPageComponent implements OnInit {
     if (task.id > 0) {
       this.teacherService.getTaskComments(task.id).subscribe({
         next: (comments) => {
-          this.tasks = this.tasks.map((item) =>
-            item.id === task.id
-              ? {
-                  ...item,
-                  taskComments: comments,
-                  comments: `${comments.length} comments`,
-                }
-              : item,
-          );
-
-          if (this.selectedTask?.id === task.id) {
-            this.selectedTask = {
-              ...this.selectedTask,
-              taskComments: comments,
-              comments: `${comments.length} comments`,
-            };
-          }
+          this.applyTaskComments(task.id, comments);
         },
       });
     }
+  }
+
+  onSubmitTaskComment(text: string): void {
+    const taskId = this.selectedTask?.id;
+    if (!taskId || taskId <= 0 || !this.teacherId) {
+      return;
+    }
+
+    this.teacherService
+      .createComment(taskId, this.teacherId, text)
+      .pipe(switchMap(() => this.teacherService.getTaskComments(taskId)))
+      .subscribe({
+        next: (comments) => {
+          this.applyTaskComments(taskId, comments);
+        },
+      });
   }
 
   onOpenNotification(notificationId: string): void {
@@ -181,36 +186,82 @@ export class TeacherPageComponent implements OnInit {
           this.fullName = [profile.lastName, profile.firstName].filter(Boolean).join(' ').trim();
           this.email = profile.email;
         }),
-        switchMap((profile) =>
-          forkJoin({
-            groups: this.teacherService.getGroupsByTeacher(profile.id),
-            tasks: this.teacherService.getTasksByTeacher(profile.id),
-          }),
-        ),
-        switchMap(({ groups, tasks }) => {
-          this.groups = groups;
-          this.tasks = tasks;
-          return this.teacherService.getNotificationsByGroupIds(groups.map((group) => group.id));
+        switchMap((profile) => {
+          const fallbackGroups: TeacherGroup[] = (profile.groups ?? [])
+            .map((group) => ({
+              id: Number(group.id),
+              name: (group.name ?? '').trim(),
+            }))
+            .filter((group) => Number.isFinite(group.id) && group.id > 0 && Boolean(group.name));
+
+          const groups$ = this.teacherService
+            .getGroupsByTeacher(profile.id)
+            .pipe(catchError(() => of(fallbackGroups)));
+
+          const tasks$ = this.teacherService
+            .getTasksByTeacher(profile.id)
+            .pipe(catchError(() => of([] as TeacherTask[])));
+
+          return forkJoin({ groups: groups$, tasks: tasks$ }).pipe(
+            switchMap(({ groups, tasks }) =>
+              this.teacherService.getNotificationsByGroupIds(groups.map((group) => group.id)).pipe(
+                catchError(() => of([] as TeacherNotification[])),
+                switchMap((notifications) =>
+                  of({
+                    groups,
+                    tasks,
+                    notifications,
+                  }),
+                ),
+              ),
+            ),
+          );
         }),
       )
       .subscribe({
-        next: (notifications) => {
+        next: ({ groups, tasks, notifications }) => {
+          this.groups = groups;
+          this.tasks = tasks;
           this.notifications = notifications;
           this.tabs = this.buildTabs(notifications.length);
+          this.cdr.detectChanges();
         },
         error: () => {
           this.groups = [];
           this.tasks = [];
           this.notifications = [];
           this.tabs = this.buildTabs(0);
+          this.cdr.detectChanges();
         },
       });
   }
 
   private buildTabs(notificationCount: number) {
     return [
-      { id: 'tasks', label: 'Tasks' },
-      { id: 'notifications', label: 'Notifications', badge: notificationCount },
+      { id: 'tasks', label: 'Задания' },
+      { id: 'notifications', label: 'Уведомления', badge: notificationCount },
     ];
   }
+
+  private applyTaskComments(taskId: number, comments: TeacherTaskComment[]): void {
+    this.tasks = this.tasks.map((item) =>
+      item.id === taskId
+        ? {
+            ...item,
+            taskComments: comments,
+            comments: `${comments.length} comments`,
+          }
+        : item,
+    );
+
+    if (this.selectedTask?.id === taskId) {
+      this.selectedTask = {
+        ...this.selectedTask,
+        taskComments: comments,
+        comments: `${comments.length} comments`,
+      };
+    }
+  }
 }
+
+
