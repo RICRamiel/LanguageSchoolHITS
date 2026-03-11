@@ -114,5 +114,7 @@ public class TaskServiceImpl implements TaskService {
         } else if (task.getDeadline().isAfter(LocalDate.now())) {
             taskStudent.setTaskStatus(TaskStatus.COMPLETE);
         }
+        taskRepository.save(task);
+        taskStudentRepository.save(taskStudent);
     }
 }
