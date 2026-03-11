@@ -15,6 +15,6 @@ public interface GroupService {
     Group getByGroupId(Long groupId);
     List<Group> getGroupsWithFilters(GroupFilter groupFilter);
     Group getByName(String name);
-    Group addStudentToGroup(Long groupId, Long studentId);
-    Group removeStudentFromGroup(Long groupId, Long studentId);
+    Group addUserToGroup(Long groupId, Long studentId);
+    Group removeUserFromGroup(Long groupId, Long studentId);
 }

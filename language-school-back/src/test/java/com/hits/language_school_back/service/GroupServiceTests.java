@@ -1,6 +1,7 @@
 package com.hits.language_school_back.service;
 
 import com.hits.language_school_back.dto.GroupDTO;
+import com.hits.language_school_back.dto.LanguageDTO;
 import com.hits.language_school_back.enums.Difficulty;
 import com.hits.language_school_back.filter.GroupFilter;
 import com.hits.language_school_back.filter.specifications.GroupSpecifications;
@@ -9,6 +10,7 @@ import com.hits.language_school_back.model.Group;
 import com.hits.language_school_back.model.Language;
 import com.hits.language_school_back.model.User;
 import com.hits.language_school_back.repository.GroupRepository;
+import com.hits.language_school_back.repository.LanguageRepository;
 import com.hits.language_school_back.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -37,6 +39,9 @@ class GroupServiceTests {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private LanguageRepository languageRepository;
+
     @InjectMocks
     private GroupServiceImpl groupService;
 
@@ -44,15 +49,28 @@ class GroupServiceTests {
     private Group group2;
     private GroupDTO groupDTO;
     private Language language;
+    private Language defaultLanguage;
+    private LanguageDTO languageDTO;
     private User teacher;
     private User student;
+    private final Long teacherId = 1L;
+    private final Long studentId = 2L;
+    private final Long groupId = 1L;
 
     @BeforeEach
     void setUp() {
+        // Setup Languages
         language = new Language();
         language.setId(1L);
         language.setName("English");
 
+        defaultLanguage = new Language();
+        defaultLanguage.setId(2L);
+        defaultLanguage.setName("Spanish");
+
+        languageDTO = new LanguageDTO("English");
+
+        // Setup Groups
         group1 = new Group();
         group1.setId(1L);
         group1.setName("Group A");
@@ -69,29 +87,36 @@ class GroupServiceTests {
         group2.setLanguage(language);
         group2.setUsers(new ArrayList<>());
 
-        groupDTO = new GroupDTO();
-        groupDTO.setName("New Group");
-        groupDTO.setDescription("New Description");
-        groupDTO.setDifficulty(Difficulty.ELEMENTARY);
-        groupDTO.setLanguage(language);
+        // Setup GroupDTO with LanguageDTO
+        groupDTO = GroupDTO.builder()
+                .name("New Group")
+                .description("New Description")
+                .difficulty(Difficulty.ELEMENTARY)
+                .language(languageDTO)
+                .build();
 
+        // Setup Users
         teacher = new User();
-        teacher.setId(1L);
+        teacher.setId(teacherId);
         teacher.setFirstName("John");
         teacher.setLastName("Doe");
         teacher.setGroups(new ArrayList<>());
 
         student = new User();
-        student.setId(2L);
+        student.setId(studentId);
         student.setFirstName("Jane");
         student.setLastName("Smith");
         student.setGroups(new ArrayList<>());
     }
 
+    // ==================== CREATE GROUP ====================
+
     @Test
-    @DisplayName("Should create group successfully")
-    void createGroup_ShouldSaveAndReturnGroup() {
+    @DisplayName("Should create group with existing language")
+    void createGroup_WithExistingLanguage_ShouldUseThatLanguage() {
         // Arrange
+        List<Language> languages = Arrays.asList(language);
+        when(languageRepository.findAllByName(groupDTO.getLanguage().getName())).thenReturn(languages);
         when(groupRepository.save(any(Group.class))).thenAnswer(invocation -> {
             Group savedGroup = invocation.getArgument(0);
             savedGroup.setId(3L);
@@ -107,16 +132,20 @@ class GroupServiceTests {
         assertThat(result.getName()).isEqualTo(groupDTO.getName());
         assertThat(result.getDescription()).isEqualTo(groupDTO.getDescription());
         assertThat(result.getDifficulty()).isEqualTo(groupDTO.getDifficulty());
-        assertThat(result.getLanguage()).isEqualTo(groupDTO.getLanguage());
+        assertThat(result.getLanguage()).isEqualTo(language);
 
+        verify(languageRepository).findAllByName(groupDTO.getLanguage().getName());
         verify(groupRepository).save(any(Group.class));
+        verify(languageRepository, never()).findAll();
     }
 
     @Test
-    @DisplayName("Should edit group successfully")
-    void editGroup_ShouldUpdateAndReturnGroup() {
+    @DisplayName("Should edit group with existing language")
+    void editGroup_WithExistingLanguage_ShouldUpdateGroup() {
         // Arrange
-        Long groupId = 1L;
+        List<Language> languages = Arrays.asList(language);
+
+        when(languageRepository.findAllByName(groupDTO.getLanguage().getName())).thenReturn(languages);
         when(groupRepository.save(any(Group.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
@@ -128,8 +157,9 @@ class GroupServiceTests {
         assertThat(result.getName()).isEqualTo(groupDTO.getName());
         assertThat(result.getDescription()).isEqualTo(groupDTO.getDescription());
         assertThat(result.getDifficulty()).isEqualTo(groupDTO.getDifficulty());
-        assertThat(result.getLanguage()).isEqualTo(groupDTO.getLanguage());
+        assertThat(result.getLanguage()).isEqualTo(language);
 
+        verify(languageRepository).findAllByName(groupDTO.getLanguage().getName());
         verify(groupRepository).save(any(Group.class));
     }
 
@@ -147,6 +177,7 @@ class GroupServiceTests {
         assertThat(result).isNotNull();
         assertThat(result.getId()).isEqualTo(group1.getId());
         assertThat(result.getName()).isEqualTo(group1.getName());
+        assertThat(result.getLanguage()).isEqualTo(language);
         verify(groupRepository).findByName(groupName);
     }
 
@@ -165,6 +196,8 @@ class GroupServiceTests {
         verify(groupRepository).findByName(groupName);
     }
 
+    // ==================== DELETE GROUP ====================
+
     @Test
     @DisplayName("Should delete group by ID")
     void deleteGroup_ShouldCallRepositoryDelete() {
@@ -178,6 +211,8 @@ class GroupServiceTests {
         // Assert
         verify(groupRepository).deleteById(groupId);
     }
+
+    // ==================== GET ALL GROUPS ====================
 
     @Test
     @DisplayName("Should get all groups")
@@ -196,11 +231,12 @@ class GroupServiceTests {
         verify(groupRepository).findAll();
     }
 
+    // ==================== GET GROUPS BY TEACHER ID ====================
+
     @Test
     @DisplayName("Should get groups by teacher ID")
     void getGroupsByTeacherId_ShouldReturnListOfGroups() {
         // Arrange
-        Long teacherId = 1L;
         List<Group> groups = Arrays.asList(group1, group2);
         when(groupRepository.findByUsersId(teacherId)).thenReturn(groups);
 
@@ -214,11 +250,12 @@ class GroupServiceTests {
         verify(groupRepository).findByUsersId(teacherId);
     }
 
+    // ==================== GET GROUP BY ID ====================
+
     @Test
     @DisplayName("Should get group by ID")
     void getByGroupId_ShouldReturnGroup() {
         // Arrange
-        Long groupId = 1L;
         when(groupRepository.findById(groupId)).thenReturn(Optional.of(group1));
 
         // Act
@@ -228,6 +265,7 @@ class GroupServiceTests {
         assertThat(result).isNotNull();
         assertThat(result.getId()).isEqualTo(groupId);
         assertThat(result.getName()).isEqualTo(group1.getName());
+        assertThat(result.getLanguage()).isEqualTo(language);
         verify(groupRepository).findById(groupId);
     }
 
@@ -235,13 +273,14 @@ class GroupServiceTests {
     @DisplayName("Should throw exception when getting group by non-existent ID")
     void getByGroupId_WithNonExistentId_ShouldThrowException() {
         // Arrange
-        Long groupId = 999L;
         when(groupRepository.findById(groupId)).thenReturn(Optional.empty());
 
         // Act & Assert
         assertThatThrownBy(() -> groupService.getByGroupId(groupId))
                 .isInstanceOf(NoSuchElementException.class);
     }
+
+    // ==================== GET GROUPS WITH FILTERS ====================
 
     @Test
     @DisplayName("Should get groups with filters")
@@ -266,19 +305,18 @@ class GroupServiceTests {
         }
     }
 
+    // ==================== ADD STUDENT TO GROUP ====================
+
     @Test
     @DisplayName("Should add student to group")
-    void addStudentToGroup_ShouldAddStudentAndReturnGroup() {
+    void addUserToGroup_ShouldAddUserAndReturnGroup() {
         // Arrange
-        Long groupId = 1L;
-        Long studentId = 2L;
-
         when(groupRepository.findById(groupId)).thenReturn(Optional.of(group1));
         when(userRepository.findById(studentId)).thenReturn(Optional.of(student));
         when(groupRepository.save(any(Group.class))).thenReturn(group1);
 
         // Act
-        Group result = groupService.addStudentToGroup(groupId, studentId);
+        Group result = groupService.addUserToGroup(groupId, studentId);
 
         // Assert
         assertThat(result).isNotNull();
@@ -292,15 +330,12 @@ class GroupServiceTests {
 
     @Test
     @DisplayName("Should throw exception when adding student to non-existent group")
-    void addStudentToGroup_WithNonExistentGroup_ShouldThrowException() {
+    void addUserToGroup_WithNonExistentGroup_ShouldThrowException() {
         // Arrange
-        Long groupId = 999L;
-        Long studentId = 2L;
-
         when(groupRepository.findById(groupId)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThatThrownBy(() -> groupService.addStudentToGroup(groupId, studentId))
+        assertThatThrownBy(() -> groupService.addUserToGroup(groupId, studentId))
                 .isInstanceOf(NoSuchElementException.class)
                 .hasMessageContaining("Group not found");
 
@@ -311,31 +346,27 @@ class GroupServiceTests {
 
     @Test
     @DisplayName("Should throw exception when adding non-existent student to group")
-    void addStudentToGroup_WithNonExistentStudent_ShouldThrowException() {
+    void addUserToGroup_WithNonExistentUser_ShouldThrowException() {
         // Arrange
-        Long groupId = 1L;
-        Long studentId = 999L;
-
         when(groupRepository.findById(groupId)).thenReturn(Optional.of(group1));
         when(userRepository.findById(studentId)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThatThrownBy(() -> groupService.addStudentToGroup(groupId, studentId))
+        assertThatThrownBy(() -> groupService.addUserToGroup(groupId, studentId))
                 .isInstanceOf(NoSuchElementException.class)
-                .hasMessageContaining("Student not found");
+                .hasMessageContaining("User not found");
 
         verify(groupRepository).findById(groupId);
         verify(userRepository).findById(studentId);
         verify(groupRepository, never()).save(any(Group.class));
     }
 
+    // ==================== REMOVE STUDENT FROM GROUP ====================
+
     @Test
     @DisplayName("Should remove student from group")
-    void removeStudentFromGroup_ShouldRemoveStudentAndReturnGroup() {
+    void removeUserFromGroup_ShouldRemoveUserAndReturnGroup() {
         // Arrange
-        Long groupId = 1L;
-        Long studentId = 2L;
-
         group1.getUsers().add(student);
         student.getGroups().add(group1);
 
@@ -344,7 +375,7 @@ class GroupServiceTests {
         when(groupRepository.save(any(Group.class))).thenReturn(group1);
 
         // Act
-        Group result = groupService.removeStudentFromGroup(groupId, studentId);
+        Group result = groupService.removeUserFromGroup(groupId, studentId);
 
         // Assert
         assertThat(result).isNotNull();
@@ -357,20 +388,18 @@ class GroupServiceTests {
     }
 
     @Test
-    @DisplayName("Should handle removing student when group has null users list")
-    void removeStudentFromGroup_WithNullUsersList_ShouldHandleGracefully() {
+    @DisplayName("Should handle removing user when group has null users list")
+    void removeUserFromGroup_WithNullUsersList_ShouldHandleGracefully() {
         // Arrange
-        Long groupId = 1L;
-        Long studentId = 2L;
-
         group1.setUsers(null);
+        student.getGroups().add(group1);
 
         when(groupRepository.findById(groupId)).thenReturn(Optional.of(group1));
         when(userRepository.findById(studentId)).thenReturn(Optional.of(student));
         when(groupRepository.save(any(Group.class))).thenReturn(group1);
 
         // Act
-        Group result = groupService.removeStudentFromGroup(groupId, studentId);
+        Group result = groupService.removeUserFromGroup(groupId, studentId);
 
         // Assert
         assertThat(result).isNotNull();
@@ -383,16 +412,26 @@ class GroupServiceTests {
 
     @Test
     @DisplayName("Should throw exception when removing student from non-existent group")
-    void removeStudentFromGroup_WithNonExistentGroup_ShouldThrowException() {
+    void removeUserFromGroup_WithNonExistentGroup_ShouldThrowException() {
         // Arrange
-        Long groupId = 999L;
-        Long studentId = 2L;
-
         when(groupRepository.findById(groupId)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThatThrownBy(() -> groupService.removeStudentFromGroup(groupId, studentId))
+        assertThatThrownBy(() -> groupService.removeUserFromGroup(groupId, studentId))
                 .isInstanceOf(NoSuchElementException.class)
                 .hasMessageContaining("Group not found");
+    }
+
+    @Test
+    @DisplayName("Should throw exception when removing non-existent student from group")
+    void removeStudentFromGroup_WithNonExistentStudent_ShouldThrowException() {
+        // Arrange
+        when(groupRepository.findById(groupId)).thenReturn(Optional.of(group1));
+        when(userRepository.findById(studentId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() -> groupService.removeUserFromGroup(groupId, studentId))
+                .isInstanceOf(NoSuchElementException.class)
+                .hasMessageContaining("Student not found");
     }
 }

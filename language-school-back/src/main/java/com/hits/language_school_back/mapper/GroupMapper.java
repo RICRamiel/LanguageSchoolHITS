@@ -1,5 +1,6 @@
 package com.hits.language_school_back.mapper;
 
+import com.hits.language_school_back.dto.GroupAnswerDTO;
 import com.hits.language_school_back.dto.GroupDTO;
 import com.hits.language_school_back.dto.LanguageDTO;
 import com.hits.language_school_back.dto.TaskDTO;
@@ -10,9 +11,10 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class GroupMapper {
-    public GroupDTO toDto(Group group) {
+    public GroupAnswerDTO toDto(Group group) {
 
-        return GroupDTO.builder()
+        return GroupAnswerDTO.builder()
+                .id(group.getId())
                 .name(group.getName())
                 .description(group.getDescription())
                 .difficulty(group.getDifficulty())
