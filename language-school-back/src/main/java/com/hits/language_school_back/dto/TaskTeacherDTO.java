@@ -18,4 +18,5 @@ public class TaskTeacherDTO {
     private String description;
     private LocalDate deadline;
     private List<CommentDTO> commentList;
+    private List<AttachmentDownloadInfo> attachmentDownloadInfos;
 }
