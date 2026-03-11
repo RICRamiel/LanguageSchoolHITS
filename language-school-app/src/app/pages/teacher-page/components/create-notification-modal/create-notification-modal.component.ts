@@ -1,10 +1,11 @@
-import { Component, effect, input, output } from '@angular/core';
+import { Component, effect, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { CreateNotificationPayload, TeacherGroup } from '../../teacher-page.types';
 
 @Component({
   selector: 'app-create-notification-modal',
   standalone: true,
   imports: [],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './create-notification-modal.component.html',
   styleUrl: './create-notification-modal.component.less',
 })

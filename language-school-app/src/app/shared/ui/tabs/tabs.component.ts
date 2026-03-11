@@ -1,4 +1,4 @@
-import { Component, effect, input, output, signal } from '@angular/core';
+import { Component, effect, input, output, signal, ChangeDetectionStrategy } from '@angular/core';
 
 export type TabItem = {
   id: string;
@@ -11,6 +11,7 @@ export type TabItem = {
   selector: 'app-tabs',
   standalone: true,
   imports: [],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './tabs.component.html',
   styleUrl: './tabs.component.less',
 })

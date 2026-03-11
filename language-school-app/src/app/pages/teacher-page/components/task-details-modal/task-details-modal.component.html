@@ -71,6 +71,23 @@
         }
       </div>
     } @else {
+      <div class="modal__comment-form">
+        <textarea
+          class="modal__comment-input"
+          placeholder="Добавить комментарий"
+          [value]="commentText()"
+          (input)="onCommentInput($event)"
+        ></textarea>
+        <button
+          class="modal__comment-submit"
+          type="button"
+          [disabled]="!commentText().trim()"
+          (click)="onCommentSubmit()"
+        >
+          Отправить
+        </button>
+      </div>
+
       <div class="modal__list">
         @if (task().taskComments.length) {
           @for (comment of task().taskComments; track comment.studentName + comment.createdAt) {

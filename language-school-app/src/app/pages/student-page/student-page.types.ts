@@ -8,14 +8,17 @@ export type StudentTask = {
   dueText: string;
 };
 
+export type StudentTaskComment = {
+  userId: number | null;
+  text: string;
+};
+
 export type StudentNotification = {
-  id: number;
+  id: string;
   type: 'announcement' | 'task' | 'comment';
   title: string;
   author: string;
   dateTime: string;
   text: string;
   tag: string;
-  isNew: boolean;
-  isUnread: boolean;
 };
