@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -25,4 +26,7 @@ public class Notification {
 
     @ManyToOne(fetch = FetchType.LAZY)
     private User createdBy;
+
+    @OneToMany(fetch = FetchType.EAGER)
+    private List<Attachment> attachmentList;
 }
