@@ -6,6 +6,7 @@ import com.hits.language_school_back.dto.TaskStudentDTO;
 import com.hits.language_school_back.dto.TaskTeacherDTO;
 import com.hits.language_school_back.dto.UserFullDTO;
 import com.hits.language_school_back.enums.TaskStatus;
+import com.hits.language_school_back.mapper.TaskStudentGroupMapper;
 import com.hits.language_school_back.mapper.TaskStudentMapper;
 import com.hits.language_school_back.mapper.TaskTeacherMapper;
 import com.hits.language_school_back.mapper.UserMapper;
@@ -32,6 +33,7 @@ public class TaskServiceImpl implements TaskService {
     private final TaskRepository taskRepository;
     private final TaskTeacherMapper taskTeacherMapper;
     private final TaskStudentMapper taskStudentMapper;
+    private final TaskStudentGroupMapper taskStudentGroupMapper;
     private final GroupService groupService;
     private final UserRepository userRepository;
     private final TaskStudentRepository taskStudentRepository;
@@ -116,5 +118,11 @@ public class TaskServiceImpl implements TaskService {
         }
         taskRepository.save(task);
         taskStudentRepository.save(taskStudent);
+    }
+
+    @Override
+    public List<TaskStudentDTO> getTasksByGroupNameReal(String groupName) {
+        List<Task> tasks = taskRepository.findByGroupName(groupName);
+        return taskStudentGroupMapper.toDtoList(tasks);
     }
 }
