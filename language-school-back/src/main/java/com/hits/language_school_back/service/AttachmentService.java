@@ -1,7 +1,10 @@
 package com.hits.language_school_back.service;
 
+import com.hits.language_school_back.dto.AttachmentDownloadInfo;
 import com.hits.language_school_back.model.Attachment;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.InputStream;
 
 
 public interface AttachmentService {
@@ -10,4 +13,8 @@ public interface AttachmentService {
     void deleteAttachment(Long attachmentId);
 
     public String getDownloadLink(Long attachmentId);
+
+    InputStream downloadAttachment(Long attachmentId);
+
+    AttachmentDownloadInfo getDownloadInfo(Long attachmentId);
 }

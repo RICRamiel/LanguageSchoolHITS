@@ -1,6 +1,7 @@
 package com.hits.language_school_back.infrastructure;
 
 import com.hits.language_school_back.config.MinioConfig;
+import com.hits.language_school_back.dto.AttachmentDownloadInfo;
 import com.hits.language_school_back.exception.ResourceNotFoundException;
 import com.hits.language_school_back.model.Attachment;
 import com.hits.language_school_back.model.Task;
@@ -12,9 +13,12 @@ import com.hits.language_school_back.service.AttachmentService;
 import com.hits.language_school_back.service.MinioService;
 import com.hits.language_school_back.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.InputStream;
 
 @Service
 @RequiredArgsConstructor
@@ -56,6 +60,14 @@ public class AttachmentServiceImpl implements AttachmentService {
         attachmentRepository.delete(attachment);
     }
 
+    @Override
+    public InputStream downloadAttachment(Long attachmentId) {
+        Attachment attachment = attachmentRepository.findById(attachmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Attachment not found: " + attachmentId));
+
+        return minioService.downloadFile(attachment.getObjectKey());
+    }
+
     public String getDownloadLink(Long attachmentId) {
         Attachment attachment = attachmentRepository.findById(attachmentId)
                 .orElseThrow(() -> new RuntimeException("Attachment not found"));
@@ -64,5 +76,18 @@ public class AttachmentServiceImpl implements AttachmentService {
                 attachment.getObjectKey(),
                 15 * 60 * 1000
         );
+    }
+
+    @Override
+    public AttachmentDownloadInfo getDownloadInfo(Long attachmentId) {
+        Attachment attachment = attachmentRepository.findById(attachmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Attachment not found: " + attachmentId));
+
+        return AttachmentDownloadInfo.builder()
+                .fileName(attachment.getFileName())
+                .fileType(attachment.getFileType())
+                .fileSize(attachment.getFileSize())
+                .objectKey(attachment.getObjectKey())
+                .build();
     }
 }
