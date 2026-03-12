@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -23,7 +24,10 @@ public class NotificationController {
     private final NotificationMapper mapper;
 
     @PostMapping("/create")
-    public NotificationDto createNotification(@RequestBody NotificationCreationModel model, HttpServletRequest request) {
+    public NotificationDto createNotification(
+            @RequestBody NotificationCreationModel model,
+            HttpServletRequest request
+    ) {
         return mapper.toDto(service.createNotification(model, userService.getMe(request)));
     }
 

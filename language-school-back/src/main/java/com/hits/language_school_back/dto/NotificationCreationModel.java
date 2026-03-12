@@ -4,9 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDate;
-import java.util.UUID;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -15,4 +15,5 @@ import java.util.UUID;
 public class NotificationCreationModel {
     private String text;
     private Long groupId;
+    private List<MultipartFile> files;
 }
