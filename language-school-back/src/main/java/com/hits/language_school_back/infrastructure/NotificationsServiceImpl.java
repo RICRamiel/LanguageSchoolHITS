@@ -6,6 +6,7 @@ import com.hits.language_school_back.model.Group;
 import com.hits.language_school_back.model.Notification;
 import com.hits.language_school_back.model.User;
 import com.hits.language_school_back.repository.NotificationRepository;
+import com.hits.language_school_back.service.AttachmentService;
 import com.hits.language_school_back.service.NotificationsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +28,7 @@ public class NotificationsServiceImpl implements NotificationsService {
     private final NotificationRepository notificationRepository;
     private final GroupRepository groupRepository;
     private final UserRepository userRepository;
+    private final AttachmentService attachmentService;
 
     public List<Notification> getAllGroupNotifications(Long groupId) {
         log.info("Fetching all notifications for group with id: {}", groupId);
@@ -78,6 +80,8 @@ public class NotificationsServiceImpl implements NotificationsService {
 
         Notification savedNotification = notificationRepository.save(notification);
         log.info("Notification created successfully with id: {}", savedNotification.getId());
+
+        model.getFiles().forEach(file -> attachmentService.uploadAttachmentForNotification(savedNotification.getId(), file, me.getId()));
 
         return savedNotification;
     }
