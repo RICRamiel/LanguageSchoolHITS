@@ -8,6 +8,8 @@ import com.hits.language_school_back.model.Notification;
 import com.hits.language_school_back.model.User;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 import static java.util.stream.Collectors.toList;
 
 @Component
@@ -19,7 +21,7 @@ public class NotificationMapper {
                 .createdByTeacherWithId(model.getCreatedBy().getId())
                 .creationDate(model.getCreationDate())
                 .groupId(model.getGroup().getId())
-                .attachments(model.getAttachmentList().stream().map(attachment ->
+                .attachments(model.getAttachmentList() == null ? List.of() : model.getAttachmentList().stream().map(attachment ->
                         AttachmentDownloadInfo.builder()
                                 .fileName(attachment.getFileName())
                                 .fileType(attachment.getFileType())
