@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -22,4 +23,6 @@ public class NotificationDto {
     private LocalDate creationDate;
 
     private Long createdByTeacherWithId;
+
+    private List<AttachmentDownloadInfo> attachments;
 }

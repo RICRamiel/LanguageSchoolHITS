@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
+import java.util.UUID;
 
 @Slf4j
 @RestController
@@ -35,6 +36,14 @@ public class AttachmentController {
             @RequestParam("file") MultipartFile file,
             HttpServletRequest request) {
         attachmentService.uploadAttachment(taskId, file, userService.getMe(request).getId());
+    }
+
+    @PostMapping(value = "/to-notification", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public void uploadAttachmentForNotification(
+            @RequestParam("taskId") UUID notificationId,
+            @RequestParam("file") MultipartFile file,
+            HttpServletRequest request) {
+        attachmentService.uploadAttachmentForNotification(notificationId, file, userService.getMe(request).getId());
     }
 
     @DeleteMapping("/{attachmentId}")
