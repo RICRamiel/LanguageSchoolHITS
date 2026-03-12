@@ -8,7 +8,23 @@
 
   <main class="teacher-content">
     <section class="teacher-panel">
-      <h2 class="teacher-panel__title">Панель учителя</h2>
+      <div class="teacher-panel__top">
+        <h2 class="teacher-panel__title">Панель учителя</h2>
+        <div class="teacher-panel__filter">
+          <label class="teacher-panel__filter-label" for="teacher-group-filter">Группа</label>
+          <select
+            id="teacher-group-filter"
+            class="teacher-panel__filter-select"
+            [value]="selectedGroupFilter"
+            (change)="onGroupFilterChange($any($event.target).value)"
+          >
+            <option value="all">Все группы</option>
+            @for (group of groups; track group.id) {
+              <option [value]="group.id">{{ group.name }}</option>
+            }
+          </select>
+        </div>
+      </div>
 
       <app-tabs
         [tabs]="tabs"

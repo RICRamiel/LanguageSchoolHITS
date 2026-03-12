@@ -23,18 +23,46 @@
       (input)="content = $any($event.target).value"
     ></textarea>
 
-    <label class="modal__label" for="notify-group">ID группы</label>
-    <select>
-    <input
-      id="notify-group"
-      class="modal__input"
-      [value]="groupId"
-      (change)="groupId = $any($event.target).value"
-    >
-      @for (group of groups(); track group.id) {
-        <option [value]="group.id">{{ group.name }}</option>
+    <label class="modal__label" for="notify-group">Группа</label>
+    <div class="modal__group-select">
+      <button class="modal__group-trigger" type="button" (click)="toggleGroupList()">
+        {{ groupQuery || 'Выберите группу' }}
+      </button>
+      @if (isGroupListOpen) {
+        <div class="modal__group-panel">
+          <input
+            id="notify-group"
+            class="modal__group-search"
+            type="text"
+            placeholder="Поиск по группам..."
+            [value]="groupQuery"
+            (input)="onGroupQueryInput($any($event.target).value)"
+          />
+          <div class="modal__group-options">
+            @for (group of filteredGroups; track group.id) {
+              <button class="modal__group-option" type="button" (click)="selectGroup(group)">
+                <span>{{ group.name }}</span>
+                <span class="modal__group-id">ID: {{ group.id }}</span>
+              </button>
+            }
+            @if (!filteredGroups.length) {
+              <p class="modal__group-empty">Ничего не найдено</p>
+            }
+          </div>
+        </div>
       }
-    </select>
+    </div>
+
+    <label class="modal__label" for="notify-attachment">Вложение (опционально)</label>
+    <input
+      id="notify-attachment"
+      class="modal__file"
+      type="file"
+      (change)="onFileSelected($event)"
+    />
+    @if (attachmentFile) {
+      <p class="modal__file-name">{{ attachmentFile.name }}</p>
+    }
 
     <div class="modal__actions">
       <button class="modal__btn modal__btn--ghost" type="button" (click)="close.emit()">Отменить</button>

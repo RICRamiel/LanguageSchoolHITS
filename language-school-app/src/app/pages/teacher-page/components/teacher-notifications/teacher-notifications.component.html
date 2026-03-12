@@ -11,6 +11,9 @@
       <button type="button" class="notification-card" (click)="openNotification.emit(item.id)">
         <span class="notification-card__title">{{ item.title }}</span>
         <span class="notification-card__text">{{ item.text }}</span>
+        @if (item.attachment) {
+          <span class="notification-card__attachment">Вложение: {{ item.attachment.fileName }}</span>
+        }
         <span class="notification-card__date">{{ item.date }}</span>
       </button>
     }

@@ -19,6 +19,11 @@ export const OPENAPI_PATHS = {
     create: '/comment/create',
     byTask: (taskId: number) => `/comment/${taskId}/get`,
   },
+  attachments: {
+    upload: '/attachments',
+    uploadToNotification: '/attachments/to-notification',
+    download: (attachmentId: number | string) => `/attachments/${attachmentId}/download`,
+  },
   tasks: {
     byGroupName: (groupName: string) =>
       `/task/get_by_group_name?groupName=${encodeURIComponent(groupName)}`,
@@ -27,6 +32,7 @@ export const OPENAPI_PATHS = {
     tasksByTeacher: (teacherId: number) => `/task/${teacherId}/get_by_teacher`,
     createTask: '/task/create',
     groupsByTeacher: (teacherId: number) => `/group/${teacherId}/get_groups_by_teacher`,
+    groupsWithFilters: '/group/get-groups-with-filters',
     commentsByTask: (taskId: number) => `/comment/${taskId}/get`,
   },
 } as const;

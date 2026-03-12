@@ -10,8 +10,16 @@
     @for (task of tasks(); track task.id) {
       <article class="task-card">
         <div class="task-card__top">
-          <h4 class="task-card__title">{{ task.title }}</h4>
-          <span class="task-card__group">{{ task.group }}</span>
+          <div>
+            <h4 class="task-card__title">{{ task.title }}</h4>
+            <p class="task-card__teacher">{{ task.teacherName }}</p>
+          </div>
+          <div class="task-card__badges">
+            <span class="task-card__group">{{ task.group }}</span>
+            <span class="task-card__status" [class]="getStatusClass(task.status)">
+              {{ getStatusLabel(task.status) }}
+            </span>
+          </div>
         </div>
 
         <p class="task-card__description">{{ task.description }}</p>

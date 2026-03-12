@@ -84,6 +84,29 @@
   color: #374151;
 }
 
+.notification-item__attachment {
+  margin: 0 0 10px 32px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #1f2937;
+  font-size: 13px;
+}
+
+.notification-item__download {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #f9fafb;
+  color: #111827;
+  font-size: 12px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.notification-item__download:hover {
+  background: #eef2ff;
+}
+
 .notification-item__tag {
   display: inline-block;
   margin-left: 32px;
@@ -118,6 +141,10 @@
   .notification-item__text {
     margin: 14px 0 8px 32px;
     font-size: 13px;
+  }
+
+  .notification-item__attachment {
+    margin-left: 32px;
   }
 
   .notification-item__tag {
