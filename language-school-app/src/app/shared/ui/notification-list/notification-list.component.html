@@ -1,4 +1,4 @@
-<section class="notifications">
+﻿<section class="notifications">
   <div class="notifications__header">
     <h2 class="notifications__title">Уведомления</h2>
   </div>
@@ -36,6 +36,20 @@
 
         <p class="notification-item__meta">{{ n.author }} • {{ n.dateTime }}</p>
         <p class="notification-item__text">{{ n.text }}</p>
+        @if (n.attachment) {
+          <div class="notification-item__attachment">
+            <span>{{ n.attachment.fileName }}</span>
+            @if (n.attachment.id || n.attachment.objectKey) {
+              <button
+                class="notification-item__download"
+                type="button"
+                (click)="downloadAttachment.emit(n.attachment); $event.stopPropagation()"
+              >
+                Скачать
+              </button>
+            }
+          </div>
+        }
         <span class="notification-item__tag">{{ n.tag }}</span>
       </article>
     }

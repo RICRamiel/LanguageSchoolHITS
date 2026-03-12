@@ -1,3 +1,5 @@
+import { NotificationAttachment } from '../../core/teacher/teacher.models';
+
 export type StudentTask = {
   id: number;
   title: string;
@@ -21,4 +23,5 @@ export type StudentNotification = {
   dateTime: string;
   text: string;
   tag: string;
+  attachment: NotificationAttachment | null;
 };

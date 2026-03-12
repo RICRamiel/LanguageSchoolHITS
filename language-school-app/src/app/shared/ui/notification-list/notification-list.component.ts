@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { NotificationAttachment } from '../../../core/teacher/teacher.models';
 
 export type NotificationType = 'announcement' | 'task' | 'comment';
 
@@ -10,6 +11,7 @@ export type NotificationItem = {
   dateTime: string;
   text: string;
   tag: string;
+  attachment: NotificationAttachment | null;
 };
 
 @Component({
@@ -22,4 +24,5 @@ export type NotificationItem = {
 })
 export class NotificationListComponent {
   readonly notifications = input<NotificationItem[]>([]);
+  readonly downloadAttachment = output<NotificationAttachment>();
 }

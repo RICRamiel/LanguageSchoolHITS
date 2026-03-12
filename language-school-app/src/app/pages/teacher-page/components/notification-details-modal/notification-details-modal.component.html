@@ -4,5 +4,8 @@
     <h3 class="modal__title">{{ notification().title }}</h3>
     <p class="modal__subtitle">{{ notification().date }}</p>
     <p class="modal__text">{{ notification().text }}</p>
+    @if (notification().attachment) {
+      <p class="modal__attachment">Вложение: {{ notification().attachment?.fileName }}</p>
+    }
   </section>
 </div>
