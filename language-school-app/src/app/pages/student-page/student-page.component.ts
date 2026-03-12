@@ -13,11 +13,29 @@ import { StudentNotification, StudentTask, StudentTaskComment } from './student-
 import { OPENAPI_PATHS, withOpenApiBase } from '../../core/api/openapi.config';
 import { AttachmentControllerService, TaskControllerService } from '../../api';
 import { CommentDTO } from '../../api/model/commentDTO';
+import { NotificationAttachment } from '../../core/teacher/teacher.models';
 
 type StudentNotificationResponse = {
   id?: string;
   text?: string;
   creationDate?: string;
+  groupId?: number;
+  attachmentDownloadInfo?: StudentAttachmentResponse | null;
+  attachmentDownloadInfos?: StudentAttachmentResponse[] | null;
+  attachment?: StudentAttachmentResponse | null;
+  attachments?: StudentAttachmentResponse[] | null;
+};
+
+type StudentAttachmentResponse = {
+  id?: number;
+  attachmentId?: number;
+  fileName?: string;
+  name?: string;
+  fileType?: string;
+  contentType?: string;
+  fileSize?: number;
+  size?: number;
+  objectKey?: string;
 };
 
 type StudentTaskResponse = {
@@ -256,6 +274,35 @@ export class StudentPageComponent implements OnInit {
     });
   }
 
+  onDownloadNotificationAttachment(attachment: NotificationAttachment): void {
+    const attachmentRef = this.resolveAttachmentRef(attachment);
+    if (!attachmentRef) {
+      return;
+    }
+
+    this.http
+      .get(withOpenApiBase(OPENAPI_PATHS.attachments.download(attachmentRef)), {
+        observe: 'response',
+        responseType: 'blob',
+      })
+      .pipe(
+        map((response) => ({
+          blob: response.body,
+          fileName: this.extractFileName(response.headers.get('content-disposition')),
+        })),
+        catchError(() => of(null)),
+      )
+      .subscribe({
+        next: (result) => {
+          if (!result?.blob) {
+            return;
+          }
+
+          this.downloadBlob(result.blob, result.fileName || attachment.fileName || 'attachment');
+        },
+      });
+  }
+
   private loadCurrentUser(): void {
     this.userService
       .getMe()
@@ -491,7 +538,48 @@ export class StudentPageComponent implements OnInit {
       dateTime: this.formatDate(notification?.creationDate),
       text,
       tag: RU.group,
+      attachment: this.mapNotificationAttachment(notification),
     };
+  }
+
+  private mapNotificationAttachment(
+    notification: StudentNotificationResponse | null | undefined,
+  ): NotificationAttachment | null {
+    const candidates: Array<StudentAttachmentResponse | null | undefined> = [
+      notification?.attachmentDownloadInfo,
+      notification?.attachment,
+      ...(notification?.attachmentDownloadInfos ?? []),
+      ...(notification?.attachments ?? []),
+    ];
+
+    for (const candidate of candidates) {
+      if (!candidate) {
+        continue;
+      }
+
+      const id = this.resolveAttachmentId(candidate.id ?? candidate.attachmentId);
+      const objectKey = (candidate.objectKey ?? '').trim() || null;
+      const fileName =
+        (candidate.fileName ?? candidate.name ?? candidate.objectKey ?? '').trim() || 'attachment';
+      const fileType = (candidate.fileType ?? candidate.contentType ?? '').trim();
+      const sizeCandidate = candidate.fileSize ?? candidate.size;
+      const fileSize =
+        typeof sizeCandidate === 'number' && Number.isFinite(sizeCandidate) && sizeCandidate >= 0
+          ? sizeCandidate
+          : null;
+
+      if (id || fileName) {
+        return {
+          id,
+          objectKey,
+          fileName,
+          fileType,
+          fileSize,
+        };
+      }
+    }
+
+    return null;
   }
 
   private formatDate(value: string | undefined): string {
@@ -537,6 +625,44 @@ export class StudentPageComponent implements OnInit {
     }
 
     return null;
+  }
+
+  private resolveAttachmentId(value: unknown): number | null {
+    return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : null;
+  }
+
+  private resolveAttachmentRef(attachment: NotificationAttachment): number | string | null {
+    if (attachment.id && attachment.id > 0) {
+      return attachment.id;
+    }
+
+    const objectKey = attachment.objectKey?.trim();
+    return objectKey || null;
+  }
+
+  private extractFileName(contentDisposition: string | null): string {
+    if (!contentDisposition) {
+      return '';
+    }
+
+    const utf8Name = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+    if (utf8Name) {
+      return decodeURIComponent(utf8Name).trim();
+    }
+
+    const plainName = contentDisposition.match(/filename=\"?([^\";]+)\"?/i)?.[1];
+    return plainName?.trim() ?? '';
+  }
+
+  private downloadBlob(blob: Blob, fileName: string): void {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   }
 
   private clearUploadedFileLink(): void {

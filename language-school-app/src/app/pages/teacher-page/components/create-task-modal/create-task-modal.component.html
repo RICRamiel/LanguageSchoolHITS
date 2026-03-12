@@ -33,17 +33,33 @@
     />
 
     <label class="modal__label" for="task-group">Группа</label>
-    <div class="modal__select-wrap">
-      <select
-        id="task-group"
-        class="modal__select"
-        [value]="groupId"
-        (change)="groupId = $any($event.target).value"
-      >
-        @for (group of groups(); track group.id) {
-          <option [value]="group.id">{{ group.name }} (ID: {{ group.id }})</option>
-        }
-      </select>
+    <div class="modal__group-select">
+      <button class="modal__group-trigger" type="button" (click)="toggleGroupList()">
+        {{ groupQuery || 'Выберите группу' }}
+      </button>
+      @if (isGroupListOpen) {
+        <div class="modal__group-panel">
+          <input
+            id="task-group"
+            class="modal__group-search"
+            type="text"
+            placeholder="Поиск по группам..."
+            [value]="groupQuery"
+            (input)="onGroupQueryInput($any($event.target).value)"
+          />
+          <div class="modal__group-options">
+            @for (group of filteredGroups; track group.id) {
+              <button class="modal__group-option" type="button" (click)="selectGroup(group)">
+                <span>{{ group.name }}</span>
+                <span class="modal__group-id">ID: {{ group.id }}</span>
+              </button>
+            }
+            @if (!filteredGroups.length) {
+              <p class="modal__group-empty">Ничего не найдено</p>
+            }
+          </div>
+        </div>
+      }
     </div>
 
     <div class="modal__actions">

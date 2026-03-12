@@ -52,6 +52,7 @@ export class TeacherPageComponent implements OnInit {
   fullName = '';
   email = '';
   badge = 'Teacher';
+  selectedGroupFilter = 'all';
 
   tabs = this.buildTabs(0);
 
@@ -65,6 +66,8 @@ export class TeacherPageComponent implements OnInit {
   selectedNotification: TeacherNotification | null = null;
 
   groups: TeacherGroup[] = [];
+  allTasks: TeacherTask[] = [];
+  allNotifications: TeacherNotification[] = [];
   tasks: TeacherTask[] = [];
   notifications: TeacherNotification[] = [];
 
@@ -87,7 +90,8 @@ export class TeacherPageComponent implements OnInit {
   submitTask(payload: CreateTaskPayload): void {
     this.teacherService.createTask(payload).subscribe({
       next: (task) => {
-        this.tasks = [task, ...this.tasks];
+        this.allTasks = [task, ...this.allTasks];
+        this.applyGroupFilter();
         this.closeCreateTaskModal();
         this.cdr.detectChanges();
       },
@@ -105,7 +109,8 @@ export class TeacherPageComponent implements OnInit {
   submitNotification(payload: CreateNotificationPayload): void {
     this.teacherService.createNotification(payload).subscribe({
       next: (notification) => {
-        this.notifications = [notification, ...this.notifications];
+        this.allNotifications = [notification, ...this.allNotifications];
+        this.applyGroupFilter();
         this.tabs = this.buildTabs(this.notifications.length);
         this.closeCreateNotificationModal();
         this.cdr.detectChanges();
@@ -177,6 +182,11 @@ export class TeacherPageComponent implements OnInit {
     });
   }
 
+  onGroupFilterChange(value: string): void {
+    this.selectedGroupFilter = value;
+    this.applyGroupFilter();
+  }
+
   private loadTeacherDashboard(): void {
     this.userService
       .getMe()
@@ -221,15 +231,19 @@ export class TeacherPageComponent implements OnInit {
       .subscribe({
         next: ({ groups, tasks, notifications }) => {
           this.groups = groups;
-          this.tasks = tasks;
-          this.notifications = notifications;
-          this.tabs = this.buildTabs(notifications.length);
+          this.allTasks = tasks;
+          this.allNotifications = notifications;
+          this.applyGroupFilter();
+          this.tabs = this.buildTabs(this.notifications.length);
           this.cdr.detectChanges();
         },
         error: () => {
           this.groups = [];
+          this.allTasks = [];
+          this.allNotifications = [];
           this.tasks = [];
           this.notifications = [];
+          this.selectedGroupFilter = 'all';
           this.tabs = this.buildTabs(0);
           this.cdr.detectChanges();
         },
@@ -244,7 +258,7 @@ export class TeacherPageComponent implements OnInit {
   }
 
   private applyTaskComments(taskId: number, comments: TeacherTaskComment[]): void {
-    this.tasks = this.tasks.map((item) =>
+    this.allTasks = this.allTasks.map((item) =>
       item.id === taskId
         ? {
             ...item,
@@ -253,6 +267,7 @@ export class TeacherPageComponent implements OnInit {
           }
         : item,
     );
+    this.applyGroupFilter();
 
     if (this.selectedTask?.id === taskId) {
       this.selectedTask = {
@@ -262,6 +277,39 @@ export class TeacherPageComponent implements OnInit {
       };
     }
   }
-}
 
+  private applyGroupFilter(): void {
+    if (this.selectedGroupFilter === 'all') {
+      this.tasks = [...this.allTasks];
+      this.notifications = [...this.allNotifications];
+      this.tabs = this.buildTabs(this.notifications.length);
+      return;
+    }
+
+    const groupId = Number(this.selectedGroupFilter);
+    const selectedGroup = this.groups.find((group) => group.id === groupId);
+    if (!selectedGroup) {
+      this.tasks = [...this.allTasks];
+      this.notifications = [...this.allNotifications];
+      this.tabs = this.buildTabs(this.notifications.length);
+      return;
+    }
+
+    this.notifications = this.allNotifications.filter((item) => item.groupId === groupId);
+    this.tabs = this.buildTabs(this.notifications.length);
+
+    this.teacherService
+      .getTasksByGroupName(selectedGroup.name)
+      .pipe(catchError(() => of([] as TeacherTask[])))
+      .subscribe({
+        next: (tasks) => {
+          if (this.selectedGroupFilter !== String(groupId)) {
+            return;
+          }
+          this.tasks = tasks;
+          this.cdr.detectChanges();
+        },
+      });
+  }
+}
 

@@ -23,6 +23,8 @@ export type TeacherTask = {
   title: string;
   description: string;
   dueDate: string;
+  status: 'COMPLETE' | 'OVERDUE' | 'PENDING';
+  teacherName: string;
   submissions: string;
   comments: string;
   group: string;
@@ -36,6 +38,15 @@ export type TeacherNotification = {
   text: string;
   date: string;
   groupId: number;
+  attachment: NotificationAttachment | null;
+};
+
+export type NotificationAttachment = {
+  id: number | null;
+  objectKey: string | null;
+  fileName: string;
+  fileType: string;
+  fileSize: number | null;
 };
 
 export type TeacherGroup = {
@@ -55,4 +66,5 @@ export type CreateNotificationPayload = {
   title: string;
   content: string;
   groupId: number;
+  attachmentFile: File | null;
 };

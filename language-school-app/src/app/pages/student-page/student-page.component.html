@@ -29,6 +29,7 @@
     } @else {
       <app-notification-list
         [notifications]="notifications"
+        (downloadAttachment)="onDownloadNotificationAttachment($event)"
       />
     }
   </div>
