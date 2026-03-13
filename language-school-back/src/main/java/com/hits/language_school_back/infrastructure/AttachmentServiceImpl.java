@@ -109,6 +109,7 @@ public class AttachmentServiceImpl implements AttachmentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Attachment not found: " + attachmentId));
 
         return AttachmentDownloadInfo.builder()
+                .id(attachment.getId())
                 .fileName(attachment.getFileName())
                 .fileType(attachment.getFileType())
                 .fileSize(attachment.getFileSize())
