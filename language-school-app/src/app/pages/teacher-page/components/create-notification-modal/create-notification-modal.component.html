@@ -53,6 +53,17 @@
       }
     </div>
 
+    <label class="modal__label" for="notify-attachment">Файл (опционально)</label>
+    <input
+      id="notify-attachment"
+      class="modal__input"
+      type="file"
+      (change)="onFileChange($event)"
+    />
+    @if (selectedFile) {
+      <p class="modal__subtitle">Выбран файл: {{ selectedFile.name }}</p>
+    }
+
     <div class="modal__actions">
       <button class="modal__btn modal__btn--ghost" type="button" (click)="close.emit()">Отменить</button>
       <button class="modal__btn modal__btn--primary" type="button" (click)="onSubmit()">Создать</button>

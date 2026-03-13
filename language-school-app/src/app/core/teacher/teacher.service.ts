@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { HttpParams } from '@angular/common/http';
-import { catchError, forkJoin, map, Observable, of } from 'rxjs';
+import { catchError, forkJoin, map, Observable, of, switchMap } from 'rxjs';
 import { OPENAPI_PATHS, withOpenApiBase } from '../api/openapi.config';
 import {
   CreateNotificationPayload,
@@ -26,6 +26,7 @@ type TeacherTaskResponse = {
   description?: string;
   deadline?: string;
   commentList?: TeacherComment[];
+  attachmentDownloadInfos?: TeacherAttachmentResponse[] | null;
   taskStatus?: 'COMPLETE' | 'OVERDUE' | 'PENDING';
   groupName?: string;
   teacher?: {
@@ -230,23 +231,31 @@ export class TeacherService {
   }
 
   createNotification(payload: CreateNotificationPayload): Observable<TeacherNotification> {
-    return this.http
-      .post<TeacherNotificationResponse>(withOpenApiBase(OPENAPI_PATHS.notifications.create), {
-        text: payload.content,
-        groupId: payload.groupId,
-      })
-      .pipe(
-        map((notification) =>
-          this.mapNotification(
-            {
-              ...notification,
-              text: notification?.text ?? payload.content,
-              groupId: notification?.groupId ?? payload.groupId,
-            },
-            payload.title,
-          ),
+    const normalizedTitle = payload.title.trim();
+    const normalizedContent = payload.content.trim();
+    const composedText = normalizedContent;
+    const attachmentFile = payload.attachmentFile ?? null;
+    const files$ = attachmentFile ? this.encodeFileToBase64(attachmentFile).pipe(map((f) => [f])) : of([] as string[]);
+
+    return files$.pipe(
+      switchMap((files) =>
+        this.http.post<TeacherNotificationResponse>(withOpenApiBase(OPENAPI_PATHS.notifications.create), {
+          text: composedText,
+          groupId: payload.groupId,
+          files,
+        }),
+      ),
+      map((notification) =>
+        this.mapNotification(
+          {
+            ...notification,
+            text: notification?.text ?? composedText,
+            groupId: notification?.groupId ?? payload.groupId,
+          },
+          normalizedTitle,
         ),
-      );
+      ),
+    );
   }
 
   attachAttachmentToNotification(
@@ -266,7 +275,9 @@ export class TeacherService {
   ): Observable<NotificationAttachment | null> {
     const formData = new FormData();
     formData.append('file', file);
-    const params = new HttpParams().set('taskId', notificationId);
+    const params = new HttpParams()
+      .set('taskId', notificationId)
+      .set('notificationId', notificationId);
 
     return this.http
       .post<unknown>(withOpenApiBase(OPENAPI_PATHS.attachments.uploadToNotification), formData, {
@@ -424,8 +435,33 @@ export class TeacherService {
     }
   }
 
+  private encodeFileToBase64(file: File): Observable<string> {
+    return new Observable<string>((observer) => {
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        const result = reader.result;
+        if (typeof result !== 'string') {
+          observer.error(new Error('Failed to read file'));
+          return;
+        }
+
+        const base64 = result.includes(',') ? result.split(',')[1] : result;
+        observer.next(base64);
+        observer.complete();
+      };
+
+      reader.onerror = () => {
+        observer.error(new Error('Failed to read file'));
+      };
+
+      reader.readAsDataURL(file);
+    });
+  }
+
   private mapTask(task: TeacherTaskResponse | null | undefined, groupName: string, id: number): TeacherTask {
     const commentCount = task?.commentList?.length ?? 0;
+    const attachedWorks = this.mapTaskAttachments(task);
     const responseGroupName = (task?.groupName ?? '').trim();
     const teacherGroupName = (task?.teacher?.groups?.[0]?.name ?? '').trim();
     const resolvedGroupName = responseGroupName || teacherGroupName || groupName || 'Group';
@@ -437,12 +473,37 @@ export class TeacherService {
       dueDate: this.formatDate(task?.deadline),
       status: task?.taskStatus ?? 'PENDING',
       teacherName: teacherName || 'Teacher',
-      submissions: '0 submissions',
+      submissions: `${attachedWorks.length} files`,
       comments: `${commentCount} comments`,
       group: resolvedGroupName,
-      attachedWorks: [],
+      attachedWorks,
       taskComments: [],
     };
+  }
+
+  private mapTaskAttachments(task: TeacherTaskResponse | null | undefined): TeacherTask['attachedWorks'] {
+    return (task?.attachmentDownloadInfos ?? [])
+      .map((attachment) => {
+        const id = this.resolveAttachmentId(attachment?.id ?? attachment?.attachmentId);
+        const objectKey = (attachment?.objectKey ?? '').trim() || null;
+        const fileName =
+          (attachment?.fileName ?? attachment?.name ?? attachment?.objectKey ?? '').trim() || 'attachment';
+        const fileType = (attachment?.fileType ?? attachment?.contentType ?? '').trim();
+        const sizeCandidate = attachment?.fileSize ?? attachment?.size;
+        const fileSize =
+          typeof sizeCandidate === 'number' && Number.isFinite(sizeCandidate) && sizeCandidate >= 0
+            ? sizeCandidate
+            : null;
+
+        return {
+          id,
+          fileName,
+          fileType,
+          fileSize,
+          objectKey,
+        };
+      })
+      .filter((attachment) => Boolean(attachment.fileName));
   }
 
   private mapNotification(

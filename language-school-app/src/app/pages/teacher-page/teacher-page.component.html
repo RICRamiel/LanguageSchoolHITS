@@ -69,6 +69,7 @@
       [task]="selectedTask"
       [activeSection]="selectedTaskSection"
       (submitComment)="onSubmitTaskComment($event)"
+      (downloadAttachment)="onDownloadTaskAttachment($event)"
       (close)="closeTaskDetailsModal()"
     />
   }
@@ -77,8 +78,10 @@
     <app-notification-details-modal
       [notification]="selectedNotification"
       [uploading]="notificationAttachmentUploading"
+      (downloadAttachment)="onDownloadNotificationAttachment($event)"
       (uploadAttachment)="onAttachNotificationFile($event)"
       (close)="closeNotificationDetailsModal()"
     />
   }
 </div>
+
