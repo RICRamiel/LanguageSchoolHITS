@@ -16,7 +16,6 @@ export interface StudentFormValue {
   email: string;
   password?: string;
   groupId: number | null;
-  grade?: string;
 }
 
 @Component({
@@ -46,32 +45,36 @@ export class StudentFormComponent {
   readonly cancel = output<void>();
 
   form = this.fb.nonNullable.group({
-    firstName: ['', Validators.required],
-    lastName: ['', Validators.required],
+    firstName: ['', [Validators.required, Validators.minLength(1)]],
+    lastName: ['', [Validators.required, Validators.minLength(1)]],
     email: ['', [Validators.required, Validators.email]],
-    password: [''],
-    groupId: [null as number | null, Validators.required],
-    grade: [''],
+    password: ['', [Validators.minLength(8), Validators.maxLength(64)]],
+    groupId: [null as number | null],
   });
 
   constructor() {
     effect(() => {
       const v = this.initialValue();
+      const grps = this.groups();
+      const pwdCtrl = this.form.get('password');
+      const grpCtrl = this.form.get('groupId');
       if (v) {
         const parts = v.fullName.trim().split(/\s+/);
         const lastName = parts[0] ?? '';
         const firstName = parts.slice(1).join(' ') ?? '';
+        const groupId = grps.find((g) => g.name === v.groupName)?.id ?? null;
         this.form.setValue({
           firstName,
           lastName,
           email: v.email,
           password: '',
-          groupId: null,
-          grade: '',
+          groupId,
         });
         this.form.get('email')?.disable();
-        this.form.get('password')?.disable();
-        this.form.get('groupId')?.disable();
+        pwdCtrl?.clearValidators();
+        pwdCtrl?.disable();
+        grpCtrl?.clearValidators();
+        grpCtrl?.disable();
       } else {
         this.form.reset({
           firstName: '',
@@ -79,12 +82,15 @@ export class StudentFormComponent {
           email: '',
           password: '',
           groupId: null,
-          grade: '',
         });
         this.form.get('email')?.enable();
-        this.form.get('password')?.enable();
-        this.form.get('groupId')?.enable();
+        pwdCtrl?.setValidators([Validators.required, Validators.minLength(8), Validators.maxLength(64)]);
+        pwdCtrl?.enable();
+        grpCtrl?.setValidators([Validators.required]);
+        grpCtrl?.enable();
       }
+      pwdCtrl?.updateValueAndValidity();
+      grpCtrl?.updateValueAndValidity();
     });
   }
 
@@ -102,22 +108,26 @@ export class StudentFormComponent {
       return;
     }
     const raw = this.form.getRawValue();
-    if (!this.isEdit && !raw.password?.trim()) {
-      this.form.get('password')?.setErrors({ required: true });
-      this.form.markAllAsTouched();
-      return;
-    }
     this.save.emit({
       firstName: raw.firstName,
       lastName: raw.lastName,
       email: raw.email,
       password: this.isEdit ? undefined : raw.password,
       groupId: raw.groupId,
-      grade: raw.grade || undefined,
     });
   }
 
   onCancel(): void {
     this.cancel.emit();
+  }
+
+  getErrorMessage(controlName: string): string {
+    const c = this.form.get(controlName);
+    if (!c?.errors) return '';
+    if (c.errors['required']) return 'Обязательное поле';
+    if (c.errors['email']) return 'Неверный формат email';
+    if (c.errors['minlength']) return `Минимум ${c.errors['minlength'].requiredLength} символов`;
+    if (c.errors['maxlength']) return `Максимум ${c.errors['maxlength'].requiredLength} символов`;
+    return 'Неверное значение';
   }
 }

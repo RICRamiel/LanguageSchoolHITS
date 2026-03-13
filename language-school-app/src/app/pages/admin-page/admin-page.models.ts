@@ -18,6 +18,8 @@ export interface Teacher {
   fullName: string;
   email: string;
   languages: string;
+  groupId?: number | null;
+  groupName?: string;
 }
 
 export interface Language {

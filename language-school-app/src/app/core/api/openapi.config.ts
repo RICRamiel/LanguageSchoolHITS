@@ -35,6 +35,37 @@ export const OPENAPI_PATHS = {
     groupsWithFilters: '/group/get-groups-with-filters',
     commentsByTask: (taskId: number) => `/comment/${taskId}/get`,
   },
+  admin: {
+    languages: {
+      list: '/language/get_all_languages',
+      create: '/language/create',
+      edit: (id: number) => `/language/${id}/edit`,
+      delete: (id: number) => `/language/${id}/delete`,
+    },
+    groups: {
+      list: '/group/get_all_groups',
+      create: '/group/create',
+      edit: (id: number) => `/group/${id}/edit`,
+      delete: (groupId: number) => `/group/${groupId}/delete`,
+      addStudent: (groupId: number, userId: number) => `/group/${groupId}/add/${userId}`,
+      removeStudent: (groupId: number, userId: number) => `/group/${groupId}/add/${userId}`,
+    },
+    students: {
+      list: '/api/users/students',
+      listByGroup: (groupId: number) => `/api/users/students?groupId=${groupId}`,
+      create: '/api/users/students',
+      get: (id: number) => `/api/users/students/${id}`,
+      update: (id: number) => `/api/users/students/${id}`,
+      delete: (id: number) => `/api/users/students/${id}`,
+    },
+    teachers: {
+      list: '/api/users/teachers',
+      create: '/api/users/teachers', // POST to same path
+      get: (id: number) => `/api/users/teachers/${id}`,
+      update: (id: number) => `/api/users/teachers/${id}`,
+      delete: (id: number) => `/api/users/teachers/${id}`,
+    },
+  },
 } as const;
 
 function normalizeBaseUrl(url: string): string {

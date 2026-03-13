@@ -1,132 +1,245 @@
-import { Component, computed, inject, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { ButtonComponent } from '../../../shared/ui/button/button.component';
 import { TeacherFormComponent } from '../teacher-form/teacher-form.component';
-import type { Teacher } from '../admin-page.models';
-import { UserControllerService } from '../../../api/api/userController.service';
-import type { UserDTO } from '../../../api/model/userDTO';
-import { catchError, EMPTY, finalize } from 'rxjs';
+import { AssignGroupModalComponent } from '../assign-group-modal/assign-group-modal.component';
+import type { Teacher, Group } from '../admin-page.models';
+import { AdminService, type AdminUserDTO } from '../../../core/admin/admin.service';
+import { catchError, concatMap, EMPTY, finalize, forkJoin, map, of } from 'rxjs';
 
-function toTeacher(item: UserDTO): Teacher {
-  const fullName = [item.firstName, item.lastName].filter(Boolean).join(' ') || '—';
+function toTeacher(dto: AdminUserDTO): Teacher {
+  const first = dto.firstName ?? '';
+  const last = dto.lastName ?? '';
+  const fullName = [first, last].filter(Boolean).join(' ') || '—';
+  const firstGroup = Array.isArray(dto.groups) ? dto.groups[0] : undefined;
   return {
-    id: item.id ?? 0,
+    id: dto.id ?? 0,
     fullName,
-    email: item.email ?? '',
+    email: dto.email ?? '',
     languages: '—',
+    groupId: firstGroup?.id ?? null,
+    groupName: firstGroup?.name ?? '—',
   };
 }
 
 @Component({
   selector: 'app-teachers-tab',
   standalone: true,
-  imports: [ButtonComponent, TeacherFormComponent],
+  imports: [ButtonComponent, TeacherFormComponent, AssignGroupModalComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './teachers-tab.component.html',
   styleUrl: './teachers-tab.component.less',
 })
 export class TeachersTabComponent implements OnInit {
-  private readonly userApi = inject(UserControllerService);
+  private readonly adminService = inject(AdminService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
-  readonly teachers = signal<Teacher[]>([]);
-  readonly loading = signal(false);
-  readonly saving = signal(false);
-  readonly error = signal<string | null>(null);
+  teachers: Teacher[] = [];
+  groups: Group[] = [];
+  loading = false;
+  saving = false;
+  error: string | null = null;
+  showForm = false;
+  editingId: number | null = null;
+  showAssignModal = false;
+  assignUserId: number | null = null;
 
-  showForm = signal(false);
-  editingId = signal<number | null>(null);
+  get editingTeacher(): Teacher | null {
+    if (this.editingId === null) return null;
+    return this.teachers.find((t) => t.id === this.editingId!) ?? null;
+  }
 
-  editingTeacher = computed(() => {
-    const id = this.editingId();
-    if (id === null) return null;
-    return this.teachers().find(t => t.id === id) ?? null;
-  });
+  get assignCurrentGroupId(): number | null {
+    if (this.assignUserId == null) return null;
+    const t = this.teachers.find((x) => x.id === this.assignUserId!);
+    return t?.groupId ?? null;
+  }
 
   ngOnInit(): void {
     this.loadTeachers();
   }
 
   loadTeachers(): void {
-    this.loading.set(true);
-    this.error.set(null);
-    this.userApi.getAllTeachers()
+    this.loading = true;
+    this.error = null;
+    this.cdr.detectChanges();
+
+    forkJoin({
+      teachers: this.adminService.getTeachers(),
+      groups: this.adminService.getGroups(),
+    })
       .pipe(
-        finalize(() => this.loading.set(false)),
-        catchError(err => {
-          this.error.set(err?.message ?? 'Ошибка загрузки преподавателей');
-          return EMPTY;
-        })
+        map(({ teachers, groups }) => ({
+          teachers: teachers.map(toTeacher),
+          groups: groups.map((d) => ({
+            id: d.id ?? 0,
+            name: d.name ?? '',
+            language: d.language?.name ?? '',
+            teacherName: '—',
+            studentsCount: 0,
+          })),
+        })),
+        finalize(() => {
+          this.loading = false;
+          this.cdr.detectChanges();
+        }),
+        catchError((err) => {
+          this.error = err?.message ?? 'Ошибка загрузки преподавателей';
+          this.cdr.detectChanges();
+          return of({ teachers: [] as Teacher[], groups: [] as Group[] });
+        }),
       )
       .subscribe({
-        next: items => this.teachers.set(items.map(toTeacher)),
+        next: ({ teachers, groups }) => {
+          this.teachers = teachers;
+          this.groups = groups;
+          this.cdr.detectChanges();
+        },
       });
   }
 
   openAdd(): void {
-    this.editingId.set(null);
-    this.showForm.set(true);
+    this.editingId = null;
+    this.showForm = true;
+    this.cdr.detectChanges();
   }
 
   openEdit(t: Teacher): void {
-    this.editingId.set(t.id);
-    this.showForm.set(true);
+    this.editingId = t.id;
+    this.showForm = true;
+    this.cdr.detectChanges();
   }
 
-  onSave(value: { firstName: string; lastName: string; email: string; password?: string }): void {
-    const id = this.editingId();
-    this.saving.set(true);
-    this.error.set(null);
+  onSave(value: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password?: string;
+    groupId?: number | null;
+  }): void {
+    const id = this.editingId;
+    this.saving = true;
+    this.error = null;
+    this.cdr.detectChanges();
 
     const done = () => {
-      this.saving.set(false);
-      this.showForm.set(false);
-      this.editingId.set(null);
+      this.saving = false;
+      this.showForm = false;
+      this.editingId = null;
       this.loadTeachers();
     };
 
     if (id !== null) {
-      this.userApi.updateTeacher(id, { firstName: value.firstName, lastName: value.lastName })
+      this.adminService
+        .updateTeacher(id, { firstName: value.firstName, lastName: value.lastName })
         .pipe(
-          finalize(() => this.saving.set(false)),
-          catchError(err => {
-            this.error.set(err?.message ?? 'Ошибка сохранения');
+          finalize(() => {
+            this.saving = false;
+            this.cdr.detectChanges();
+          }),
+          catchError((err) => {
+            this.error = err?.message ?? 'Ошибка сохранения';
+            this.cdr.detectChanges();
             return EMPTY;
-          })
+          }),
         )
         .subscribe({ next: () => done() });
     } else {
-      this.userApi.createTeacher({
-        firstName: value.firstName,
-        lastName: value.lastName,
-        email: value.email,
-        password: value.password ?? '',
-      })
+      const groupId = value.groupId;
+      this.adminService
+        .createTeacher({
+          firstName: value.firstName,
+          lastName: value.lastName,
+          email: value.email,
+          password: value.password ?? '',
+        })
         .pipe(
-          finalize(() => this.saving.set(false)),
-          catchError(err => {
-            this.error.set(err?.message ?? 'Ошибка создания');
+          concatMap((created) => {
+            if (groupId != null && created.id != null) {
+              return this.adminService.addStudentToGroup(groupId, created.id).pipe(map(() => created));
+            }
+            return of(created);
+          }),
+          finalize(() => {
+            this.saving = false;
+            this.cdr.detectChanges();
+          }),
+          catchError((err) => {
+            this.error = err?.message ?? 'Ошибка создания';
+            this.cdr.detectChanges();
             return EMPTY;
-          })
+          }),
         )
         .subscribe({ next: () => done() });
     }
   }
 
   onCancel(): void {
-    this.showForm.set(false);
-    this.editingId.set(null);
+    this.showForm = false;
+    this.editingId = null;
+    this.cdr.detectChanges();
   }
 
   deleteTeacher(id: number): void {
-    this.saving.set(true);
-    this.error.set(null);
-    this.userApi.deleteTeacher(id)
+    this.saving = true;
+    this.error = null;
+    this.cdr.detectChanges();
+    this.adminService
+      .deleteTeacher(id)
       .pipe(
-        finalize(() => this.saving.set(false)),
-        catchError(err => {
-          this.error.set(err?.message ?? 'Ошибка удаления');
+        finalize(() => {
+          this.saving = false;
+          this.cdr.detectChanges();
+        }),
+        catchError((err) => {
+          this.error = err?.message ?? 'Ошибка удаления';
+          this.cdr.detectChanges();
           return EMPTY;
-        })
+        }),
       )
       .subscribe({ next: () => this.loadTeachers() });
+  }
+
+  openAssignModal(t: Teacher): void {
+    this.assignUserId = t.id;
+    this.showAssignModal = true;
+    this.cdr.detectChanges();
+  }
+
+  closeAssignModal(): void {
+    this.showAssignModal = false;
+    this.assignUserId = null;
+    this.cdr.detectChanges();
+  }
+
+  onAssignSave(groupId: number): void {
+    const userId = this.assignUserId;
+    if (userId == null) return;
+    const t = this.teachers.find((x) => x.id === userId);
+    const oldGroupId = t?.groupId ?? null;
+
+    this.saving = true;
+    this.error = null;
+    this.cdr.detectChanges();
+
+    const remove$ =
+      oldGroupId != null
+        ? this.adminService.removeStudentFromGroup(oldGroupId, userId)
+        : of(undefined as unknown);
+    remove$
+      .pipe(
+        concatMap(() => this.adminService.addStudentToGroup(groupId, userId)),
+        finalize(() => {
+          this.saving = false;
+          this.closeAssignModal();
+          this.loadTeachers();
+          this.cdr.detectChanges();
+        }),
+        catchError((err) => {
+          this.error = err?.message ?? 'Ошибка привязки к группе';
+          this.cdr.detectChanges();
+          return EMPTY;
+        }),
+      )
+      .subscribe();
   }
 }

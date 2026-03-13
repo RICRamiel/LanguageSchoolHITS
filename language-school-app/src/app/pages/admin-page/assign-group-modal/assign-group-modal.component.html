@@ -1,0 +1,32 @@
+<div class="assign-modal-overlay" (click)="onOverlayClick()">
+  <section class="assign-modal" (click)="onModalClick($event)">
+    <button class="assign-modal__close" type="button" (click)="onClose()">×</button>
+    <h3 class="assign-modal__title">Привязать к группе</h3>
+    <p class="assign-modal__subtitle">Выберите группу для привязки пользователя</p>
+
+    <label class="assign-modal__label" for="assign-group">Группа</label>
+    <select
+      id="assign-group"
+      class="assign-modal__select"
+      [(ngModel)]="selectedGroupId"
+    >
+      <option [ngValue]="null">Выберите группу</option>
+      @for (g of groupsList; track g.id) {
+        <option [ngValue]="g.id">{{ g.name }} ({{ g.language }})</option>
+      }
+    </select>
+
+    <div class="assign-modal__actions">
+      <app-button type="button" class="outline small" (click)="onClose()"
+        >Отмена</app-button
+      >
+      <app-button
+        type="button"
+        class="small"
+        [disabled]="selectedGroupId === null || selectedGroupId === currentGroupId()"
+        (click)="onSave()"
+        >Сохранить</app-button
+      >
+    </div>
+  </section>
+</div>

@@ -1,5 +1,4 @@
 .gitignore
-.openapi-generator-ignore
 README.md
 api.module.ts
 api/api.ts
@@ -16,6 +15,7 @@ encoder.ts
 git_push.sh
 index.ts
 model/commentDTO.ts
+model/groupAnswerDTO.ts
 model/groupDTO.ts
 model/languageDTO.ts
 model/loginDTO.ts

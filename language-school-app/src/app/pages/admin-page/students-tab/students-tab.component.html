@@ -1,20 +1,20 @@
 <section class="admin-section">
   <div class="admin-section__head">
     <h3 class="section-title">Студенты</h3>
-    <app-button type="button" (click)="openAdd()" [disabled]="saving()">Добавить студента</app-button>
+    <app-button type="button" (click)="openAdd()" [disabled]="saving">Добавить студента</app-button>
   </div>
-  @if (error()) {
-    <p class="admin-error">{{ error() }}</p>
+  @if (error) {
+    <p class="admin-error">{{ error }}</p>
   }
-  @if (showForm()) {
+  @if (showForm) {
     <app-student-form
-      [initialValue]="editingStudent()"
-      [groups]="groups()"
+      [initialValue]="editingStudent"
+      [groups]="groups"
       (save)="onSave($event)"
       (cancel)="onCancel()"
     />
   }
-  @if (loading()) {
+  @if (loading) {
     <p class="admin-loading">Загрузка...</p>
   } @else {
   <div class="admin-table-wrap">
@@ -28,12 +28,15 @@
         </tr>
       </thead>
       <tbody>
-        @for (s of students(); track s.id) {
+        @for (s of students; track s.id) {
           <tr>
             <td>{{ s.fullName }}</td>
             <td>{{ s.email }}</td>
             <td>{{ s.groupName }}</td>
             <td class="admin-table__actions">
+              <app-button type="button" class="outline small" (click)="openAssignModal(s)"
+                >Привязать к группе</app-button
+              >
               <app-button type="button" class="outline small" (click)="openEdit(s)">Изменить</app-button>
               <app-button type="button" class="outline small" (click)="deleteStudent(s.id)">Удалить</app-button>
             </td>
@@ -42,5 +45,13 @@
       </tbody>
     </table>
   </div>
+  }
+  @if (showAssignModal) {
+    <app-assign-group-modal
+      [groups]="groups"
+      [currentGroupId]="assignCurrentGroupId"
+      (save)="onAssignSave($event)"
+      (close)="closeAssignModal()"
+    />
   }
 </section>

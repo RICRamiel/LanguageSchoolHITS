@@ -7,20 +7,34 @@
       <div class="form-row">
         <app-label for="student-firstName">Имя</app-label>
         <app-input id="student-firstName" formControlName="firstName" placeholder="Имя" />
+        @if (form.get('firstName')?.invalid && form.get('firstName')?.touched) {
+          <span class="form-error">{{ getErrorMessage('firstName') }}</span>
+        }
       </div>
       <div class="form-row">
         <app-label for="student-lastName">Фамилия</app-label>
         <app-input id="student-lastName" formControlName="lastName" placeholder="Фамилия" />
+        @if (form.get('lastName')?.invalid && form.get('lastName')?.touched) {
+          <span class="form-error">{{ getErrorMessage('lastName') }}</span>
+        }
       </div>
       <div class="form-row">
         <app-label for="student-email">Email</app-label>
         <app-input id="student-email" type="email" formControlName="email" placeholder="email@example.com" />
+        @if (form.get('email')?.invalid && form.get('email')?.touched) {
+          <span class="form-error">{{ getErrorMessage('email') }}</span>
+        }
       </div>
       @if (!isEdit) {
       <div class="form-row">
         <app-label for="student-password">Пароль</app-label>
-        <app-input id="student-password" type="password" formControlName="password" placeholder="Пароль (мин. 8 символов)" />
+        <app-input id="student-password" type="password" formControlName="password" placeholder="Пароль (8–64 символа)" />
+        @if (form.get('password')?.invalid && form.get('password')?.touched) {
+          <span class="form-error">{{ getErrorMessage('password') }}</span>
+        }
       </div>
+      }
+      @if (!isEdit) {
       <div class="form-row">
         <app-label for="student-group">Группа</app-label>
         <select id="student-group" formControlName="groupId" class="form-select">
@@ -29,12 +43,9 @@
             <option [ngValue]="g.id">{{ g.name }}</option>
           }
         </select>
-      </div>
-      }
-      @if (isEdit) {
-      <div class="form-row">
-        <app-label for="student-grade">Класс / Курс</app-label>
-        <app-input id="student-grade" formControlName="grade" placeholder="Например: 10А" />
+        @if (form.get('groupId')?.invalid && form.get('groupId')?.touched) {
+          <span class="form-error">{{ getErrorMessage('groupId') }}</span>
+        }
       </div>
       }
       <div class="form-actions">
