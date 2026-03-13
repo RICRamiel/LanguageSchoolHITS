@@ -1,5 +1,5 @@
 import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
-import { TeacherNotification } from '../../teacher-page.types';
+import { NotificationAttachment, TeacherNotification } from '../../teacher-page.types';
 
 @Component({
   selector: 'app-notification-details-modal',
@@ -14,6 +14,7 @@ export class NotificationDetailsModalComponent {
   readonly uploading = input(false);
   readonly close = output<void>();
   readonly uploadAttachment = output<File>();
+  readonly downloadAttachment = output<NotificationAttachment>();
 
   selectedFile: File | null = null;
 
@@ -28,5 +29,14 @@ export class NotificationDetailsModalComponent {
     }
 
     this.uploadAttachment.emit(this.selectedFile);
+  }
+
+  onDownloadClick(): void {
+    const attachment = this.notification().attachment;
+    if (!attachment?.id) {
+      return;
+    }
+
+    this.downloadAttachment.emit(attachment);
   }
 }

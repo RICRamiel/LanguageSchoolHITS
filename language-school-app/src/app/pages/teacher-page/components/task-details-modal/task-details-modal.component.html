@@ -1,6 +1,6 @@
-<div class="modal-overlay" (click)="close.emit()">
+﻿<div class="modal-overlay" (click)="close.emit()">
   <section class="modal" (click)="$event.stopPropagation()">
-    <button class="modal__close" type="button" (click)="close.emit()">×</button>
+    <button class="modal__close" type="button" (click)="close.emit()">&times;</button>
     <h3 class="modal__title">{{ task().title }}</h3>
     <p class="modal__subtitle">{{ task().group }}</p>
 
@@ -33,8 +33,6 @@
 
     @if (selectedSection() === 'overview') {
       <p class="modal__text">{{ task().description }}</p>
-      <button class="modal__download" type="button" (click)="downloadTask()">Скачать задание</button>
-
       <dl class="modal__meta-list">
         <div class="modal__meta-row">
           <dt>Срок:</dt>
@@ -55,12 +53,15 @@
           @for (work of task().attachedWorks; track work.fileName) {
             <article class="modal__item">
               <p class="modal__item-title">{{ work.fileName }}</p>
-              <p class="modal__item-meta">{{ work.studentName }}</p>
-              <p class="modal__item-meta">{{ work.submittedAt }}</p>
+              <p class="modal__item-meta">{{ work.fileType || 'Файл' }}</p>
+              <p class="modal__item-meta">
+                {{ work.fileSize !== null ? (work.fileSize + ' bytes') : 'Размер неизвестен' }}
+              </p>
               <button
                 class="modal__download modal__download--small"
                 type="button"
-                (click)="downloadSubmission(work.fileName, work.content)"
+                [disabled]="!work.id"
+                (click)="requestAttachmentDownload(work)"
               >
                 Скачать
               </button>
