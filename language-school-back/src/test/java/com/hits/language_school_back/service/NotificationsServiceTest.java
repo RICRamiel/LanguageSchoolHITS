@@ -247,7 +247,8 @@ class NotificationsServiceTest {
             NotificationCreationModel model = new NotificationCreationModel();
             model.setGroupId(1L);
             model.setText("New test notification");
-            
+            model.setFiles(List.of());
+
             when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
             when(userRepository.findById(2L)).thenReturn(Optional.of(teacher));
             when(notificationRepository.save(any(Notification.class))).thenAnswer(invocation -> {
@@ -323,7 +324,7 @@ class NotificationsServiceTest {
             NotificationCreationModel model = new NotificationCreationModel();
             model.setGroupId(1L);
             model.setText("Test");
-            
+            model.setFiles(List.of());
             LocalDate testDate = LocalDate.now();
             
             when(groupRepository.findById(1L)).thenReturn(Optional.of(group));

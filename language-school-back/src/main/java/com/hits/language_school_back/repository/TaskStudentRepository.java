@@ -5,10 +5,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface TaskStudentRepository extends JpaRepository<TaskStudent, Long> {
     List<TaskStudent> findByUserId(Long userId);
+
+    Optional<TaskStudent> findByTaskIdAndUserId(Long taskId, Long userId);
 
     List<TaskStudent> findByTaskId(Long taskId);
 }

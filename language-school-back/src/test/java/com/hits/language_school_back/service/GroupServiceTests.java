@@ -68,7 +68,8 @@ class GroupServiceTests {
         defaultLanguage.setId(2L);
         defaultLanguage.setName("Spanish");
 
-        languageDTO = new LanguageDTO("English");
+        languageDTO = new LanguageDTO();
+        languageDTO.setName("English");
 
         // Setup Groups
         group1 = new Group();

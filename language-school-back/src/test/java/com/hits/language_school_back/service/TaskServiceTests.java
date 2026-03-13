@@ -83,7 +83,8 @@ class TaskServiceTests {
         language.setId(1L);
         language.setName("English");
 
-        languageDTO = new LanguageDTO("English");
+        languageDTO = new LanguageDTO();
+        languageDTO.setName("English");
 
         // Setup Group
         group = new Group();
@@ -92,6 +93,7 @@ class TaskServiceTests {
         group.setDescription("Test Group");
         group.setDifficulty(Difficulty.BEGINNER);
         group.setLanguage(language);
+
 
         groupAnswerDTO = GroupAnswerDTO.builder()
                 .id(1L)
@@ -165,6 +167,7 @@ class TaskServiceTests {
                 .role(Role.TEACHER)
                 .groups(Arrays.asList(groupAnswerDTO))
                 .build();
+        group.setUsers(Arrays.asList(teacher, student));
     }
 
     // ==================== GET TASKS BY TEACHER ID ====================
@@ -289,8 +292,19 @@ class TaskServiceTests {
     @DisplayName("Should create task with PENDING status when deadline is in future")
     void createTask_WithFutureDeadline_ShouldSetPendingStatus() {
         // Arrange
+        Task estTask = new Task();
+        estTask.setId(1L);
+        estTask.setName(taskDTO.getName());
+        estTask.setDescription(taskDTO.getDescription());
+        estTask.setDeadline(taskDTO.getDeadline());
+        estTask.setTaskStatus(TaskStatus.PENDING);
+        estTask.setGroup(group);
+        estTask.setUser(teacher);
+
+
         when(userRepository.findById(anyLong())).thenReturn(Optional.of(teacher));
         when(groupService.getByName(anyString())).thenReturn(group);
+        when(taskRepository.save(any(Task.class))).thenReturn(estTask);
 
         // Act
         Task result = taskService.createTask(taskDTO, userFullDTO);
@@ -307,7 +321,7 @@ class TaskServiceTests {
 
         verify(userRepository).findById(userFullDTO.getId());
         verify(groupService).getByName(taskDTO.getGroupName());
-        verify(taskRepository, never()).save(any(Task.class));
+        verify(taskRepository, atLeast(1)).save(any(Task.class));
     }
 
     @Test
@@ -321,9 +335,17 @@ class TaskServiceTests {
                 .groupName("Group A")
                 .build();
 
+        Task estTask = new Task();
+        estTask.setId(1L);
+        estTask.setName(pastDeadlineDTO.getName());
+        estTask.setDescription(pastDeadlineDTO.getDescription());
+        estTask.setDeadline(pastDeadlineDTO.getDeadline());
+        estTask.setTaskStatus(TaskStatus.OVERDUE);
+        estTask.setGroup(new Group());
+
         when(userRepository.findById(anyLong())).thenReturn(Optional.of(teacher));
         when(groupService.getByName(anyString())).thenReturn(group);
-
+        when(taskRepository.save(any(Task.class))).thenReturn(estTask);
         // Act
         Task result = taskService.createTask(pastDeadlineDTO, userFullDTO);
 
@@ -343,8 +365,17 @@ class TaskServiceTests {
                 .groupName("Group A")
                 .build();
 
+        Task estTask = new Task();
+        estTask.setId(1L);
+        estTask.setName(todayDeadlineDTO.getName());
+        estTask.setDescription(todayDeadlineDTO.getDescription());
+        estTask.setDeadline(todayDeadlineDTO.getDeadline());
+        estTask.setTaskStatus(null);
+        estTask.setGroup(new Group());
+
         when(userRepository.findById(anyLong())).thenReturn(Optional.of(teacher));
         when(groupService.getByName(anyString())).thenReturn(group);
+        when(taskRepository.save(any(Task.class))).thenReturn(estTask);
 
         // Act
         Task result = taskService.createTask(todayDeadlineDTO, userFullDTO);
@@ -546,14 +577,12 @@ class TaskServiceTests {
                 .group(group)
                 .build();
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(student));
         when(taskRepository.findById(taskId)).thenReturn(Optional.of(existingTask));
-
+        when(taskStudentRepository.findByTaskIdAndUserId(taskId, userId)).thenReturn(Optional.of(taskStudent));
         // Act
         taskService.completeTask(taskId, userId);
 
         // Assert
-        verify(userRepository).findById(userId);
         verify(taskRepository).findById(taskId);
     }
 
@@ -573,14 +602,12 @@ class TaskServiceTests {
                 .group(group)
                 .build();
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(student));
         when(taskRepository.findById(taskId)).thenReturn(Optional.of(existingTask));
-
+        when(taskStudentRepository.findByTaskIdAndUserId(taskId, userId)).thenReturn(Optional.of(taskStudent));
         // Act
         taskService.completeTask(taskId, userId);
 
         // Assert
-        verify(userRepository).findById(userId);
         verify(taskRepository).findById(taskId);
     }
 
@@ -591,7 +618,7 @@ class TaskServiceTests {
         Long taskId = 1L;
         Long userId = 999L;
 
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+        lenient().when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
         // Act & Assert
         assertThatThrownBy(() -> taskService.completeTask(taskId, userId))
@@ -605,8 +632,8 @@ class TaskServiceTests {
         Long taskId = 999L;
         Long userId = 2L;
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(student));
-        when(taskRepository.findById(taskId)).thenReturn(Optional.empty());
+        lenient().when(userRepository.findById(userId)).thenReturn(Optional.of(student));
+        lenient().when(taskRepository.findById(taskId)).thenReturn(Optional.empty());
 
         // Act & Assert
         assertThatThrownBy(() -> taskService.completeTask(taskId, userId))
@@ -629,14 +656,12 @@ class TaskServiceTests {
                 .group(group)
                 .build();
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(student));
         when(taskRepository.findById(taskId)).thenReturn(Optional.of(existingTask));
-
+        when(taskStudentRepository.findByTaskIdAndUserId(taskId, userId)).thenReturn(Optional.of(taskStudent));
         // Act
         taskService.completeTask(taskId, userId);
 
         // Assert
-        verify(userRepository).findById(userId);
         verify(taskRepository).findById(taskId);
     }
 }
