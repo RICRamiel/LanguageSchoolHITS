@@ -6,10 +6,11 @@ export type TaskDetailsOpenPayload = {
 };
 
 export type TeacherTaskSubmission = {
-  studentName: string;
+  id: number | null;
   fileName: string;
-  submittedAt: string;
-  content: string;
+  fileType: string;
+  fileSize: number | null;
+  objectKey: string | null;
 };
 
 export type TeacherTaskComment = {
@@ -66,4 +67,5 @@ export type CreateNotificationPayload = {
   title: string;
   content: string;
   groupId: number;
+  attachmentFile?: File | null;
 };

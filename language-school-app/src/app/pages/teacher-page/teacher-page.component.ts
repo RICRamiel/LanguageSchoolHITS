@@ -1,4 +1,5 @@
 ﻿import { AsyncPipe } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
@@ -8,6 +9,7 @@ import { TabsComponent } from '../../shared/ui/tabs/tabs.component';
 import {
   CreateNotificationPayload,
   CreateTaskPayload,
+  NotificationAttachment,
   TaskDetailsOpenPayload,
   TeacherGroup,
   TeacherNotification,
@@ -24,6 +26,7 @@ import { NotificationDetailsModalComponent } from './components/notification-det
 import { AuthService } from '../../core/auth/auth.service';
 import { UserService } from '../../core/user/user.service';
 import { TeacherService } from '../../core/teacher/teacher.service';
+import { OPENAPI_PATHS, withOpenApiBase } from '../../core/api/openapi.config';
 
 @Component({
   selector: 'app-teacher-page',
@@ -45,6 +48,7 @@ import { TeacherService } from '../../core/teacher/teacher.service';
 })
 export class TeacherPageComponent implements OnInit {
   private readonly router = inject(Router);
+  private readonly http = inject(HttpClient);
   private readonly authService = inject(AuthService);
   private readonly userService = inject(UserService);
   private readonly teacherService = inject(TeacherService);
@@ -199,6 +203,62 @@ export class TeacherPageComponent implements OnInit {
       .subscribe({
         next: (comments) => {
           this.applyTaskComments(taskId, comments);
+        },
+      });
+  }
+
+  onDownloadTaskAttachment(attachment: TeacherTask['attachedWorks'][number]): void {
+    if (!attachment.id) {
+      return;
+    }
+
+    this.http
+      .get(withOpenApiBase(OPENAPI_PATHS.attachments.download(attachment.id)), {
+        observe: 'response',
+        responseType: 'blob',
+      })
+      .pipe(
+        map((response) => ({
+          blob: response.body,
+          fileName: this.extractFileName(response.headers.get('content-disposition')),
+        })),
+        catchError(() => of(null)),
+      )
+      .subscribe({
+        next: (result) => {
+          if (!result?.blob) {
+            return;
+          }
+
+          this.downloadBlob(result.blob, result.fileName || attachment.fileName || 'attachment');
+        },
+      });
+  }
+
+  onDownloadNotificationAttachment(attachment: NotificationAttachment): void {
+    if (!attachment.id) {
+      return;
+    }
+
+    this.http
+      .get(withOpenApiBase(OPENAPI_PATHS.attachments.download(attachment.id)), {
+        observe: 'response',
+        responseType: 'blob',
+      })
+      .pipe(
+        map((response) => ({
+          blob: response.body,
+          fileName: this.extractFileName(response.headers.get('content-disposition')),
+        })),
+        catchError(() => of(null)),
+      )
+      .subscribe({
+        next: (result) => {
+          if (!result?.blob) {
+            return;
+          }
+
+          this.downloadBlob(result.blob, result.fileName || attachment.fileName || 'attachment');
         },
       });
   }
@@ -363,4 +423,32 @@ export class TeacherPageComponent implements OnInit {
       };
     }
   }
+
+  private extractFileName(contentDisposition: string | null): string {
+    if (!contentDisposition) {
+      return '';
+    }
+
+    const utf8Name = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+    if (utf8Name) {
+      return decodeURIComponent(utf8Name).trim();
+    }
+
+    const plainName = contentDisposition.match(/filename="?([^";]+)"?/i)?.[1];
+    return plainName?.trim() ?? '';
+  }
+
+  private downloadBlob(blob: Blob, fileName: string): void {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
 }
+
+
+
