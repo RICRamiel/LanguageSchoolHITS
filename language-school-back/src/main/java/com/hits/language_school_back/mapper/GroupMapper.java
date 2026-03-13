@@ -18,7 +18,7 @@ public class GroupMapper {
                 .name(group.getName())
                 .description(group.getDescription())
                 .difficulty(group.getDifficulty())
-                .language(new LanguageDTO(group.getLanguage().getName()))
+                .language(new LanguageDTO(group.getLanguage().getId(),group.getLanguage().getName()))
                 .build();
     }
 }

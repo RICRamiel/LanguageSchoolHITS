@@ -9,6 +9,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class LanguageMapper {
     public LanguageDTO toDto(Language language) {
-        return new LanguageDTO(language.getName());
+        return new LanguageDTO(language.getId(), language.getName());
     }
 }
