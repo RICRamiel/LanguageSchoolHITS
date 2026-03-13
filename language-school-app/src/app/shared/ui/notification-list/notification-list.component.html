@@ -5,7 +5,7 @@
 
   <div class="notification-list">
     @for (n of notifications(); track n.id) {
-      <article class="notification-item">
+      <article class="notification-item" (click)="openNotification.emit(n.id)">
         <div class="notification-item__head">
           <div class="notification-item__title-wrap">
             <span
@@ -36,14 +36,16 @@
 
         <p class="notification-item__meta">{{ n.author }} • {{ n.dateTime }}</p>
         <p class="notification-item__text">{{ n.text }}</p>
-        @if (n.attachment) {
+        @if (n.attachments.length) {
           <div class="notification-item__attachment">
-            <span>{{ n.attachment.fileName }}</span>
-            @if (n.attachment.id || n.attachment.objectKey) {
+            <span>
+              {{ n.attachments[0].fileName }}{{ n.attachments.length > 1 ? ' (+' + (n.attachments.length - 1) + ')' : '' }}
+            </span>
+            @if (n.attachments[0].id || n.attachments[0].objectKey) {
               <button
                 class="notification-item__download"
                 type="button"
-                (click)="downloadAttachment.emit(n.attachment); $event.stopPropagation()"
+                (click)="downloadAttachment.emit(n.attachments[0]); $event.stopPropagation()"
               >
                 Скачать
               </button>

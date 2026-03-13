@@ -19,7 +19,7 @@
             (change)="onGroupFilterChange($any($event.target).value)"
           >
             <option value="all">Все группы</option>
-            @for (group of groups; track group.id) {
+            @for (group of (groups$ | async) ?? []; track group.id) {
               <option [value]="group.id">{{ group.name }}</option>
             }
           </select>
@@ -27,20 +27,20 @@
       </div>
 
       <app-tabs
-        [tabs]="tabs"
+        [tabs]="(tabs$ | async) ?? []"
         [activeId]="activeTab"
         (tabChange)="onTabChange($event)"
       />
 
       @if (activeTab === 'tasks') {
         <app-teacher-task-list
-          [tasks]="tasks"
+          [tasks]="(tasks$ | async) ?? []"
           (createTask)="onCreateTask()"
           (openTaskDetails)="onOpenTaskDetails($event)"
         />
       } @else {
         <app-teacher-notifications
-          [notifications]="notifications"
+          [notifications]="(notifications$ | async) ?? []"
           (createNotification)="openCreateNotificationModal()"
           (openNotification)="onOpenNotification($event)"
         />
@@ -50,7 +50,7 @@
 
   @if (isNotificationModalOpen) {
     <app-create-notification-modal
-      [groups]="groups"
+      [groups]="(groups$ | async) ?? []"
       (close)="closeCreateNotificationModal()"
       (submit)="submitNotification($event)"
     />
@@ -58,7 +58,7 @@
 
   @if (isTaskModalOpen) {
     <app-create-task-modal
-      [groups]="groups"
+      [groups]="(groups$ | async) ?? []"
       (close)="closeCreateTaskModal()"
       (submit)="submitTask($event)"
     />
@@ -76,6 +76,8 @@
   @if (isNotificationDetailsModalOpen && selectedNotification) {
     <app-notification-details-modal
       [notification]="selectedNotification"
+      [uploading]="notificationAttachmentUploading"
+      (uploadAttachment)="onAttachNotificationFile($event)"
       (close)="closeNotificationDetailsModal()"
     />
   }

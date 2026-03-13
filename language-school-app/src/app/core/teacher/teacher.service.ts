@@ -1,7 +1,7 @@
-import { HttpClient, HttpResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { HttpParams } from '@angular/common/http';
-import { catchError, forkJoin, map, Observable, of, switchMap } from 'rxjs';
+import { catchError, forkJoin, map, Observable, of } from 'rxjs';
 import { OPENAPI_PATHS, withOpenApiBase } from '../api/openapi.config';
 import {
   CreateNotificationPayload,
@@ -111,10 +111,10 @@ export class TeacherService {
 
   getTasksByTeacher(teacherId: number): Observable<TeacherTask[]> {
     return this.http
-      .get<TeacherTaskResponse[]>(withOpenApiBase(OPENAPI_PATHS.teacher.tasksByTeacher(teacherId)))
+      .get<unknown>(withOpenApiBase(OPENAPI_PATHS.teacher.tasksByTeacher(teacherId)))
       .pipe(
         map((tasks) =>
-          (tasks ?? []).map((task, index) =>
+          this.normalizeTaskList(tasks).map((task, index) =>
             this.mapTask(
               task,
               (task.groupName ?? '').trim() || 'Group',
@@ -132,21 +132,14 @@ export class TeacherService {
     }
 
     return this.http
-      .get<TeacherTaskResponse[]>(
-        withOpenApiBase(OPENAPI_PATHS.tasks.byGroupName(normalizedGroupName)),
+      .get<unknown>(
+        withOpenApiBase(OPENAPI_PATHS.tasks.byGroupNameReal(normalizedGroupName)),
       )
       .pipe(
         map((tasks) =>
-          (tasks ?? []).map((task, index) =>
+          this.normalizeTaskList(tasks).map((task, index) =>
             this.mapTask(
-              {
-                id: task.id,
-                name: task.name,
-                description: task.description,
-                deadline: task.deadline,
-                taskStatus: task.taskStatus,
-                teacher: task.teacher,
-              },
+              task,
               normalizedGroupName,
               task.id && Number.isFinite(task.id) ? task.id : -(index + 1),
             ),
@@ -237,151 +230,34 @@ export class TeacherService {
   }
 
   createNotification(payload: CreateNotificationPayload): Observable<TeacherNotification> {
-    return this.createNotificationJsonFlow(payload);
-  }
-
-  private createNotificationJsonFlow(payload: CreateNotificationPayload): Observable<TeacherNotification> {
-    const attachmentFile = payload.attachmentFile;
-    const existingIds$ = attachmentFile
-      ? this.getGroupNotificationIds(payload.groupId)
-      : of(new Set<string>());
-
-    return existingIds$.pipe(
-      switchMap((existingIds) =>
-        this.http
-          .post<TeacherNotificationResponse>(
-            withOpenApiBase(OPENAPI_PATHS.notifications.create),
+    return this.http
+      .post<TeacherNotificationResponse>(withOpenApiBase(OPENAPI_PATHS.notifications.create), {
+        text: payload.content,
+        groupId: payload.groupId,
+      })
+      .pipe(
+        map((notification) =>
+          this.mapNotification(
             {
-              text: payload.content,
-              groupId: payload.groupId,
+              ...notification,
+              text: notification?.text ?? payload.content,
+              groupId: notification?.groupId ?? payload.groupId,
             },
-            { observe: 'response' },
-          )
-          .pipe(
-            switchMap((response) => {
-              const notification = response.body;
-              const mapped = this.mapNotification(
-                {
-                  ...notification,
-                  text: notification?.text ?? payload.content,
-                  groupId: notification?.groupId ?? payload.groupId,
-                },
-                payload.title,
-              );
-
-              if (!attachmentFile) {
-                return of(mapped);
-              }
-
-              return this.resolveNotificationId(
-                response,
-                payload.groupId,
-                payload.content,
-                existingIds,
-              ).pipe(
-                switchMap((notificationId) => {
-                  if (!notificationId) {
-                    return of(mapped);
-                  }
-
-                  return this.uploadNotificationAttachment(notificationId, attachmentFile).pipe(
-                    map((attachment) =>
-                      attachment
-                        ? {
-                            ...mapped,
-                            attachment,
-                          }
-                        : mapped,
-                    ),
-                    catchError(() => of(mapped)),
-                  );
-                }),
-              );
-            }),
-          ),
-      ),
-    );
-  }
-
-  private resolveNotificationId(
-    response: HttpResponse<TeacherNotificationResponse>,
-    groupId: number,
-    text: string,
-    existingIds: Set<string>,
-  ): Observable<string | null> {
-    const fromBody = (response.body?.id ?? '').trim();
-    if (fromBody) {
-      return of(fromBody);
-    }
-
-    const fromLocation = this.extractNotificationIdFromLocation(
-      response.headers.get('location') ?? response.headers.get('Location'),
-    );
-    if (fromLocation) {
-      return of(fromLocation);
-    }
-
-    return this.findLatestCreatedNotificationId(groupId, text, existingIds);
-  }
-
-  private extractNotificationIdFromLocation(locationHeader: string | null): string | null {
-    if (!locationHeader) {
-      return null;
-    }
-
-    const tail = locationHeader.split('/').filter(Boolean).pop()?.trim() ?? '';
-    return tail || null;
-  }
-
-  private findLatestCreatedNotificationId(
-    groupId: number,
-    text: string,
-    existingIds: Set<string>,
-  ): Observable<string | null> {
-    const normalizedText = text.trim();
-    return this.http
-      .get<TeacherNotificationResponse[]>(withOpenApiBase(OPENAPI_PATHS.notifications.byGroup(groupId)))
-      .pipe(
-        map((notifications) => notifications ?? []),
-        map((notifications) => {
-          const newItems = notifications.filter((item) => {
-            const id = (item?.id ?? '').trim();
-            return Boolean(id) && !existingIds.has(id);
-          });
-
-          if (newItems.length) {
-            const latestNew = [...newItems].sort(
-              (a, b) =>
-                this.parseDateToMillis(b?.creationDate ?? '') - this.parseDateToMillis(a?.creationDate ?? ''),
-            )[0];
-            return (latestNew?.id ?? '').trim() || null;
-          }
-
-          const textMatches = notifications
-            .filter((item) => (item?.text ?? '').trim() === normalizedText)
-            .sort(
-              (a, b) =>
-                this.parseDateToMillis(b?.creationDate ?? '') - this.parseDateToMillis(a?.creationDate ?? ''),
-            );
-          return (textMatches[0]?.id ?? '').trim() || null;
-        }),
-        catchError(() => of(null)),
-      );
-  }
-
-  private getGroupNotificationIds(groupId: number): Observable<Set<string>> {
-    return this.http
-      .get<TeacherNotificationResponse[]>(withOpenApiBase(OPENAPI_PATHS.notifications.byGroup(groupId)))
-      .pipe(
-        map((notifications) =>
-          new Set(
-            (notifications ?? [])
-              .map((item) => (item?.id ?? '').trim())
-              .filter((id) => Boolean(id)),
+            payload.title,
           ),
         ),
-        catchError(() => of(new Set<string>())),
       );
+  }
+
+  attachAttachmentToNotification(
+    notificationId: string,
+    file: File,
+  ): Observable<NotificationAttachment | null> {
+    if (!notificationId.trim()) {
+      return of(null);
+    }
+
+    return this.uploadNotificationAttachment(notificationId, file);
   }
 
   private uploadNotificationAttachment(
@@ -497,6 +373,55 @@ export class TeacherService {
 
   private sortGroups(groups: TeacherGroup[]): TeacherGroup[] {
     return [...groups].sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+  }
+
+  private normalizeTaskList(payload: unknown): TeacherTaskResponse[] {
+    if (typeof payload === 'string') {
+      const parsed = this.safeJsonParse(payload);
+      return parsed === null ? [] : this.normalizeTaskList(parsed);
+    }
+
+    if (Array.isArray(payload)) {
+      return payload.filter((item) => this.isTaskLike(item)) as TeacherTaskResponse[];
+    }
+
+    if (!payload || typeof payload !== 'object') {
+      return [];
+    }
+
+    const candidate = payload as Record<string, unknown>;
+    const possibleKeys = ['tasks', 'data', 'content', 'body'] as const;
+    for (const key of possibleKeys) {
+      if (Array.isArray(candidate[key])) {
+        return (candidate[key] as unknown[]).filter((item) => this.isTaskLike(item)) as TeacherTaskResponse[];
+      }
+    }
+
+    if (this.isTaskLike(candidate)) {
+      return [candidate as TeacherTaskResponse];
+    }
+
+    return [];
+  }
+
+  private isTaskLike(value: unknown): value is TeacherTaskResponse {
+    if (!value || typeof value !== 'object') {
+      return false;
+    }
+    const obj = value as Record<string, unknown>;
+    return 'name' in obj || 'description' in obj || 'deadline' in obj || 'taskStatus' in obj || 'teacher' in obj;
+  }
+
+  private safeJsonParse(value: string): unknown | null {
+    const text = value.trim();
+    if (!text) {
+      return null;
+    }
+    try {
+      return JSON.parse(text);
+    } catch {
+      return null;
+    }
   }
 
   private mapTask(task: TeacherTaskResponse | null | undefined, groupName: string, id: number): TeacherTask {

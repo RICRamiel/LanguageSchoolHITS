@@ -7,5 +7,18 @@
     @if (notification().attachment) {
       <p class="modal__attachment">Вложение: {{ notification().attachment?.fileName }}</p>
     }
+    <label class="modal__label" for="notification-attachment">Прикрепить файл</label>
+    <input
+      id="notification-attachment"
+      class="modal__input"
+      type="file"
+      (change)="onFileSelected($event)"
+    />
+    @if (selectedFile) {
+      <p class="modal__attachment">Выбран файл: {{ selectedFile.name }}</p>
+    }
+    <button class="modal__btn modal__btn--primary" type="button" (click)="onUploadClick()">
+      {{ uploading() ? 'Загрузка...' : 'Прикрепить' }}
+    </button>
   </section>
 </div>

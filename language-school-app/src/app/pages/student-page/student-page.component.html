@@ -7,11 +7,30 @@
   />
 
   <div class="student-page__content">
+    <div class="student-page__top">
+      <div class="student-page__top-spacer"></div>
+      <div class="student-page__filter">
+        <label class="student-page__filter-label" for="student-group-filter">Группа</label>
+        <select
+          id="student-group-filter"
+          class="teacher-panel__filter-select"
+          [value]="selectedGroupFilter"
+          (change)="onGroupFilterChange($any($event.target).value)"
+        >
+          <option value="all">Все группы</option>
+          @for (group of groups; track group.id) {
+            <option [value]="group.id">{{ group.name }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
     <app-tabs
       [tabs]="tabs"
       [activeId]="activeTab"
       (tabChange)="onTabChange($event)"
     ></app-tabs>
+
     @if (activeTab === 'tasks') {
       <div class="task-list">
         @for (t of tasks; track t.id) {
@@ -29,6 +48,7 @@
     } @else {
       <app-notification-list
         [notifications]="notifications"
+        (openNotification)="openNotificationDetails($event)"
         (downloadAttachment)="onDownloadNotificationAttachment($event)"
       />
     }
@@ -50,4 +70,11 @@
     />
   }
 
+  @if (isNotificationDetailsModalOpen && selectedNotification) {
+    <app-student-notification-modal
+      [notification]="selectedNotification"
+      (downloadAttachment)="onDownloadNotificationAttachment($event)"
+      (close)="closeNotificationDetailsModal()"
+    />
+  }
 </div>
