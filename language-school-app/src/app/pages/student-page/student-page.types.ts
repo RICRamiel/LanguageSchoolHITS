@@ -8,6 +8,7 @@ export type StudentTask = {
   teacher: string;
   description: string;
   dueText: string;
+  groupId: number | null;
 };
 
 export type StudentTaskComment = {
@@ -23,5 +24,6 @@ export type StudentNotification = {
   dateTime: string;
   text: string;
   tag: string;
-  attachment: NotificationAttachment | null;
+  attachments: NotificationAttachment[];
+  groupId: number;
 };

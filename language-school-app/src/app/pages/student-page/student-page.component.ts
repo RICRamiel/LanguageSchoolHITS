@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { catchError, finalize, forkJoin, map, of, switchMap, timeout } from 'rxjs';
+import { catchError, finalize, forkJoin, map, Observable, of, switchMap, timeout } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { UserService } from '../../core/user/user.service';
 import { HeaderComponent } from '../../shared/ui/header/header.component';
@@ -9,6 +9,7 @@ import { NotificationListComponent } from '../../shared/ui/notification-list/not
 import { TabsComponent } from '../../shared/ui/tabs/tabs.component';
 import { TaskCardComponent } from '../../shared/ui/task-card/task-card.component';
 import { StudentTaskDetailsModalComponent } from './components/student-task-details-modal/student-task-details-modal.component';
+import { StudentNotificationModalComponent } from './components/student-notification-modal/student-notification-modal.component';
 import { StudentNotification, StudentTask, StudentTaskComment } from './student-page.types';
 import { OPENAPI_PATHS, withOpenApiBase } from '../../core/api/openapi.config';
 import { AttachmentControllerService, TaskControllerService } from '../../api';
@@ -20,6 +21,7 @@ type StudentNotificationResponse = {
   text?: string;
   creationDate?: string;
   groupId?: number;
+  createdByTeacherWithId?: number;
   attachmentDownloadInfo?: StudentAttachmentResponse | null;
   attachmentDownloadInfos?: StudentAttachmentResponse[] | null;
   attachment?: StudentAttachmentResponse | null;
@@ -50,6 +52,16 @@ type StudentTaskResponse = {
   };
 };
 
+type StudentGroupResponse = {
+  id?: number;
+  name?: string;
+};
+
+type StudentGroup = {
+  id: number;
+  name: string;
+};
+
 const RU = {
   tasks: '\u0417\u0430\u0434\u0430\u043D\u0438\u044F',
   notifications: '\u0423\u0432\u0435\u0434\u043E\u043C\u043B\u0435\u043D\u0438\u044F',
@@ -57,6 +69,7 @@ const RU = {
   notification: '\u0423\u0432\u0435\u0434\u043E\u043C\u043B\u0435\u043D\u0438\u0435',
   teacher: '\u041F\u0440\u0435\u043F\u043E\u0434\u0430\u0432\u0430\u0442\u0435\u043B\u044C',
   group: '\u0413\u0440\u0443\u043F\u043F\u0430',
+  allGroups: '\u0412\u0441\u0435 \u0433\u0440\u0443\u043F\u043F\u044B',
   completed: '\u0412\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u043E',
   overdue: '\u041F\u0440\u043E\u0441\u0440\u043E\u0447\u0435\u043D\u043E',
   inProgress: '\u0412 \u043F\u0440\u043E\u0446\u0435\u0441\u0441\u0435',
@@ -71,6 +84,7 @@ const RU = {
     TaskCardComponent,
     NotificationListComponent,
     StudentTaskDetailsModalComponent,
+    StudentNotificationModalComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './student-page.component.html',
@@ -89,6 +103,8 @@ export class StudentPageComponent implements OnInit {
   fullName = '';
   email = '';
   groupName = '';
+  groups: StudentGroup[] = [];
+  selectedGroupFilter = 'all';
 
   tabs = [
     { id: 'tasks', label: RU.tasks },
@@ -97,10 +113,14 @@ export class StudentPageComponent implements OnInit {
 
   activeTab = 'tasks';
   isTaskDetailsModalOpen = false;
+  isNotificationDetailsModalOpen = false;
   selectedTask: StudentTask | null = null;
+  selectedNotification: StudentNotification | null = null;
 
   tasks: StudentTask[] = [];
   notifications: StudentNotification[] = [];
+  allTasks: StudentTask[] = [];
+  allNotifications: StudentNotification[] = [];
 
   uploadedFileLink: string | null = null;
   uploadInProgress = false;
@@ -115,6 +135,12 @@ export class StudentPageComponent implements OnInit {
 
   onTabChange(tabId: string) {
     this.activeTab = tabId;
+  }
+
+  onGroupFilterChange(value: string): void {
+    this.selectedGroupFilter = value;
+    this.applyGroupFilter();
+    this.cdr.detectChanges();
   }
 
   openTaskDetails(taskId: number) {
@@ -138,6 +164,21 @@ export class StudentPageComponent implements OnInit {
     this.commentsLoading = false;
     this.commentSubmitting = false;
     this.taskComments = [];
+  }
+
+  openNotificationDetails(notificationId: string): void {
+    const notification = this.notifications.find((item) => item.id === notificationId);
+    if (!notification) {
+      return;
+    }
+
+    this.selectedNotification = notification;
+    this.isNotificationDetailsModalOpen = true;
+  }
+
+  closeNotificationDetailsModal(): void {
+    this.selectedNotification = null;
+    this.isNotificationDetailsModalOpen = false;
   }
 
   onUploadTaskFile(file: File): void {
@@ -313,13 +354,31 @@ export class StudentPageComponent implements OnInit {
           this.studentId = profile.id;
           this.groupName = profile.groups[0]?.name ?? '';
 
-          const tasks$ = this.groupName
-            ? this.http
-                .get<StudentTaskResponse[]>(
-                  withOpenApiBase(OPENAPI_PATHS.tasks.byGroupName(this.groupName)),
-                )
-                .pipe(catchError(() => of([] as StudentTaskResponse[])))
-            : of([] as StudentTaskResponse[]);
+          const fallbackGroups: StudentGroup[] = (profile.groups ?? [])
+            .map((group) => ({
+              id: Number(group.id),
+              name: (group.name ?? '').trim(),
+            }))
+            .filter((group) => Number.isFinite(group.id) && group.id > 0 && Boolean(group.name));
+
+          const groups$ = this.http
+            .get<StudentGroupResponse[]>(
+              withOpenApiBase(OPENAPI_PATHS.teacher.groupsByTeacher(profile.id)),
+            )
+            .pipe(
+              map((groups) =>
+                (groups ?? [])
+                  .map((group) => ({
+                    id: Number(group.id),
+                    name: (group.name ?? '').trim(),
+                  }))
+                  .filter((group) => Number.isFinite(group.id) && group.id > 0 && Boolean(group.name)),
+              ),
+              map((groups) =>
+                groups.length ? groups.sort((a, b) => a.name.localeCompare(b.name, 'ru')) : fallbackGroups,
+              ),
+              catchError(() => of(fallbackGroups)),
+            );
 
           const notifications$ = this.http
             .get<StudentNotificationResponse[]>(
@@ -327,22 +386,41 @@ export class StudentPageComponent implements OnInit {
             )
             .pipe(catchError(() => of([] as StudentNotificationResponse[])));
 
-          return forkJoin({
-            tasks: tasks$,
-            notifications: notifications$,
-          });
+          return groups$.pipe(
+            switchMap((groups) =>
+              this.loadTasksForGroups(groups).pipe(
+                map((tasks) => ({
+                  groups,
+                  tasks,
+                })),
+              ),
+            ),
+            switchMap(({ groups, tasks }) =>
+              notifications$.pipe(
+                map((notifications) => ({
+                  groups,
+                  tasks,
+                  notifications,
+                })),
+              ),
+            ),
+          );
         }),
       )
       .subscribe({
-        next: ({ tasks, notifications }) => {
-          this.tasks = tasks.map((task) => this.mapTask(task));
-          this.notifications = notifications.map((item, index) =>
+        next: ({ groups, tasks, notifications }) => {
+          this.groups = groups;
+          if (
+            this.selectedGroupFilter !== 'all' &&
+            !groups.some((group: StudentGroup) => String(group.id) === this.selectedGroupFilter)
+          ) {
+            this.selectedGroupFilter = 'all';
+          }
+          this.allTasks = tasks;
+          this.allNotifications = notifications.map((item, index) =>
             this.mapNotification(item, index),
           );
-          this.tabs = [
-            { id: 'tasks', label: RU.tasks },
-            { id: 'notifications', label: RU.notifications, badge: this.notifications.length },
-          ];
+          this.applyGroupFilter();
           this.cdr.detectChanges();
         },
         error: () => {
@@ -350,6 +428,11 @@ export class StudentPageComponent implements OnInit {
           this.email = '';
           this.studentId = 0;
           this.groupName = '';
+          this.groups = [];
+          this.allTasks = [];
+          this.allNotifications = [];
+          this.selectedGroupFilter = 'all';
+          this.tasks = [];
           this.notifications = [];
           this.tabs = [
             { id: 'tasks', label: RU.tasks },
@@ -360,7 +443,10 @@ export class StudentPageComponent implements OnInit {
       });
   }
 
-  private mapTask(task: StudentTaskResponse | null | undefined): StudentTask {
+  private mapTask(
+    task: StudentTaskResponse | null | undefined,
+    group: StudentGroup | null,
+  ): StudentTask {
     const title = (task?.name ?? '').trim() || RU.task;
     const description = (task?.description ?? '').trim();
     const status = task?.taskStatus ?? 'PENDING';
@@ -377,6 +463,7 @@ export class StudentPageComponent implements OnInit {
       teacher: teacherName || RU.teacher,
       description,
       dueText: this.formatDate(task?.deadline),
+      groupId: group?.id ?? null,
     };
   }
 
@@ -534,23 +621,27 @@ export class StudentPageComponent implements OnInit {
       id: (notification?.id ?? '').trim() || fallbackId,
       type: 'announcement',
       title: text.length > 60 ? `${text.slice(0, 60)}...` : text || RU.notification,
-      author: RU.teacher,
+      author: notification?.createdByTeacherWithId
+        ? `${RU.teacher} #${notification.createdByTeacherWithId}`
+        : RU.teacher,
       dateTime: this.formatDate(notification?.creationDate),
       text,
       tag: RU.group,
-      attachment: this.mapNotificationAttachment(notification),
+      attachments: this.mapNotificationAttachments(notification),
+      groupId: notification?.groupId ?? 0,
     };
   }
 
-  private mapNotificationAttachment(
+  private mapNotificationAttachments(
     notification: StudentNotificationResponse | null | undefined,
-  ): NotificationAttachment | null {
+  ): NotificationAttachment[] {
     const candidates: Array<StudentAttachmentResponse | null | undefined> = [
       notification?.attachmentDownloadInfo,
       notification?.attachment,
       ...(notification?.attachmentDownloadInfos ?? []),
       ...(notification?.attachments ?? []),
     ];
+    const result: NotificationAttachment[] = [];
 
     for (const candidate of candidates) {
       if (!candidate) {
@@ -569,17 +660,17 @@ export class StudentPageComponent implements OnInit {
           : null;
 
       if (id || fileName) {
-        return {
+        result.push({
           id,
           objectKey,
           fileName,
           fileType,
           fileSize,
-        };
+        });
       }
     }
 
-    return null;
+    return result;
   }
 
   private formatDate(value: string | undefined): string {
@@ -670,5 +761,47 @@ export class StudentPageComponent implements OnInit {
       URL.revokeObjectURL(this.uploadedFileLink);
     }
     this.uploadedFileLink = null;
+  }
+
+  private loadTasksForGroups(groups: StudentGroup[]): Observable<StudentTask[]> {
+    if (!groups.length) {
+      return of([]);
+    }
+
+    return forkJoin(
+      groups.map((group) =>
+        this.http
+          .get<StudentTaskResponse[]>(
+            withOpenApiBase(OPENAPI_PATHS.tasks.byGroupNameReal(group.name)),
+          )
+          .pipe(
+            map((tasks) => (tasks ?? []).map((task) => this.mapTask(task, group))),
+            catchError(() => of([] as StudentTask[])),
+          ),
+      ),
+    ).pipe(
+      map((chunks) => chunks.flat()),
+      map((tasks) => {
+        const deduplicated = new Map<number, StudentTask>();
+        tasks.forEach((task) => deduplicated.set(task.id, task));
+        return [...deduplicated.values()];
+      }),
+    );
+  }
+
+  private applyGroupFilter(): void {
+    if (this.selectedGroupFilter === 'all') {
+      this.tasks = [...this.allTasks];
+      this.notifications = [...this.allNotifications];
+    } else {
+      const groupId = Number(this.selectedGroupFilter);
+      this.tasks = this.allTasks.filter((task) => task.groupId === groupId);
+      this.notifications = this.allNotifications.filter((item) => item.groupId === groupId);
+    }
+
+    this.tabs = [
+      { id: 'tasks', label: RU.tasks },
+      { id: 'notifications', label: RU.notifications, badge: this.notifications.length },
+    ];
   }
 }

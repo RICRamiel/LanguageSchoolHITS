@@ -66,5 +66,4 @@ export type CreateNotificationPayload = {
   title: string;
   content: string;
   groupId: number;
-  attachmentFile: File | null;
 };
