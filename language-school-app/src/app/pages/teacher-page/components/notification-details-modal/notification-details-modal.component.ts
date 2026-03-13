@@ -11,5 +11,22 @@ import { TeacherNotification } from '../../teacher-page.types';
 })
 export class NotificationDetailsModalComponent {
   readonly notification = input.required<TeacherNotification>();
+  readonly uploading = input(false);
   readonly close = output<void>();
+  readonly uploadAttachment = output<File>();
+
+  selectedFile: File | null = null;
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement | null;
+    this.selectedFile = input?.files?.item(0) ?? null;
+  }
+
+  onUploadClick(): void {
+    if (!this.selectedFile || this.uploading()) {
+      return;
+    }
+
+    this.uploadAttachment.emit(this.selectedFile);
+  }
 }

@@ -1,4 +1,5 @@
 import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
+import { NotificationAttachment } from '../../../../core/teacher/teacher.models';
 import { StudentNotification } from '../../student-page.types';
 
 @Component({
@@ -12,4 +13,9 @@ import { StudentNotification } from '../../student-page.types';
 export class StudentNotificationModalComponent {
   readonly notification = input.required<StudentNotification>();
   readonly close = output<void>();
+  readonly downloadAttachment = output<NotificationAttachment>();
+
+  onDownloadAttachment(attachment: NotificationAttachment): void {
+    this.downloadAttachment.emit(attachment);
+  }
 }

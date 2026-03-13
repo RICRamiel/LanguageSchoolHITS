@@ -17,7 +17,6 @@ export class CreateNotificationModalComponent {
   groupId = '';
   groupQuery = '';
   isGroupListOpen = false;
-  attachmentFile: File | null = null;
 
   readonly close = output<void>();
   readonly submit = output<CreateNotificationPayload>();
@@ -54,14 +53,7 @@ export class CreateNotificationModalComponent {
       title: this.title,
       content: this.content,
       groupId: selectedGroup.id,
-      attachmentFile: this.attachmentFile,
     });
-  }
-
-  onFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement | null;
-    const file = input?.files?.item(0) ?? null;
-    this.attachmentFile = file;
   }
 
   toggleGroupList(): void {
