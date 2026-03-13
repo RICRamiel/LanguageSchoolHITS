@@ -63,20 +63,42 @@ export class GroupsTabComponent implements OnInit {
               catchError(() => of(0)),
             ),
           );
-          return forkJoin({
-            groups: of(groupDtos),
-            languages: this.adminService.getLanguages(),
-            studentCounts: forkJoin(studentCounts$),
-            teachers: this.adminService.getTeachers().pipe(catchError(() => of([] as AdminUserDTO[]))),
-          });
+          return this.adminService.getTeachers().pipe(
+            catchError(() => of([] as AdminUserDTO[])),
+            switchMap((teachers) => {
+              const groupsByTeacher$ =
+                teachers.length > 0
+                  ? forkJoin(
+                      teachers.map((t) =>
+                        this.adminService.getGroupsByTeacher(t.id ?? 0).pipe(
+                          map((groups) => ({ teacher: t, groups })),
+                          catchError(() => of({ teacher: t, groups: [] as AdminGroupDTO[] })),
+                        ),
+                      ),
+                    )
+                  : of([] as { teacher: AdminUserDTO; groups: AdminGroupDTO[] }[]);
+              return forkJoin({
+                groups: of(groupDtos),
+                languages: this.adminService.getLanguages(),
+                studentCounts: forkJoin(studentCounts$),
+                teachersWithGroups: groupsByTeacher$,
+              });
+            }),
+          );
         }),
-        map(({ groups, languages, studentCounts, teachers }) => {
+        map(({ groups, languages, studentCounts, teachersWithGroups }) => {
+          const groupToTeachers = new Map<number, AdminUserDTO[]>();
+          for (const { teacher, groups: grps } of teachersWithGroups) {
+            for (const g of grps) {
+              const gid = g.id ?? 0;
+              if (!groupToTeachers.has(gid)) groupToTeachers.set(gid, []);
+              groupToTeachers.get(gid)!.push(teacher);
+            }
+          }
           return {
             groups: groups.map((dto, i) => {
               const gid = dto.id ?? 0;
-              const teachersInGroup = teachers.filter((t) =>
-                (t.groups ?? []).some((gr) => gr.id === gid),
-              );
+              const teachersInGroup = groupToTeachers.get(gid) ?? [];
               const teacherNames = teachersInGroup
                 .map((t) => [t.lastName, t.firstName].filter(Boolean).join(' ').trim())
                 .filter(Boolean)

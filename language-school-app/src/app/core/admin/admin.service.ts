@@ -161,6 +161,15 @@ export class AdminService {
       );
   }
 
+  getGroupsByTeacher(teacherId: number): Observable<AdminGroupDTO[]> {
+    return this.http
+      .get<unknown>(withOpenApiBase(OPENAPI_PATHS.teacher.groupsByTeacher(teacherId)))
+      .pipe(
+        map((res) => this.normalizeArray<AdminGroupDTO>(res)),
+        catchError(() => of([])),
+      );
+  }
+
   createTeacher(payload: {
     firstName: string;
     lastName: string;

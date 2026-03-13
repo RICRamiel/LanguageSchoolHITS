@@ -4,14 +4,16 @@ import { StudentFormComponent, type StudentFormValue } from '../student-form/stu
 import { AssignGroupModalComponent } from '../assign-group-modal/assign-group-modal.component';
 import type { Student, Group } from '../admin-page.models';
 import { AdminService, type AdminGroupDTO, type AdminUserDTO } from '../../../core/admin/admin.service';
-import { catchError, concatMap, EMPTY, finalize, forkJoin, map, of } from 'rxjs';
+import { catchError, concatMap, EMPTY, finalize, forkJoin, map, of, switchMap } from 'rxjs';
 
-function toStudent(dto: AdminUserDTO): Student {
+function toStudent(dto: AdminUserDTO, groupNameFromMap?: string): Student {
   const first = dto.firstName ?? '';
   const last = dto.lastName ?? '';
   const fullName = [first, last].filter(Boolean).join(' ') || '—';
-  const firstGroup = Array.isArray(dto.groups) ? dto.groups[0] : undefined;
-  const groupName = firstGroup?.name ?? '—';
+  const groupName =
+    groupNameFromMap ??
+    (Array.isArray(dto.groups) ? dto.groups[0]?.name : undefined) ??
+    '—';
   return {
     id: dto.id ?? 0,
     fullName,
@@ -72,15 +74,44 @@ export class StudentsTabComponent implements OnInit {
     this.error = null;
     this.cdr.detectChanges();
 
-    forkJoin({
-      students: this.adminService.getStudents(),
-      groups: this.adminService.getGroups(),
-    })
+    this.adminService
+      .getGroups()
       .pipe(
-        map(({ students, groups }) => ({
-          students: students.map(toStudent),
-          groups: groups.map(toGroup),
-        })),
+        switchMap((groupDtos) => {
+          const studentsByGroup$ =
+            groupDtos.length > 0
+              ? forkJoin(
+                  groupDtos.map((g) =>
+                    this.adminService.getStudentsByGroupId(g.id ?? 0).pipe(
+                      map((students) => {
+                        const fromResponse = students[0]?.groups?.[0]?.name;
+                        const groupName = (fromResponse ?? g.name ?? '—').trim() || '—';
+                        return { groupName, students };
+                      }),
+                      catchError(() => of({ groupName: g.name ?? '—', students: [] as AdminUserDTO[] })),
+                    ),
+                  ),
+                )
+              : of([] as { groupName: string; students: AdminUserDTO[] }[]);
+          return forkJoin({
+            groupDtos: of(groupDtos),
+            studentsByGroup: studentsByGroup$,
+            students: this.adminService.getStudents(),
+          });
+        }),
+        map(({ groupDtos, studentsByGroup, students }) => {
+          const studentToGroupName = new Map<number, string>();
+          for (const { groupName, students: groupStudents } of studentsByGroup) {
+            for (const s of groupStudents) {
+              const id = s.id ?? 0;
+              if (!studentToGroupName.has(id)) studentToGroupName.set(id, groupName);
+            }
+          }
+          return {
+            students: students.map((s) => toStudent(s, studentToGroupName.get(s.id ?? 0))),
+            groups: groupDtos.map(toGroup),
+          };
+        }),
         finalize(() => {
           this.loading = false;
           this.cdr.detectChanges();

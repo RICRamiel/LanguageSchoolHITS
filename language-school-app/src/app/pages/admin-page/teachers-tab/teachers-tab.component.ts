@@ -3,19 +3,22 @@ import { ButtonComponent } from '../../../shared/ui/button/button.component';
 import { TeacherFormComponent } from '../teacher-form/teacher-form.component';
 import { AssignGroupModalComponent } from '../assign-group-modal/assign-group-modal.component';
 import type { Teacher, Group } from '../admin-page.models';
-import { AdminService, type AdminUserDTO } from '../../../core/admin/admin.service';
-import { catchError, concatMap, EMPTY, finalize, forkJoin, map, of } from 'rxjs';
+import { AdminService, type AdminGroupDTO, type AdminUserDTO } from '../../../core/admin/admin.service';
+import { catchError, concatMap, EMPTY, finalize, forkJoin, map, of, switchMap } from 'rxjs';
 
-function toTeacher(dto: AdminUserDTO): Teacher {
+function toTeacher(dto: AdminUserDTO, groups: AdminGroupDTO[]): Teacher {
   const first = dto.firstName ?? '';
   const last = dto.lastName ?? '';
   const fullName = [first, last].filter(Boolean).join(' ') || '—';
-  const firstGroup = Array.isArray(dto.groups) ? dto.groups[0] : undefined;
+  const firstGroup = groups[0];
+  const languages = [
+    ...new Set(groups.map((g) => g.language?.name).filter((n): n is string => !!n)),
+  ].join(', ');
   return {
     id: dto.id ?? 0,
     fullName,
     email: dto.email ?? '',
-    languages: '—',
+    languages: languages || '—',
     groupId: firstGroup?.id ?? null,
     groupName: firstGroup?.name ?? '—',
   };
@@ -63,13 +66,29 @@ export class TeachersTabComponent implements OnInit {
     this.error = null;
     this.cdr.detectChanges();
 
-    forkJoin({
-      teachers: this.adminService.getTeachers(),
-      groups: this.adminService.getGroups(),
-    })
+    this.adminService
+      .getTeachers()
       .pipe(
-        map(({ teachers, groups }) => ({
-          teachers: teachers.map(toTeacher),
+        catchError(() => of([] as AdminUserDTO[])),
+        switchMap((teachers) => {
+          const teachersWithGroups$ =
+            teachers.length > 0
+              ? forkJoin(
+                  teachers.map((t) =>
+                    this.adminService.getGroupsByTeacher(t.id ?? 0).pipe(
+                      map((groups) => ({ teacher: t, groups })),
+                      catchError(() => of({ teacher: t, groups: [] as AdminGroupDTO[] })),
+                    ),
+                  ),
+                )
+              : of([] as { teacher: AdminUserDTO; groups: AdminGroupDTO[] }[]);
+          return forkJoin({
+            teachersWithGroups: teachersWithGroups$,
+            groups: this.adminService.getGroups().pipe(catchError(() => of([]))),
+          });
+        }),
+        map(({ teachersWithGroups, groups }) => ({
+          teachers: teachersWithGroups.map(({ teacher, groups: grps }) => toTeacher(teacher, grps)),
           groups: groups.map((d) => ({
             id: d.id ?? 0,
             name: d.name ?? '',
