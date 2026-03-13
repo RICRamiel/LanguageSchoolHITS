@@ -12,7 +12,7 @@ test('Teacher: create notification, create task, leave comment', async ({ page }
   await page.fill('#notify-title', 'Новость для группы');
   await page.fill('#notify-content', 'Сегодня перенос занятия');
   await page.locator('app-create-notification-modal .modal__btn--primary').click();
-  expect(state.notificationCreated).toBe(true);
+  await expect.poll(() => state.notificationCreated).toBe(true);
 
   await page.locator('.tabs .tab').nth(0).click();
   await page.locator('.tasks-section__create').click();
@@ -21,7 +21,7 @@ test('Teacher: create notification, create task, leave comment', async ({ page }
   await page.fill('#task-content', 'Выполнить упражнения 1-5');
   await page.fill('#task-date', '2026-03-20');
   await page.locator('app-create-task-modal .modal__btn--primary').click();
-  expect(state.taskCreated).toBe(true);
+  await expect.poll(() => state.taskCreated).toBe(true);
 
   const firstTaskCard = page.locator('.task-card').first();
   await expect(firstTaskCard).toBeVisible();

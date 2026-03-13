@@ -1,19 +1,20 @@
 <section class="admin-section">
   <div class="admin-section__head">
     <h3 class="section-title">Группы</h3>
-    <app-button type="button" (click)="openAdd()" [disabled]="saving()">Добавить группу</app-button>
+    <app-button type="button" (click)="openAdd()" [disabled]="saving">Добавить группу</app-button>
   </div>
-  @if (error()) {
-    <p class="admin-error">{{ error() }}</p>
+  @if (error) {
+    <p class="admin-error">{{ error }}</p>
   }
-  @if (showForm()) {
+  @if (showForm) {
     <app-group-form
-      [initialValue]="editingGroup()"
+      [initialValue]="editingGroup"
+      [languages]="languages"
       (save)="onSave($event)"
       (cancel)="onCancel()"
     />
   }
-  @if (loading()) {
+  @if (loading) {
     <p class="admin-loading">Загрузка...</p>
   } @else {
   <div class="admin-table-wrap">
@@ -28,7 +29,7 @@
         </tr>
       </thead>
       <tbody>
-        @for (g of groups(); track g.id) {
+        @for (g of groups; track g.id) {
           <tr>
             <td>{{ g.name }}</td>
             <td>{{ g.language }}</td>

@@ -11,6 +11,8 @@ export interface Student {
   fullName: string;
   email: string;
   groupName: string;
+  /** IDs групп, в которых состоит студент (для модалки «Привязать к группе») */
+  groupIds?: number[];
 }
 
 export interface Teacher {
@@ -18,6 +20,8 @@ export interface Teacher {
   fullName: string;
   email: string;
   languages: string;
+  groupId?: number | null;
+  groupName?: string;
 }
 
 export interface Language {

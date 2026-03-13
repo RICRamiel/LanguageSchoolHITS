@@ -7,6 +7,9 @@
       <div class="form-row">
         <app-label for="language-name">Название</app-label>
         <app-input id="language-name" formControlName="name" placeholder="Название языка" />
+        @if (form.get('name')?.invalid && form.get('name')?.touched) {
+          <span class="form-error">{{ getErrorMessage('name') }}</span>
+        }
       </div>
       <div class="form-actions">
         <app-button type="submit" class="small">Сохранить</app-button>

@@ -19,6 +19,8 @@ import { CustomHttpParameterCodec }                          from '../encoder';
 import { Observable }                                        from 'rxjs';
 
 // @ts-ignore
+import { GroupAnswerDTO } from '../model/groupAnswerDTO';
+// @ts-ignore
 import { GroupDTO } from '../model/groupDTO';
 
 // @ts-ignore
@@ -93,19 +95,19 @@ export class GroupControllerService {
 
     /**
      * @param groupId 
-     * @param studentId 
+     * @param userId 
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public addStudentToGroup(groupId: number, studentId: number, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<GroupDTO>;
-    public addStudentToGroup(groupId: number, studentId: number, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpResponse<GroupDTO>>;
-    public addStudentToGroup(groupId: number, studentId: number, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpEvent<GroupDTO>>;
-    public addStudentToGroup(groupId: number, studentId: number, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<any> {
+    public addStudentToGroup(groupId: number, userId: number, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<GroupAnswerDTO>;
+    public addStudentToGroup(groupId: number, userId: number, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpResponse<GroupAnswerDTO>>;
+    public addStudentToGroup(groupId: number, userId: number, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpEvent<GroupAnswerDTO>>;
+    public addStudentToGroup(groupId: number, userId: number, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<any> {
         if (groupId === null || groupId === undefined) {
             throw new Error('Required parameter groupId was null or undefined when calling addStudentToGroup.');
         }
-        if (studentId === null || studentId === undefined) {
-            throw new Error('Required parameter studentId was null or undefined when calling addStudentToGroup.');
+        if (userId === null || userId === undefined) {
+            throw new Error('Required parameter userId was null or undefined when calling addStudentToGroup.');
         }
 
         let localVarHeaders = this.defaultHeaders;
@@ -146,8 +148,8 @@ export class GroupControllerService {
             }
         }
 
-        let localVarPath = `/group/${this.configuration.encodeParam({name: "groupId", value: groupId, in: "path", style: "simple", explode: false, dataType: "number", dataFormat: "int64"})}/add/${this.configuration.encodeParam({name: "studentId", value: studentId, in: "path", style: "simple", explode: false, dataType: "number", dataFormat: "int64"})}`;
-        return this.httpClient.request<GroupDTO>('post', `${this.configuration.basePath}${localVarPath}`,
+        let localVarPath = `/group/${this.configuration.encodeParam({name: "groupId", value: groupId, in: "path", style: "simple", explode: false, dataType: "number", dataFormat: "int64"})}/add/${this.configuration.encodeParam({name: "userId", value: userId, in: "path", style: "simple", explode: false, dataType: "number", dataFormat: "int64"})}`;
+        return this.httpClient.request<GroupAnswerDTO>('post', `${this.configuration.basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
                 responseType: <any>responseType_,
@@ -164,9 +166,9 @@ export class GroupControllerService {
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public createGroup(groupDTO: GroupDTO, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<GroupDTO>;
-    public createGroup(groupDTO: GroupDTO, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpResponse<GroupDTO>>;
-    public createGroup(groupDTO: GroupDTO, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpEvent<GroupDTO>>;
+    public createGroup(groupDTO: GroupDTO, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<GroupAnswerDTO>;
+    public createGroup(groupDTO: GroupDTO, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpResponse<GroupAnswerDTO>>;
+    public createGroup(groupDTO: GroupDTO, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpEvent<GroupAnswerDTO>>;
     public createGroup(groupDTO: GroupDTO, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<any> {
         if (groupDTO === null || groupDTO === undefined) {
             throw new Error('Required parameter groupDTO was null or undefined when calling createGroup.');
@@ -220,7 +222,7 @@ export class GroupControllerService {
         }
 
         let localVarPath = `/group/create`;
-        return this.httpClient.request<GroupDTO>('post', `${this.configuration.basePath}${localVarPath}`,
+        return this.httpClient.request<GroupAnswerDTO>('post', `${this.configuration.basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
                 body: groupDTO,
@@ -289,7 +291,7 @@ export class GroupControllerService {
             }
         }
 
-        let localVarPath = `/group/delete`;
+        let localVarPath = `/group//delete`;
         return this.httpClient.request<any>('delete', `${this.configuration.basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
@@ -309,9 +311,9 @@ export class GroupControllerService {
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public editGroup(groupId: number, groupDTO: GroupDTO, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<GroupDTO>;
-    public editGroup(groupId: number, groupDTO: GroupDTO, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpResponse<GroupDTO>>;
-    public editGroup(groupId: number, groupDTO: GroupDTO, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpEvent<GroupDTO>>;
+    public editGroup(groupId: number, groupDTO: GroupDTO, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<GroupAnswerDTO>;
+    public editGroup(groupId: number, groupDTO: GroupDTO, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpResponse<GroupAnswerDTO>>;
+    public editGroup(groupId: number, groupDTO: GroupDTO, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpEvent<GroupAnswerDTO>>;
     public editGroup(groupId: number, groupDTO: GroupDTO, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<any> {
         if (groupId === null || groupId === undefined) {
             throw new Error('Required parameter groupId was null or undefined when calling editGroup.');
@@ -368,7 +370,7 @@ export class GroupControllerService {
         }
 
         let localVarPath = `/group/${this.configuration.encodeParam({name: "groupId", value: groupId, in: "path", style: "simple", explode: false, dataType: "number", dataFormat: "int64"})}/edit`;
-        return this.httpClient.request<GroupDTO>('put', `${this.configuration.basePath}${localVarPath}`,
+        return this.httpClient.request<GroupAnswerDTO>('put', `${this.configuration.basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
                 body: groupDTO,
@@ -386,9 +388,9 @@ export class GroupControllerService {
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public getByGroupId(groupId: number, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<GroupDTO>;
-    public getByGroupId(groupId: number, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpResponse<GroupDTO>>;
-    public getByGroupId(groupId: number, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpEvent<GroupDTO>>;
+    public getByGroupId(groupId: number, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<GroupAnswerDTO>;
+    public getByGroupId(groupId: number, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpResponse<GroupAnswerDTO>>;
+    public getByGroupId(groupId: number, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpEvent<GroupAnswerDTO>>;
     public getByGroupId(groupId: number, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<any> {
         if (groupId === null || groupId === undefined) {
             throw new Error('Required parameter groupId was null or undefined when calling getByGroupId.');
@@ -433,7 +435,7 @@ export class GroupControllerService {
         }
 
         let localVarPath = `/group/${this.configuration.encodeParam({name: "groupId", value: groupId, in: "path", style: "simple", explode: false, dataType: "number", dataFormat: "int64"})}/get_group_by_id`;
-        return this.httpClient.request<GroupDTO>('get', `${this.configuration.basePath}${localVarPath}`,
+        return this.httpClient.request<GroupAnswerDTO>('get', `${this.configuration.basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
                 responseType: <any>responseType_,
@@ -449,9 +451,9 @@ export class GroupControllerService {
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public getGroups(observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<Array<GroupDTO>>;
-    public getGroups(observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpResponse<Array<GroupDTO>>>;
-    public getGroups(observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpEvent<Array<GroupDTO>>>;
+    public getGroups(observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<Array<GroupAnswerDTO>>;
+    public getGroups(observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpResponse<Array<GroupAnswerDTO>>>;
+    public getGroups(observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpEvent<Array<GroupAnswerDTO>>>;
     public getGroups(observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<any> {
 
         let localVarHeaders = this.defaultHeaders;
@@ -493,7 +495,7 @@ export class GroupControllerService {
         }
 
         let localVarPath = `/group/get_all_groups`;
-        return this.httpClient.request<Array<GroupDTO>>('get', `${this.configuration.basePath}${localVarPath}`,
+        return this.httpClient.request<Array<GroupAnswerDTO>>('get', `${this.configuration.basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
                 responseType: <any>responseType_,
@@ -510,9 +512,9 @@ export class GroupControllerService {
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public getGroupsByTeacherId(teacherId: number, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<Array<GroupDTO>>;
-    public getGroupsByTeacherId(teacherId: number, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpResponse<Array<GroupDTO>>>;
-    public getGroupsByTeacherId(teacherId: number, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpEvent<Array<GroupDTO>>>;
+    public getGroupsByTeacherId(teacherId: number, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<Array<GroupAnswerDTO>>;
+    public getGroupsByTeacherId(teacherId: number, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpResponse<Array<GroupAnswerDTO>>>;
+    public getGroupsByTeacherId(teacherId: number, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpEvent<Array<GroupAnswerDTO>>>;
     public getGroupsByTeacherId(teacherId: number, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<any> {
         if (teacherId === null || teacherId === undefined) {
             throw new Error('Required parameter teacherId was null or undefined when calling getGroupsByTeacherId.');
@@ -557,7 +559,7 @@ export class GroupControllerService {
         }
 
         let localVarPath = `/group/${this.configuration.encodeParam({name: "teacherId", value: teacherId, in: "path", style: "simple", explode: false, dataType: "number", dataFormat: "int64"})}/get_groups_by_teacher`;
-        return this.httpClient.request<Array<GroupDTO>>('get', `${this.configuration.basePath}${localVarPath}`,
+        return this.httpClient.request<Array<GroupAnswerDTO>>('get', `${this.configuration.basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
                 responseType: <any>responseType_,
@@ -576,9 +578,9 @@ export class GroupControllerService {
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public getWithFilters(name?: string, difficulty?: 'BEGINNER' | 'ELEMENTARY' | 'UPPER_INTERMEDIATE' | 'ADVANCED' | 'PROFICIENCY', language?: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<Array<GroupDTO>>;
-    public getWithFilters(name?: string, difficulty?: 'BEGINNER' | 'ELEMENTARY' | 'UPPER_INTERMEDIATE' | 'ADVANCED' | 'PROFICIENCY', language?: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpResponse<Array<GroupDTO>>>;
-    public getWithFilters(name?: string, difficulty?: 'BEGINNER' | 'ELEMENTARY' | 'UPPER_INTERMEDIATE' | 'ADVANCED' | 'PROFICIENCY', language?: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpEvent<Array<GroupDTO>>>;
+    public getWithFilters(name?: string, difficulty?: 'BEGINNER' | 'ELEMENTARY' | 'UPPER_INTERMEDIATE' | 'ADVANCED' | 'PROFICIENCY', language?: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<Array<GroupAnswerDTO>>;
+    public getWithFilters(name?: string, difficulty?: 'BEGINNER' | 'ELEMENTARY' | 'UPPER_INTERMEDIATE' | 'ADVANCED' | 'PROFICIENCY', language?: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpResponse<Array<GroupAnswerDTO>>>;
+    public getWithFilters(name?: string, difficulty?: 'BEGINNER' | 'ELEMENTARY' | 'UPPER_INTERMEDIATE' | 'ADVANCED' | 'PROFICIENCY', language?: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpEvent<Array<GroupAnswerDTO>>>;
     public getWithFilters(name?: string, difficulty?: 'BEGINNER' | 'ELEMENTARY' | 'UPPER_INTERMEDIATE' | 'ADVANCED' | 'PROFICIENCY', language?: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<any> {
 
         let localVarQueryParameters = new HttpParams({encoder: this.encoder});
@@ -634,7 +636,7 @@ export class GroupControllerService {
         }
 
         let localVarPath = `/group/get-groups-with-filters`;
-        return this.httpClient.request<Array<GroupDTO>>('get', `${this.configuration.basePath}${localVarPath}`,
+        return this.httpClient.request<Array<GroupAnswerDTO>>('get', `${this.configuration.basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
                 params: localVarQueryParameters,
@@ -649,19 +651,19 @@ export class GroupControllerService {
 
     /**
      * @param groupId 
-     * @param studentId 
+     * @param userId 
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public removeStudentFromGroup(groupId: number, studentId: number, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<GroupDTO>;
-    public removeStudentFromGroup(groupId: number, studentId: number, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpResponse<GroupDTO>>;
-    public removeStudentFromGroup(groupId: number, studentId: number, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpEvent<GroupDTO>>;
-    public removeStudentFromGroup(groupId: number, studentId: number, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<any> {
+    public removeStudentFromGroup(groupId: number, userId: number, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<GroupAnswerDTO>;
+    public removeStudentFromGroup(groupId: number, userId: number, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpResponse<GroupAnswerDTO>>;
+    public removeStudentFromGroup(groupId: number, userId: number, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpEvent<GroupAnswerDTO>>;
+    public removeStudentFromGroup(groupId: number, userId: number, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<any> {
         if (groupId === null || groupId === undefined) {
             throw new Error('Required parameter groupId was null or undefined when calling removeStudentFromGroup.');
         }
-        if (studentId === null || studentId === undefined) {
-            throw new Error('Required parameter studentId was null or undefined when calling removeStudentFromGroup.');
+        if (userId === null || userId === undefined) {
+            throw new Error('Required parameter userId was null or undefined when calling removeStudentFromGroup.');
         }
 
         let localVarHeaders = this.defaultHeaders;
@@ -702,8 +704,8 @@ export class GroupControllerService {
             }
         }
 
-        let localVarPath = `/group/${this.configuration.encodeParam({name: "groupId", value: groupId, in: "path", style: "simple", explode: false, dataType: "number", dataFormat: "int64"})}/add/${this.configuration.encodeParam({name: "studentId", value: studentId, in: "path", style: "simple", explode: false, dataType: "number", dataFormat: "int64"})}`;
-        return this.httpClient.request<GroupDTO>('delete', `${this.configuration.basePath}${localVarPath}`,
+        let localVarPath = `/group/${this.configuration.encodeParam({name: "groupId", value: groupId, in: "path", style: "simple", explode: false, dataType: "number", dataFormat: "int64"})}/add/${this.configuration.encodeParam({name: "userId", value: userId, in: "path", style: "simple", explode: false, dataType: "number", dataFormat: "int64"})}`;
+        return this.httpClient.request<GroupAnswerDTO>('delete', `${this.configuration.basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
                 responseType: <any>responseType_,

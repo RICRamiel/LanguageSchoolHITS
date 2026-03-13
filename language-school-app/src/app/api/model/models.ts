@@ -1,4 +1,5 @@
 export * from './commentDTO';
+export * from './groupAnswerDTO';
 export * from './groupDTO';
 export * from './languageDTO';
 export * from './loginDTO';

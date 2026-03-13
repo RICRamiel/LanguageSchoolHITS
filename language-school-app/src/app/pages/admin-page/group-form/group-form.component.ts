@@ -30,11 +30,12 @@ export class GroupFormComponent {
   private readonly fb = inject(FormBuilder);
 
   readonly initialValue = input<Group | null>(null);
+  readonly languages = input<{ name?: string }[]>([]);
   readonly save = output<{ name: string; language: string }>();
   readonly cancel = output<void>();
 
   form = this.fb.nonNullable.group({
-    name: ['', Validators.required],
+    name: ['', [Validators.required, Validators.minLength(1)]],
     language: ['', Validators.required],
   });
 
@@ -63,5 +64,13 @@ export class GroupFormComponent {
 
   onCancel(): void {
     this.cancel.emit();
+  }
+
+  getErrorMessage(controlName: string): string {
+    const c = this.form.get(controlName);
+    if (!c?.errors) return '';
+    if (c.errors['required']) return 'Обязательное поле';
+    if (c.errors['minlength']) return 'Минимум 1 символ';
+    return 'Неверное значение';
   }
 }

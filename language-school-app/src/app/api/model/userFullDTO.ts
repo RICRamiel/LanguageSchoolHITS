@@ -9,7 +9,7 @@
  * https://openapi-generator.tech
  * Do not edit the class manually.
  */
-import { GroupDTO } from './groupDTO';
+import { GroupAnswerDTO } from './groupAnswerDTO';
 
 
 export interface UserFullDTO { 
@@ -17,7 +17,7 @@ export interface UserFullDTO {
     firstName?: string;
     lastName?: string;
     email?: string;
-    groups?: Array<GroupDTO>;
+    groups?: Array<GroupAnswerDTO>;
     role?: UserFullDTO.RoleEnum;
 }
 export namespace UserFullDTO {
