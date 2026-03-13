@@ -9,8 +9,7 @@ import com.hits.language_school_back.enums.TaskStatus;
 import com.hits.language_school_back.mapper.TaskStudentGroupMapper;
 import com.hits.language_school_back.mapper.TaskStudentMapper;
 import com.hits.language_school_back.mapper.TaskTeacherMapper;
-import com.hits.language_school_back.mapper.UserMapper;
-import com.hits.language_school_back.model.Group;
+import com.hits.language_school_back.model.Task;
 import com.hits.language_school_back.model.TaskStudent;
 import com.hits.language_school_back.model.User;
 import com.hits.language_school_back.repository.TaskRepository;
@@ -18,9 +17,8 @@ import com.hits.language_school_back.repository.TaskStudentRepository;
 import com.hits.language_school_back.repository.UserRepository;
 import com.hits.language_school_back.service.GroupService;
 import com.hits.language_school_back.service.TaskService;
-import com.hits.language_school_back.model.Task;
-import com.hits.language_school_back.service.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -28,6 +26,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TaskServiceImpl implements TaskService {
 
     private final TaskRepository taskRepository;
@@ -105,10 +104,10 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public void completeTask(Long taskId, Long userId) {
-        TaskStudent taskStudent = new TaskStudent();
-        taskStudent.setUserId(userId);
-        taskStudent.setTaskId(taskId);
-        taskStudent.setAttachmentList(userRepository.findById(userId).orElseThrow().getAttachmentList());
+        TaskStudent taskStudent = taskStudentRepository.findByTaskIdAndUserId(taskId, userId).orElseThrow(() -> {
+            log.info("Not found task student by taskId:{} ", taskId);
+            return new RuntimeException("Not found task for this user: " + userId);
+        });
         Task task = taskRepository.findById(taskId).orElseThrow();
         if (task.getDeadline().isBefore(LocalDate.now())) {
             task.setTaskStatus(TaskStatus.OVERDUE);
