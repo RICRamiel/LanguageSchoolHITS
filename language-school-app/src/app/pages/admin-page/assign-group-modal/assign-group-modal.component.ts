@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonComponent } from '../../../shared/ui/button/button.component';
 import type { Group } from '../admin-page.models';
@@ -12,6 +12,8 @@ import type { Group } from '../admin-page.models';
   styleUrl: './assign-group-modal.component.less',
 })
 export class AssignGroupModalComponent {
+  private readonly cdr = inject(ChangeDetectorRef);
+
   readonly groups = input<Group[]>([]);
   readonly currentGroupId = input<number | null>(null);
   /** Группы, в которых пользователь уже состоит (кнопка «Сохранить» неактивна при выборе такой группы) */
@@ -20,14 +22,6 @@ export class AssignGroupModalComponent {
   readonly close = output<void>();
 
   selectedGroupId: number | null = null;
-
-  constructor() {
-    effect(() => {
-      this.currentGroupIds();
-      this.currentGroupId();
-      this.selectedGroupId = null;
-    });
-  }
 
   isGroupAlreadyAssigned(groupId: number): boolean {
     const ids = this.currentGroupIds();
@@ -40,10 +34,17 @@ export class AssignGroupModalComponent {
     return this.groups();
   }
 
+  onGroupChange(event: Event): void {
+    const el = event.target as HTMLSelectElement;
+    const v = el.value;
+    this.selectedGroupId = v === '' || v === 'null' ? null : Number(v);
+    this.cdr.markForCheck();
+  }
+
   onSave(): void {
     const id = this.selectedGroupId;
     if (id == null) return;
-    this.save.emit(id);
+    this.save.emit(Number(id));
   }
 
   onClose(): void {

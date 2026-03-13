@@ -9,10 +9,11 @@
       id="assign-group"
       class="assign-modal__select"
       [(ngModel)]="selectedGroupId"
+      (change)="onGroupChange($event)"
     >
       <option [ngValue]="null">Выберите группу</option>
       @for (g of groupsList; track g.id) {
-        <option [ngValue]="g.id" [disabled]="isGroupAlreadyAssigned(g.id)">{{ g.name }} ({{ g.language }})</option>
+        <option [value]="g.id" [disabled]="isGroupAlreadyAssigned(g.id)">{{ g.name }} ({{ g.language }})</option>
       }
     </select>
 

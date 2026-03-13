@@ -86,7 +86,7 @@ export class StudentFormComponent {
         this.form.get('email')?.enable();
         pwdCtrl?.setValidators([Validators.required, Validators.minLength(8), Validators.maxLength(64)]);
         pwdCtrl?.enable();
-        grpCtrl?.setValidators([Validators.required]);
+        grpCtrl?.clearValidators();
         grpCtrl?.enable();
       }
       pwdCtrl?.updateValueAndValidity();
