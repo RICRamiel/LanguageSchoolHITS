@@ -6,6 +6,7 @@ import { LoginRequest, LoginResponse, LoginResult } from './auth.models';
 import { OPENAPI_PATHS, withOpenApiBase } from '../api/openapi.config';
 import { UserMeResponse } from '../user/user.models';
 import { UserService } from '../user/user.service';
+import { AuthTokenService } from './auth-token.service';
 
 const TOKEN_KEY = 'auth_token';
 
@@ -14,6 +15,7 @@ export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly userService = inject(UserService);
+  private readonly authTokenService = inject(AuthTokenService);
 
   login(payload: LoginRequest): Observable<LoginResult> {
     return this.http
@@ -29,6 +31,7 @@ export class AuthService {
           return of(token);
         }),
         tap((token) => {
+          this.authTokenService.setToken(token);
           if (isPlatformBrowser(this.platformId)) {
             localStorage.setItem(TOKEN_KEY, token);
           }
@@ -59,6 +62,7 @@ export class AuthService {
       .pipe(
         tap(() => {
           this.userService.clearCachedMe();
+          this.authTokenService.setToken(null);
           if (isPlatformBrowser(this.platformId)) {
             localStorage.removeItem(TOKEN_KEY);
           }

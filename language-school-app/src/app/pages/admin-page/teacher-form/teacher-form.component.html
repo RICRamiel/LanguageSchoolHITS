@@ -7,19 +7,40 @@
       <div class="form-row">
         <app-label for="teacher-firstName">Имя</app-label>
         <app-input id="teacher-firstName" formControlName="firstName" placeholder="Имя" />
+        @if (form.get('firstName')?.invalid && form.get('firstName')?.touched) {
+          <span class="form-error">{{ getErrorMessage('firstName') }}</span>
+        }
       </div>
       <div class="form-row">
         <app-label for="teacher-lastName">Фамилия</app-label>
         <app-input id="teacher-lastName" formControlName="lastName" placeholder="Фамилия" />
+        @if (form.get('lastName')?.invalid && form.get('lastName')?.touched) {
+          <span class="form-error">{{ getErrorMessage('lastName') }}</span>
+        }
       </div>
       <div class="form-row">
         <app-label for="teacher-email">Email</app-label>
         <app-input id="teacher-email" type="email" formControlName="email" placeholder="email@school.com" />
+        @if (form.get('email')?.invalid && form.get('email')?.touched) {
+          <span class="form-error">{{ getErrorMessage('email') }}</span>
+        }
       </div>
       @if (!isEdit) {
       <div class="form-row">
         <app-label for="teacher-password">Пароль</app-label>
-        <app-input id="teacher-password" type="password" formControlName="password" placeholder="Пароль (мин. 8 символов)" />
+        <app-input id="teacher-password" type="password" formControlName="password" placeholder="Пароль (8–64 символа)" />
+        @if (form.get('password')?.invalid && form.get('password')?.touched) {
+          <span class="form-error">{{ getErrorMessage('password') }}</span>
+        }
+      </div>
+      <div class="form-row">
+        <app-label for="teacher-group">Группа</app-label>
+        <select id="teacher-group" formControlName="groupId" class="form-select">
+          <option [ngValue]="null">Выберите группу</option>
+          @for (g of groups(); track g.id) {
+            <option [ngValue]="g.id">{{ g.name }}</option>
+          }
+        </select>
       </div>
       }
       <div class="form-actions">

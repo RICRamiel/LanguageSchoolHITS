@@ -16,5 +16,6 @@ export interface CommentDTO {
     userId?: number;
     taskId?: number;
     privateStatus?: boolean;
+    id?: number;
 }
 

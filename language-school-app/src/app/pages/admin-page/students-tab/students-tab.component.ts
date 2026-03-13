@@ -1,31 +1,37 @@
-import { Component, computed, inject, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { ButtonComponent } from '../../../shared/ui/button/button.component';
 import { StudentFormComponent, type StudentFormValue } from '../student-form/student-form.component';
+import { AssignGroupModalComponent } from '../assign-group-modal/assign-group-modal.component';
 import type { Student, Group } from '../admin-page.models';
-import { UserControllerService } from '../../../api/api/userController.service';
-import { GroupControllerService } from '../../../api/api/groupController.service';
-import type { UserDTO } from '../../../api/model/userDTO';
-import type { GroupDTO } from '../../../api/model/groupDTO';
-import { catchError, EMPTY, finalize, forkJoin } from 'rxjs';
+import { AdminService, type AdminGroupDTO, type AdminUserDTO } from '../../../core/admin/admin.service';
+import { catchError, EMPTY, finalize, forkJoin, map, of, switchMap } from 'rxjs';
 
-type GroupApi = GroupDTO & { id?: number };
-
-function toStudent(item: UserDTO): Student {
-  const fullName = [item.firstName, item.lastName].filter(Boolean).join(' ') || '—';
-  const groupName = item.groups?.[0]?.name ?? '—';
+function toStudent(
+  dto: AdminUserDTO,
+  groupNameFromMap?: string,
+  groupIdsFromMap?: number[],
+): Student {
+  const first = dto.firstName ?? '';
+  const last = dto.lastName ?? '';
+  const fullName = [first, last].filter(Boolean).join(' ') || '—';
+  const groupName =
+    groupNameFromMap ??
+    (Array.isArray(dto.groups) ? dto.groups.map((gr) => gr.name).filter(Boolean).join(', ') : undefined) ??
+    '—';
   return {
-    id: item.id ?? 0,
+    id: dto.id ?? 0,
     fullName,
-    email: item.email ?? '',
+    email: dto.email ?? '',
     groupName,
+    groupIds: groupIdsFromMap,
   };
 }
 
-function toGroup(item: GroupApi): Group {
+function toGroup(dto: AdminGroupDTO): Group {
   return {
-    id: item.id ?? 0,
-    name: item.name ?? '',
-    language: item.language?.name ?? '',
+    id: dto.id ?? 0,
+    name: dto.name ?? '',
+    language: dto.language?.name ?? '',
     teacherName: '—',
     studentsCount: '—',
   };
@@ -34,128 +40,245 @@ function toGroup(item: GroupApi): Group {
 @Component({
   selector: 'app-students-tab',
   standalone: true,
-  imports: [ButtonComponent, StudentFormComponent],
+  imports: [ButtonComponent, StudentFormComponent, AssignGroupModalComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './students-tab.component.html',
   styleUrl: './students-tab.component.less',
 })
 export class StudentsTabComponent implements OnInit {
-  private readonly userApi = inject(UserControllerService);
-  private readonly groupApi = inject(GroupControllerService);
+  private readonly adminService = inject(AdminService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
-  readonly students = signal<Student[]>([]);
-  readonly groups = signal<Group[]>([]);
-  readonly loading = signal(false);
-  readonly saving = signal(false);
-  readonly error = signal<string | null>(null);
+  students: Student[] = [];
+  groups: Group[] = [];
+  loading = false;
+  saving = false;
+  error: string | null = null;
+  showForm = false;
+  editingId: number | null = null;
+  showAssignModal = false;
+  assignUserId: number | null = null;
 
-  showForm = signal(false);
-  editingId = signal<number | null>(null);
+  get editingStudent(): Student | null {
+    if (this.editingId === null) return null;
+    return this.students.find((s) => s.id === this.editingId!) ?? null;
+  }
 
-  editingStudent = computed(() => {
-    const id = this.editingId();
-    if (id === null) return null;
-    return this.students().find(s => s.id === id) ?? null;
-  });
+  get assignCurrentGroupIds(): number[] {
+    if (this.assignUserId == null) return [];
+    const s = this.students.find((x) => x.id === this.assignUserId!);
+    return s?.groupIds ?? [];
+  }
 
   ngOnInit(): void {
     this.loadData();
   }
 
   loadData(): void {
-    this.loading.set(true);
-    this.error.set(null);
-    forkJoin({
-      students: this.userApi.getAllStudents(),
-      groups: this.groupApi.getGroups(),
-    })
+    this.loading = true;
+    this.error = null;
+    this.cdr.detectChanges();
+
+    this.adminService
+      .getGroups()
       .pipe(
-        finalize(() => this.loading.set(false)),
-        catchError(err => {
-          this.error.set(err?.message ?? 'Ошибка загрузки данных');
-          return EMPTY;
-        })
+        switchMap((groupDtos) => {
+          const studentsByGroup$ =
+            groupDtos.length > 0
+              ? forkJoin(
+                  groupDtos.map((g) =>
+                    this.adminService.getStudentsByGroupId(g.id ?? 0).pipe(
+                      map((students) => {
+                        const fromResponse = students[0]?.groups?.[0]?.name;
+                        const groupName = (fromResponse ?? g.name ?? '—').trim() || '—';
+                        return { groupId: g.id ?? 0, groupName, students };
+                      }),
+                      catchError(() =>
+                        of({ groupId: g.id ?? 0, groupName: g.name ?? '—', students: [] as AdminUserDTO[] }),
+                      ),
+                    ),
+                  ),
+                )
+              : of([] as { groupId: number; groupName: string; students: AdminUserDTO[] }[]);
+          return forkJoin({
+            groupDtos: of(groupDtos),
+            studentsByGroup: studentsByGroup$,
+            students: this.adminService.getStudents(),
+          });
+        }),
+        map(({ groupDtos, studentsByGroup, students }) => {
+          const studentToGroupNames = new Map<number, string[]>();
+          const studentToGroupIds = new Map<number, number[]>();
+          for (const { groupId, groupName, students: groupStudents } of studentsByGroup) {
+            for (const s of groupStudents) {
+              const id = s.id ?? 0;
+              if (!studentToGroupNames.has(id)) {
+                studentToGroupNames.set(id, []);
+                studentToGroupIds.set(id, []);
+              }
+              studentToGroupNames.get(id)!.push(groupName);
+              studentToGroupIds.get(id)!.push(groupId);
+            }
+          }
+          return {
+            students: students.map((s) => {
+              const id = s.id ?? 0;
+              const names = studentToGroupNames.get(id);
+              const ids = studentToGroupIds.get(id);
+              const groupNameStr = names?.length ? names.join(', ') : undefined;
+              return toStudent(s, groupNameStr, ids);
+            }),
+            groups: groupDtos.map(toGroup),
+          };
+        }),
+        finalize(() => {
+          this.loading = false;
+          this.cdr.detectChanges();
+        }),
+        catchError((err) => {
+          this.error = err?.message ?? 'Ошибка загрузки данных';
+          this.cdr.detectChanges();
+          return of({ students: [] as Student[], groups: [] as Group[] });
+        }),
       )
       .subscribe({
         next: ({ students, groups }) => {
-          this.students.set(students.map(toStudent));
-          this.groups.set((groups as GroupApi[]).map(toGroup));
+          this.students = students;
+          this.groups = groups;
+          this.cdr.detectChanges();
         },
       });
   }
 
   openAdd(): void {
-    this.editingId.set(null);
-    this.showForm.set(true);
+    this.editingId = null;
+    this.showForm = true;
+    this.cdr.detectChanges();
   }
 
   openEdit(s: Student): void {
-    this.editingId.set(s.id);
-    this.showForm.set(true);
+    this.editingId = s.id;
+    this.showForm = true;
+    this.cdr.detectChanges();
   }
 
   onSave(value: StudentFormValue): void {
-    const id = this.editingId();
-    this.saving.set(true);
-    this.error.set(null);
+    const id = this.editingId;
+    this.saving = true;
+    this.error = null;
+    this.cdr.detectChanges();
 
     const done = () => {
-      this.saving.set(false);
-      this.showForm.set(false);
-      this.editingId.set(null);
+      this.saving = false;
+      this.showForm = false;
+      this.editingId = null;
       this.loadData();
     };
 
     if (id !== null) {
-      this.userApi.updateStudent(id, {
-        firstName: value.firstName,
-        lastName: value.lastName,
-        grade: value.grade,
-      })
+      this.adminService
+        .updateStudent(id, {
+          firstName: value.firstName,
+          lastName: value.lastName,
+        })
         .pipe(
-          finalize(() => this.saving.set(false)),
-          catchError(err => {
-            this.error.set(err?.message ?? 'Ошибка сохранения');
+          finalize(() => {
+            this.saving = false;
+            this.cdr.detectChanges();
+          }),
+          catchError((err) => {
+            this.error = err?.message ?? 'Ошибка сохранения';
+            this.cdr.detectChanges();
             return EMPTY;
-          })
+          }),
         )
         .subscribe({ next: () => done() });
     } else {
       const groupIds = value.groupId != null ? [value.groupId] : [];
-      this.userApi.createStudent({
-        firstName: value.firstName,
-        lastName: value.lastName,
-        email: value.email,
-        password: value.password ?? '',
-        groupIds,
-      })
+      this.adminService
+        .createStudent({
+          firstName: value.firstName,
+          lastName: value.lastName,
+          email: value.email,
+          password: value.password ?? '',
+          groupIds,
+        })
         .pipe(
-          finalize(() => this.saving.set(false)),
-          catchError(err => {
-            this.error.set(err?.message ?? 'Ошибка создания');
+          finalize(() => {
+            this.saving = false;
+            this.cdr.detectChanges();
+          }),
+          catchError((err) => {
+            this.error = err?.message ?? 'Ошибка создания';
+            this.cdr.detectChanges();
             return EMPTY;
-          })
+          }),
         )
         .subscribe({ next: () => done() });
     }
   }
 
   onCancel(): void {
-    this.showForm.set(false);
-    this.editingId.set(null);
+    this.showForm = false;
+    this.editingId = null;
+    this.cdr.detectChanges();
   }
 
   deleteStudent(id: number): void {
-    this.saving.set(true);
-    this.error.set(null);
-    this.userApi.deleteStudent(id)
+    this.saving = true;
+    this.error = null;
+    this.cdr.detectChanges();
+    this.adminService
+      .deleteStudent(id)
       .pipe(
-        finalize(() => this.saving.set(false)),
-        catchError(err => {
-          this.error.set(err?.message ?? 'Ошибка удаления');
+        finalize(() => {
+          this.saving = false;
+          this.cdr.detectChanges();
+        }),
+        catchError((err) => {
+          this.error = err?.message ?? 'Ошибка удаления';
+          this.cdr.detectChanges();
           return EMPTY;
-        })
+        }),
       )
       .subscribe({ next: () => this.loadData() });
+  }
+
+  openAssignModal(s: Student): void {
+    this.assignUserId = s.id;
+    this.showAssignModal = true;
+    this.cdr.detectChanges();
+  }
+
+  closeAssignModal(): void {
+    this.showAssignModal = false;
+    this.assignUserId = null;
+    this.cdr.detectChanges();
+  }
+
+  onAssignSave(groupId: number): void {
+    const userId = this.assignUserId;
+    if (userId == null) return;
+
+    this.saving = true;
+    this.error = null;
+    this.cdr.detectChanges();
+
+    this.adminService
+      .addStudentToGroup(groupId, userId)
+      .pipe(
+        finalize(() => {
+          this.saving = false;
+          this.closeAssignModal();
+          this.loadData();
+          this.cdr.detectChanges();
+        }),
+        catchError((err) => {
+          this.error = err?.message ?? 'Ошибка привязки к группе';
+          this.cdr.detectChanges();
+          return EMPTY;
+        }),
+      )
+      .subscribe();
   }
 }
