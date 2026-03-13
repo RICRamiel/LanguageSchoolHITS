@@ -23,6 +23,7 @@ public class NotificationMapper {
                 .groupId(model.getGroup().getId())
                 .attachments(model.getAttachmentList() == null ? List.of() : model.getAttachmentList().stream().map(attachment ->
                         AttachmentDownloadInfo.builder()
+                                .id(attachment.getId())
                                 .fileName(attachment.getFileName())
                                 .fileType(attachment.getFileType())
                                 .fileSize(attachment.getFileSize())

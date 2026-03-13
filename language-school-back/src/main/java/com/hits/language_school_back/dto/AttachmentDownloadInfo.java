@@ -6,6 +6,7 @@ import lombok.Data;
 @Data
 @Builder
 public class AttachmentDownloadInfo {
+    private Long id;
     private String fileName;
     private String fileType;
     private Long fileSize;
