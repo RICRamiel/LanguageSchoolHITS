@@ -18,7 +18,7 @@ public class TaskStudent {
     private Long userId;
     private Long taskId;
 
-    @OneToMany
+    @OneToMany(mappedBy = "task")
     private List<Attachment> attachmentList;
     private TaskStatus taskStatus;
 }
