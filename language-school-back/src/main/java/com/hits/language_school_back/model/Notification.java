@@ -27,6 +27,6 @@ public class Notification {
     @ManyToOne(fetch = FetchType.LAZY)
     private User createdBy;
 
-    @OneToMany(fetch = FetchType.EAGER)
+    @OneToMany(fetch = FetchType.EAGER,mappedBy = "notification")
     private List<Attachment> attachmentList;
 }
