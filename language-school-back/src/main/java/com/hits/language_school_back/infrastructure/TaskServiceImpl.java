@@ -113,6 +113,7 @@ public class TaskServiceImpl implements TaskService {
             task.setTaskStatus(TaskStatus.OVERDUE);
             taskStudent.setTaskStatus(TaskStatus.OVERDUE);
         } else if (task.getDeadline().isAfter(LocalDate.now())) {
+            task.setTaskStatus(TaskStatus.COMPLETE);
             taskStudent.setTaskStatus(TaskStatus.COMPLETE);
         }
         taskRepository.save(task);
