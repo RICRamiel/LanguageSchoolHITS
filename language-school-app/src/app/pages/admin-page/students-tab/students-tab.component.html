@@ -49,7 +49,7 @@
   @if (showAssignModal) {
     <app-assign-group-modal
       [groups]="groups"
-      [currentGroupId]="assignCurrentGroupId"
+      [currentGroupIds]="assignCurrentGroupIds"
       (save)="onAssignSave($event)"
       (close)="closeAssignModal()"
     />

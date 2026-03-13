@@ -12,7 +12,7 @@
     >
       <option [ngValue]="null">Выберите группу</option>
       @for (g of groupsList; track g.id) {
-        <option [ngValue]="g.id">{{ g.name }} ({{ g.language }})</option>
+        <option [ngValue]="g.id" [disabled]="isGroupAlreadyAssigned(g.id)">{{ g.name }} ({{ g.language }})</option>
       }
     </select>
 
@@ -23,7 +23,7 @@
       <app-button
         type="button"
         class="small"
-        [disabled]="selectedGroupId === null || selectedGroupId === currentGroupId()"
+        [disabled]="selectedGroupId === null || (selectedGroupId != null && isGroupAlreadyAssigned(selectedGroupId))"
         (click)="onSave()"
         >Сохранить</app-button
       >

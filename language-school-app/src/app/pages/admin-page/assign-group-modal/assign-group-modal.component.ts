@@ -14,6 +14,8 @@ import type { Group } from '../admin-page.models';
 export class AssignGroupModalComponent {
   readonly groups = input<Group[]>([]);
   readonly currentGroupId = input<number | null>(null);
+  /** Группы, в которых пользователь уже состоит (кнопка «Сохранить» неактивна при выборе такой группы) */
+  readonly currentGroupIds = input<number[]>([]);
   readonly save = output<number>();
   readonly close = output<void>();
 
@@ -21,8 +23,17 @@ export class AssignGroupModalComponent {
 
   constructor() {
     effect(() => {
-      this.selectedGroupId = this.currentGroupId();
+      this.currentGroupIds();
+      this.currentGroupId();
+      this.selectedGroupId = null;
     });
+  }
+
+  isGroupAlreadyAssigned(groupId: number): boolean {
+    const ids = this.currentGroupIds();
+    if (ids.length > 0) return ids.includes(groupId);
+    const single = this.currentGroupId();
+    return single != null && single === groupId;
   }
 
   get groupsList(): Group[] {

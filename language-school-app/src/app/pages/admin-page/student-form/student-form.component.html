@@ -34,20 +34,6 @@
         }
       </div>
       }
-      @if (!isEdit) {
-      <div class="form-row">
-        <app-label for="student-group">Группа</app-label>
-        <select id="student-group" formControlName="groupId" class="form-select">
-          <option [ngValue]="null">Выберите группу</option>
-          @for (g of groups(); track g.id) {
-            <option [ngValue]="g.id">{{ g.name }}</option>
-          }
-        </select>
-        @if (form.get('groupId')?.invalid && form.get('groupId')?.touched) {
-          <span class="form-error">{{ getErrorMessage('groupId') }}</span>
-        }
-      </div>
-      }
       <div class="form-actions">
         <app-button type="submit" class="small">Сохранить</app-button>
         <app-button type="button" class="outline small" (click)="onCancel()">Отмена</app-button>

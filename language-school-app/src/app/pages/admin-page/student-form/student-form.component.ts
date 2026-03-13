@@ -62,7 +62,7 @@ export class StudentFormComponent {
         const parts = v.fullName.trim().split(/\s+/);
         const lastName = parts[0] ?? '';
         const firstName = parts.slice(1).join(' ') ?? '';
-        const groupId = grps.find((g) => g.name === v.groupName)?.id ?? null;
+        const groupId = v.groupIds?.[0] ?? grps.find((g) => g.name === v.groupName)?.id ?? null;
         this.form.setValue({
           firstName,
           lastName,
