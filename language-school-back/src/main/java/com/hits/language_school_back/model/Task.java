@@ -39,6 +39,6 @@ public class Task {
     @OneToMany(fetch = FetchType.EAGER, mappedBy = "task")
     private List<Comment> commentList;
 
-    @OneToMany(fetch = FetchType.EAGER)
+    @OneToMany(fetch = FetchType.EAGER, mappedBy = "task")
     private List<Attachment> attachmentList;
 }
