@@ -53,15 +53,15 @@
       }
     </div>
 
-    <label class="modal__label" for="notify-attachment">Вложение (опционально)</label>
+    <label class="modal__label" for="notify-attachment">Файл (опционально)</label>
     <input
       id="notify-attachment"
-      class="modal__file"
+      class="modal__input"
       type="file"
-      (change)="onFileSelected($event)"
+      (change)="onFileChange($event)"
     />
-    @if (attachmentFile) {
-      <p class="modal__file-name">{{ attachmentFile.name }}</p>
+    @if (selectedFile) {
+      <p class="modal__subtitle">Выбран файл: {{ selectedFile.name }}</p>
     }
 
     <div class="modal__actions">

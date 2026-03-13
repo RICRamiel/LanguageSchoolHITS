@@ -1,9 +1,26 @@
-<div class="modal-overlay" (click)="close.emit()">
+﻿<div class="modal-overlay" (click)="close.emit()">
   <section class="modal" (click)="$event.stopPropagation()">
     <button class="modal__close" type="button" (click)="close.emit()">×</button>
     <h3 class="modal__title">{{ notification().title }}</h3>
     <p class="modal__subtitle">{{ notification().author }} • {{ notification().dateTime }}</p>
     <p class="modal__text">{{ notification().text }}</p>
+
+    @if (notification().attachments.length) {
+      <div class="modal__attachments">
+        <p class="modal__attachments-title">Вложения</p>
+        @for (attachment of notification().attachments; track attachment.objectKey ?? attachment.fileName) {
+          <div class="modal__attachment-item">
+            <span>{{ attachment.fileName }}</span>
+            @if (attachment.id || attachment.objectKey) {
+              <button class="modal__download" type="button" (click)="onDownloadAttachment(attachment)">
+                Скачать
+              </button>
+            }
+          </div>
+        }
+      </div>
+    }
+
     <span class="modal__tag">{{ notification().tag }}</span>
   </section>
 </div>

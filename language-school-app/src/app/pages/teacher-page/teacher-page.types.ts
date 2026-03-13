@@ -1,5 +1,6 @@
 export type {
   CreateNotificationPayload,
+  NotificationAttachment,
   CreateTaskPayload,
   TaskDetailsOpenPayload,
   TeacherGroup,

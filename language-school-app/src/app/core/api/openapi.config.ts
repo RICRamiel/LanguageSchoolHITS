@@ -27,6 +27,8 @@ export const OPENAPI_PATHS = {
   tasks: {
     byGroupName: (groupName: string) =>
       `/task/get_by_group_name?groupName=${encodeURIComponent(groupName)}`,
+    byGroupNameReal: (groupName: string) =>
+      `/task/get_by_group_name_real?groupName=${encodeURIComponent(groupName)}`,
   },
   teacher: {
     tasksByTeacher: (teacherId: number) => `/task/${teacherId}/get_by_teacher`,

@@ -11,7 +11,7 @@ export type NotificationItem = {
   dateTime: string;
   text: string;
   tag: string;
-  attachment: NotificationAttachment | null;
+  attachments: NotificationAttachment[];
 };
 
 @Component({
@@ -25,4 +25,5 @@ export type NotificationItem = {
 export class NotificationListComponent {
   readonly notifications = input<NotificationItem[]>([]);
   readonly downloadAttachment = output<NotificationAttachment>();
+  readonly openNotification = output<string>();
 }
