@@ -5,8 +5,7 @@ import com.hits.language_school_back.dto.TaskTeacherDTO;
 import com.hits.language_school_back.infrastructure.AttachmentServiceImpl;
 import com.hits.language_school_back.model.Attachment;
 import com.hits.language_school_back.model.Task;
-import com.hits.language_school_back.model.TaskStudent;
-import com.hits.language_school_back.repository.TaskStudentRepository;
+import com.hits.language_school_back.repository.TaskRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -19,17 +18,13 @@ public class TaskTeacherMapper {
 
     private final CommentMapper commentMapper;
     private final AttachmentServiceImpl attachmentService;
-    private final TaskStudentRepository taskStudentRepository;
+    private final TaskRepository taskRepository;
 
     public TaskTeacherDTO toDto(Task task) {
         if (task == null) {
             return null;
         }
-        List<TaskStudent> taskStudents = taskStudentRepository.findByTaskId(task.getId());
-        List<Attachment> attachments = new java.util.ArrayList<>(List.of());
-        taskStudents.forEach(taskStudent -> {
-            attachments.addAll(taskStudent.getAttachmentList());
-        });
+        List<Attachment> attachments = taskRepository.getAttachmentsById(task.getId());
 
         TaskTeacherDTO dto = new TaskTeacherDTO();
         dto.setId(task.getId());
