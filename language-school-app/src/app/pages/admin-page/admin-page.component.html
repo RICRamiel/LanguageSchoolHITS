@@ -1,0 +1,31 @@
+<div class="admin-page">
+  <app-header
+    fullName="Администратор"
+    email="admin@school.com"
+    (logout)="onLogout()"
+  />
+
+  <div class="admin-page__content">
+    <h2 class="admin-page__title">Панель администратора</h2>
+    <app-tabs
+      [tabs]="tabs"
+      [activeId]="activeTab"
+      (tabChange)="onTabChange($event)"
+    />
+
+    @switch (activeTab) {
+      @case ('groups') {
+        <app-groups-tab />
+      }
+      @case ('students') {
+        <app-students-tab />
+      }
+      @case ('teachers') {
+        <app-teachers-tab />
+      }
+      @case ('languages') {
+        <app-languages-tab />
+      }
+    }
+  </div>
+</div>

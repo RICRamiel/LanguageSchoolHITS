@@ -1,0 +1,21 @@
+<div class="notifications-section">
+  <div class="notifications-section__header">
+    <h3 class="notifications-section__title">Уведомления</h3>
+    <button class="notifications-section__create" type="button" (click)="createNotification.emit()">
+      Создать уведомление
+    </button>
+  </div>
+
+  <div class="notifications-list">
+    @for (item of notifications(); track item.id) {
+      <button type="button" class="notification-card" (click)="openNotification.emit(item.id)">
+        <span class="notification-card__title">{{ item.title }}</span>
+        <span class="notification-card__text">{{ item.text }}</span>
+        @if (item.attachment) {
+          <span class="notification-card__attachment">Вложение: {{ item.attachment.fileName }}</span>
+        }
+        <span class="notification-card__date">{{ item.date }}</span>
+      </button>
+    }
+  </div>
+</div>

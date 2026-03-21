@@ -5,8 +5,11 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "api:generate": "openapi-generator-cli generate",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
     "serve:ssr:language-school-app": "node dist/language-school-app/server/server.mjs"
   },
   "prettier": {
@@ -40,6 +43,8 @@
     "@angular/build": "^21.1.4",
     "@angular/cli": "^21.1.4",
     "@angular/compiler-cli": "^21.1.0",
+    "@openapitools/openapi-generator-cli": "^2.30.2",
+    "@playwright/test": "^1.58.2",
     "@types/express": "^5.0.1",
     "@types/node": "^20.17.19",
     "jsdom": "^27.1.0",

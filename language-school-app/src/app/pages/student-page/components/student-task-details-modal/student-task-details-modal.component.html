@@ -1,0 +1,100 @@
+<div class="modal-overlay" (click)="close.emit()">
+  <section class="modal" (click)="$event.stopPropagation()">
+    <button class="modal__close" type="button" (click)="close.emit()">&times;</button>
+    <h3 class="modal__title">{{ task().title }}</h3>
+    <p class="modal__subtitle">&#1055;&#1088;&#1077;&#1087;&#1086;&#1076;&#1072;&#1074;&#1072;&#1090;&#1077;&#1083;&#1100;: {{ task().teacher }}</p>
+
+    <p class="modal__text">{{ task().description }}</p>
+
+    <dl class="modal__meta-list">
+      <div class="modal__meta-row">
+        <dt>&#1057;&#1088;&#1086;&#1082;:</dt>
+        <dd>{{ task().dueText }}</dd>
+      </div>
+      @if (task().pillText) {
+        <div class="modal__meta-row">
+          <dt>&#1057;&#1090;&#1072;&#1090;&#1091;&#1089;:</dt>
+          <dd>{{ task().pillText }}</dd>
+        </div>
+      }
+    </dl>
+
+    <div class="modal__actions">
+      <label class="modal__file-label">
+        <input type="file" (change)="onFileChange($event)" />
+      </label>
+
+      <button
+        class="modal__action-btn"
+        type="button"
+        [disabled]="!selectedFile() || uploadInProgress()"
+        (click)="submitFile()"
+      >
+        {{ uploadInProgress() ? '\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430...' : '\u041F\u0440\u0438\u043A\u0440\u0435\u043F\u0438\u0442\u044C \u0444\u0430\u0439\u043B' }}
+      </button>
+
+      <button
+        class="modal__action-btn modal__action-btn--primary"
+        type="button"
+        [disabled]="completeInProgress() || task().pillText === '\u0412\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u043E'"
+        (click)="submitCompleteTask()"
+      >
+        {{ completeInProgress() ? '\u0417\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0438\u0435...' : '\u0417\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u044C \u0437\u0430\u0434\u0430\u043D\u0438\u0435' }}
+      </button>
+    </div>
+
+    @if (uploadedFileLink()) {
+      <a
+        class="modal__download-link"
+        [href]="uploadedFileLink()!"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        &#1057;&#1082;&#1072;&#1095;&#1072;&#1090;&#1100; &#1087;&#1088;&#1080;&#1082;&#1088;&#1077;&#1087;&#1083;&#1077;&#1085;&#1085;&#1099;&#1081; &#1092;&#1072;&#1081;&#1083;
+      </a>
+    }
+
+    <div class="modal__comments">
+      <h4 class="modal__comments-title">&#1050;&#1086;&#1084;&#1084;&#1077;&#1085;&#1090;&#1072;&#1088;&#1080;&#1080;</h4>
+
+      @if (commentsLoading()) {
+        <p class="modal__comments-state">
+          &#1047;&#1072;&#1075;&#1088;&#1091;&#1079;&#1082;&#1072;...
+        </p>
+      } @else if (!comments().length) {
+        <p class="modal__comments-state">
+          &#1050;&#1086;&#1084;&#1084;&#1077;&#1085;&#1090;&#1072;&#1088;&#1080;&#1077;&#1074; &#1087;&#1086;&#1082;&#1072; &#1085;&#1077;&#1090;
+        </p>
+      } @else {
+        <ul class="modal__comments-list">
+          @for (comment of comments(); track $index) {
+            <li class="modal__comment-item">
+              <p class="modal__comment-author">
+                {{ comment.userId ? ('User #' + comment.userId) : '\u0421\u0442\u0443\u0434\u0435\u043D\u0442' }}
+              </p>
+              <p class="modal__comment-text">{{ comment.text }}</p>
+            </li>
+          }
+        </ul>
+      }
+
+      <textarea
+        class="modal__comment-input"
+        rows="3"
+        [value]="commentText()"
+        [disabled]="commentSubmitting()"
+        (input)="onCommentInput($event)"
+        placeholder="&#1053;&#1086;&#1074;&#1099;&#1081; &#1082;&#1086;&#1084;&#1084;&#1077;&#1085;&#1090;&#1072;&#1088;&#1080;&#1081;"
+      ></textarea>
+
+      <button
+        class="modal__action-btn"
+        type="button"
+        [disabled]="!commentText().trim() || commentSubmitting()"
+        (click)="sendComment()"
+      >
+        {{ commentSubmitting() ? '\u041E\u0442\u043F\u0440\u0430\u0432\u043A\u0430...' : '\u041E\u0442\u043F\u0440\u0430\u0432\u0438\u0442\u044C \u043A\u043E\u043C\u043C\u0435\u043D\u0442\u0430\u0440\u0438\u0439' }}
+      </button>
+    </div>
+  </section>
+</div>

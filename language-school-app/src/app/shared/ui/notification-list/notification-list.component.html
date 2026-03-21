@@ -1,0 +1,59 @@
+﻿<section class="notifications">
+  <div class="notifications__header">
+    <h2 class="notifications__title">Уведомления</h2>
+  </div>
+
+  <div class="notification-list">
+    @for (n of notifications(); track n.id) {
+      <article class="notification-item" (click)="openNotification.emit(n.id)">
+        <div class="notification-item__head">
+          <div class="notification-item__title-wrap">
+            <span
+              class="notification-item__icon"
+              [class.notification-item__icon--task]="n.type === 'task'"
+              [class.notification-item__icon--comment]="n.type === 'comment'"
+            >
+              @if (n.type === 'announcement') {
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M15 17H20L18 15V11C18 8 16.2 5.5 13.5 4.6V4C13.5 3.2 12.8 2.5 12 2.5C11.2 2.5 10.5 3.2 10.5 4V4.6C7.8 5.5 6 8 6 11V15L4 17H9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M10 19C10.5 20 11.2 20.5 12 20.5C12.8 20.5 13.5 20 14 19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+              } @else if (n.type === 'task') {
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M8 3.5H13L18.5 9V20.5H8C6.9 20.5 6 19.6 6 18.5V5.5C6 4.4 6.9 3.5 8 3.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                  <path d="M13 3.5V9H18.5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                  <path d="M9 13H15M9 16H14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+              } @else {
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M20 14C20 15.1 19.1 16 18 16H9L5 19V6C5 4.9 5.9 4 7 4H18C19.1 4 20 4.9 20 6V14Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                </svg>
+              }
+            </span>
+            <h3 class="notification-item__title">{{ n.title }}</h3>
+          </div>
+        </div>
+
+        <p class="notification-item__meta">{{ n.author }} • {{ n.dateTime }}</p>
+        <p class="notification-item__text">{{ n.text }}</p>
+        @if (n.attachments.length) {
+          <div class="notification-item__attachment">
+            <span>
+              {{ n.attachments[0].fileName }}{{ n.attachments.length > 1 ? ' (+' + (n.attachments.length - 1) + ')' : '' }}
+            </span>
+            @if (n.attachments[0].id || n.attachments[0].objectKey) {
+              <button
+                class="notification-item__download"
+                type="button"
+                (click)="downloadAttachment.emit(n.attachments[0]); $event.stopPropagation()"
+              >
+                Скачать
+              </button>
+            }
+          </div>
+        }
+        <span class="notification-item__tag">{{ n.tag }}</span>
+      </article>
+    }
+  </div>
+</section>

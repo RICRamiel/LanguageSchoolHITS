@@ -1,0 +1,41 @@
+<section class="admin-section">
+  <div class="admin-section__head">
+    <h3 class="section-title">Языки</h3>
+    <app-button type="button" (click)="openAdd()" [disabled]="saving">Добавить язык</app-button>
+  </div>
+  @if (error) {
+    <p class="admin-error">{{ error }}</p>
+  }
+  @if (showForm) {
+    <app-language-form
+      [initialValue]="editingLanguage"
+      (save)="onSave($event)"
+      (cancel)="onCancel()"
+    />
+  }
+  @if (loading) {
+    <p class="admin-loading">Загрузка...</p>
+  } @else {
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Название</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (l of languages; track $index) {
+          <tr>
+            <td>{{ l.name }}</td>
+            <td class="admin-table__actions">
+              <app-button type="button" class="outline small" (click)="openEdit(l)">Изменить</app-button>
+              <app-button type="button" class="outline small" (click)="deleteLanguage(l.id)">Удалить</app-button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  }
+</section>

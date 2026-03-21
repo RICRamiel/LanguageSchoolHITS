@@ -1,0 +1,32 @@
+﻿<div class="modal-overlay" (click)="close.emit()">
+  <section class="modal" (click)="$event.stopPropagation()">
+    <button class="modal__close" type="button" (click)="close.emit()">&times;</button>
+    <h3 class="modal__title">{{ notification().title }}</h3>
+    <p class="modal__subtitle">{{ notification().date }}</p>
+    <p class="modal__text">{{ notification().text }}</p>
+    @if (notification().attachment) {
+      <p class="modal__attachment">Вложение: {{ notification().attachment?.fileName }}</p>
+      <button
+        class="modal__btn modal__btn--ghost"
+        type="button"
+        [disabled]="!notification().attachment?.id"
+        (click)="onDownloadClick()"
+      >
+        Скачать вложение
+      </button>
+    }
+    <label class="modal__label" for="notification-attachment">Прикрепить файл</label>
+    <input
+      id="notification-attachment"
+      class="modal__input"
+      type="file"
+      (change)="onFileSelected($event)"
+    />
+    @if (selectedFile) {
+      <p class="modal__attachment">Выбран файл: {{ selectedFile.name }}</p>
+    }
+    <button class="modal__btn modal__btn--primary" type="button" (click)="onUploadClick()">
+      {{ uploading() ? 'Загрузка...' : 'Прикрепить' }}
+    </button>
+  </section>
+</div>

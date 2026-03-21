@@ -1,0 +1,32 @@
+<app-card class="admin-form-card">
+  <app-card-header>
+    <app-card-title>{{ title }}</app-card-title>
+  </app-card-header>
+  <app-card-content>
+    <form (ngSubmit)="onSubmit()" class="admin-form" [formGroup]="form">
+      <div class="form-row">
+        <app-label for="group-name">Название</app-label>
+        <app-input id="group-name" formControlName="name" placeholder="Название группы" />
+        @if (form.get('name')?.invalid && form.get('name')?.touched) {
+          <span class="form-error">{{ getErrorMessage('name') }}</span>
+        }
+      </div>
+      <div class="form-row">
+        <app-label for="group-language">Язык</app-label>
+        <select id="group-language" class="form-select" formControlName="language">
+          <option value="">Выберите язык</option>
+          @for (lang of languages(); track $index) {
+            <option [value]="lang.name">{{ lang.name }}</option>
+          }
+        </select>
+        @if (form.get('language')?.invalid && form.get('language')?.touched) {
+          <span class="form-error">{{ getErrorMessage('language') }}</span>
+        }
+      </div>
+      <div class="form-actions">
+        <app-button type="submit" class="small">Сохранить</app-button>
+        <app-button type="button" class="outline small" (click)="onCancel()">Отмена</app-button>
+      </div>
+    </form>
+  </app-card-content>
+</app-card>

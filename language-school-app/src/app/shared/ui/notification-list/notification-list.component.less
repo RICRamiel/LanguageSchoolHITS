@@ -1,0 +1,155 @@
+.notifications {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.notifications__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.notifications__title {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.2;
+  font-weight: 700;
+  color: #111827;
+}
+
+.notification-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.notification-item {
+  border: 1px solid #e6e9ef;
+  border-radius: 14px;
+  padding: 22px 22px 18px;
+  background: #ffffff;
+  border-left: 4px solid transparent;
+  cursor: pointer;
+}
+
+.notification-item__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.notification-item__title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.notification-item__icon {
+  display: inline-flex;
+  color: #2563eb;
+}
+
+.notification-item__icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.notification-item__icon--task {
+  color: #10b981;
+}
+
+.notification-item__icon--comment {
+  color: #a855f7;
+}
+
+.notification-item__title {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.2;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.notification-item__meta {
+  margin: 8px 0 0 32px;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.notification-item__text {
+  margin: 24px 0 8px 32px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #374151;
+}
+
+.notification-item__attachment {
+  margin: 0 0 10px 32px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #1f2937;
+  font-size: 13px;
+}
+
+.notification-item__download {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #f9fafb;
+  color: #111827;
+  font-size: 12px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.notification-item__download:hover {
+  background: #eef2ff;
+}
+
+.notification-item__tag {
+  display: inline-block;
+  margin-left: 32px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 600;
+  color: #4b5563;
+  background: #f3f4f6;
+}
+
+@media (max-width: 880px) {
+  .notifications__title {
+    font-size: 22px;
+  }
+
+  .notification-item {
+    border-radius: 12px;
+    padding: 16px;
+  }
+
+  .notification-item__title {
+    font-size: 15px;
+  }
+
+  .notification-item__meta {
+    margin: 6px 0 0 32px;
+    font-size: 12px;
+  }
+
+  .notification-item__text {
+    margin: 14px 0 8px 32px;
+    font-size: 13px;
+  }
+
+  .notification-item__attachment {
+    margin-left: 32px;
+  }
+
+  .notification-item__tag {
+    margin-left: 32px;
+    font-size: 11px;
+  }
+}

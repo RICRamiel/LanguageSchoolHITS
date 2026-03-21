@@ -1,4 +1,4 @@
-<div class="login-page">
+﻿<div class="login-page">
   <app-login-card>
     <form [formGroup]="form" (ngSubmit)="onLogin($event)" class="login-form">
       <div class="form-group">
@@ -19,7 +19,16 @@
           formControlName="password"
         ></app-input>
       </div>
-      <app-button type="submit" class="submit-btn">Войти</app-button>
+      @if (errorMessage) {
+        <p class="login-error">{{ errorMessage }}</p>
+      }
+      <app-button type="submit" class="submit-btn" [disabled]="isLoading">
+        @if (isLoading) {
+          Вход...
+        } @else {
+          Войти
+        }
+      </app-button>
     </form>
   </app-login-card>
 </div>

@@ -1,0 +1,43 @@
+<app-card class="admin-form-card">
+  <app-card-header>
+    <app-card-title>{{ title }}</app-card-title>
+  </app-card-header>
+  <app-card-content>
+    <form (ngSubmit)="onSubmit()" class="admin-form" [formGroup]="form">
+      <div class="form-row">
+        <app-label for="student-firstName">Имя</app-label>
+        <app-input id="student-firstName" formControlName="firstName" placeholder="Имя" />
+        @if (form.get('firstName')?.invalid && form.get('firstName')?.touched) {
+          <span class="form-error">{{ getErrorMessage('firstName') }}</span>
+        }
+      </div>
+      <div class="form-row">
+        <app-label for="student-lastName">Фамилия</app-label>
+        <app-input id="student-lastName" formControlName="lastName" placeholder="Фамилия" />
+        @if (form.get('lastName')?.invalid && form.get('lastName')?.touched) {
+          <span class="form-error">{{ getErrorMessage('lastName') }}</span>
+        }
+      </div>
+      <div class="form-row">
+        <app-label for="student-email">Email</app-label>
+        <app-input id="student-email" type="email" formControlName="email" placeholder="email@example.com" />
+        @if (form.get('email')?.invalid && form.get('email')?.touched) {
+          <span class="form-error">{{ getErrorMessage('email') }}</span>
+        }
+      </div>
+      @if (!isEdit) {
+      <div class="form-row">
+        <app-label for="student-password">Пароль</app-label>
+        <app-input id="student-password" type="password" formControlName="password" placeholder="Пароль (8–64 символа)" />
+        @if (form.get('password')?.invalid && form.get('password')?.touched) {
+          <span class="form-error">{{ getErrorMessage('password') }}</span>
+        }
+      </div>
+      }
+      <div class="form-actions">
+        <app-button type="submit" class="small">Сохранить</app-button>
+        <app-button type="button" class="outline small" (click)="onCancel()">Отмена</app-button>
+      </div>
+    </form>
+  </app-card-content>
+</app-card>
