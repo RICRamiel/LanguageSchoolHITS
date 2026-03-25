@@ -3,14 +3,16 @@ package com.hits.language_school_back.model;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.util.UUID;
+
 
 @Entity
 @Table(name = "attachments")
 @Data
 public class Attachment {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     private String fileName;
     private String fileType;
@@ -32,4 +34,8 @@ public class Attachment {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "notification_id")
     private Notification notification;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "participation_id")
+    private Participation participation;
 }
