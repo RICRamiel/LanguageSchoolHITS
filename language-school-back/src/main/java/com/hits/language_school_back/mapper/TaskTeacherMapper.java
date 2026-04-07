@@ -37,7 +37,6 @@ public class TaskTeacherMapper {
                 .maxTeamsAmount(task.getMaxTeamsAmount())
                 .minTeamsAmount(task.getMinTeamsAmount())
                 .votesThreshold(task.getVotesThreshold())
-                .taskType(task.getTaskType())
                 .teamType(task.getTeamType())
                 .resolveType(task.getResolveType())
                 .submissionClosed(task.getSubmissionClosed())

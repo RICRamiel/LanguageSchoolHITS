@@ -1,7 +1,6 @@
 package com.hits.language_school_back.model;
 
 import com.hits.language_school_back.enums.TaskResolveType;
-import com.hits.language_school_back.enums.TaskType;
 import com.hits.language_school_back.enums.TeamType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -53,10 +52,6 @@ public class Task {
     private Duration teamsCreationTimeout;
     private LocalDateTime createdAt;
     private LocalDateTime finalizedAt;
-
-    @NotNull
-    @Enumerated(EnumType.STRING)
-    private TaskType taskType;
 
     @NotNull
     @Enumerated(EnumType.STRING)

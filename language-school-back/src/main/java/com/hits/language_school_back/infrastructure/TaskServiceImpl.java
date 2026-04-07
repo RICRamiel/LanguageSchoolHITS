@@ -13,7 +13,6 @@ import com.hits.language_school_back.dto.UserFullDTO;
 import com.hits.language_school_back.enums.Role;
 import com.hits.language_school_back.enums.SolutionStatus;
 import com.hits.language_school_back.enums.TaskResolveType;
-import com.hits.language_school_back.enums.TaskType;
 import com.hits.language_school_back.enums.TeamType;
 import com.hits.language_school_back.mapper.TaskStudentMapper;
 import com.hits.language_school_back.mapper.TaskTeacherMapper;
@@ -133,7 +132,7 @@ public class TaskServiceImpl implements TaskService {
         UUID captainId = dto.getCaptainId() == null ? userId : dto.getCaptainId();
         User captain = getUser(captainId);
 
-        if (task.getTeamType() == TeamType.SOLO) {
+        if (isSoloTask(task)) {
             captain = actor;
             captainId = userId;
         }
@@ -332,7 +331,6 @@ public class TaskServiceImpl implements TaskService {
 
         task.setCourse(course);
         task.setCreatedBy(creator);
-        task.setTaskType(taskDTO.getTaskType() == null ? task.getTaskType() : taskDTO.getTaskType());
         task.setTeamType(taskDTO.getTeamType() == null ? task.getTeamType() : taskDTO.getTeamType());
         task.setResolveType(taskDTO.getResolveType() == null ? task.getResolveType() : taskDTO.getResolveType());
 
@@ -345,15 +343,11 @@ public class TaskServiceImpl implements TaskService {
     }
 
     private void validateTaskConfiguration(TaskDTO taskDTO, Task task) {
-        TaskType taskType = taskDTO.getTaskType() == null ? task.getTaskType() : taskDTO.getTaskType();
         TeamType teamType = taskDTO.getTeamType() == null ? task.getTeamType() : taskDTO.getTeamType();
         TaskResolveType resolveType = taskDTO.getResolveType() == null ? task.getResolveType() : taskDTO.getResolveType();
 
-        if (taskType == null || teamType == null || resolveType == null) {
-            throw new IllegalArgumentException("Task type, team type and solution type are required");
-        }
-        if (!taskType.supports(teamType)) {
-            throw new IllegalArgumentException("Selected task type does not support this team type");
+        if (teamType == null || resolveType == null) {
+            throw new IllegalArgumentException("Team type and solution type are required");
         }
 
         Integer minTeamSize = resolveInteger(taskDTO.getMinTeamSize(), task.getMinTeamSize());
@@ -361,7 +355,7 @@ public class TaskServiceImpl implements TaskService {
         Integer minTeamsAmount = resolveInteger(taskDTO.getMinTeamsAmount(), task.getMinTeamsAmount());
         Integer maxTeamsAmount = resolveInteger(taskDTO.getMaxTeamsAmount(), task.getMaxTeamsAmount());
 
-        if (teamType == TeamType.SOLO) {
+        if (maxTeamSize != null && maxTeamSize == 1) {
             minTeamSize = 1;
             maxTeamSize = 1;
         }
@@ -377,14 +371,19 @@ public class TaskServiceImpl implements TaskService {
                 && task.getVotesThreshold() == null) {
             throw new IllegalArgumentException("votesThreshold is required for vote-based solution resolution");
         }
+        if (teamType == TeamType.DRAFT && task.getTeamsCreationTimeout() == null && taskDTO.getTeamsCreationTimeout() == null) {
+            throw new IllegalArgumentException("teamsCreationTimeout is required for draft team creation");
+        }
 
-        task.setTaskType(taskType);
         task.setTeamType(teamType);
         task.setResolveType(resolveType);
         task.setMinTeamSize(minTeamSize);
         task.setMaxTeamSize(maxTeamSize);
         task.setMinTeamsAmount(minTeamsAmount);
         task.setMaxTeamsAmount(maxTeamsAmount);
+        if (teamType != TeamType.DRAFT) {
+            task.setTeamsCreationTimeout(null);
+        }
     }
 
     private Task resolveTaskById(UUID taskId) {
@@ -445,7 +444,7 @@ public class TaskServiceImpl implements TaskService {
             throw new IllegalArgumentException("Only teacher or students can create teams");
         }
 
-        if (task.getTeamType() != TeamType.FREEROAM && task.getTeamType() != TeamType.SOLO) {
+        if (task.getTeamType() != TeamType.FREEROAM && task.getTeamType() != TeamType.DRAFT && !isSoloTask(task)) {
             throw new IllegalArgumentException("Students cannot create teams for this task type");
         }
     }
@@ -479,11 +478,21 @@ public class TaskServiceImpl implements TaskService {
             return;
         }
 
+        if (task.getTeamType() == TeamType.DRAFT) {
+            boolean captain = participationRepository.findByTeamIdAndStudentId(team.getId(), actor.getId())
+                    .map(Participation::getIsCaptain)
+                    .orElse(false);
+            if (!captain) {
+                throw new IllegalArgumentException("Only captain can draft students to the team");
+            }
+            return;
+        }
+
         if (!selfJoin) {
             throw new IllegalArgumentException("Students can only add themselves");
         }
 
-        if (task.getTeamType() != TeamType.FREEROAM && task.getTeamType() != TeamType.SOLO) {
+        if (task.getTeamType() != TeamType.FREEROAM && !isSoloTask(task)) {
             throw new IllegalArgumentException("This task requires teacher-managed team assignment");
         }
     }
@@ -527,7 +536,7 @@ public class TaskServiceImpl implements TaskService {
                 .map(Participation::getTeam)
                 .findFirst()
                 .orElseGet(() -> {
-                    if (task.getTeamType() != TeamType.SOLO) {
+                    if (!isSoloTask(task)) {
                         throw new IllegalArgumentException("User is not assigned to a team");
                     }
                     return createTeam(task.getId(), TaskTeamCreateDTO.builder().build(), userId) == null ? null : getSoloTeam(task.getId(), userId);
@@ -667,13 +676,17 @@ public class TaskServiceImpl implements TaskService {
     }
 
     private String resolveTeamName(Task task, TaskTeamCreateDTO dto, User captain) {
-        if (task.getTeamType() == TeamType.SOLO) {
+        if (isSoloTask(task)) {
             return captain.getFirstName() + " " + captain.getLastName();
         }
         if (!Strings.isNullOrEmpty(dto.getName())) {
             return dto.getName();
         }
         return "Команда " + (teamRepository.countByTaskId(task.getId()) + 1);
+    }
+
+    private boolean isSoloTask(Task task) {
+        return task.getMaxTeamSize() != null && task.getMaxTeamSize() == 1;
     }
 
     private Integer resolveInteger(Integer requested, Integer current) {

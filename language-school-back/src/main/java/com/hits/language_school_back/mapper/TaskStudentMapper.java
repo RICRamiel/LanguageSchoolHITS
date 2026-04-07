@@ -32,7 +32,6 @@ public class TaskStudentMapper {
                 .courseId(task.getCourse() == null ? null : task.getCourse().getId())
                 .courseName(task.getCourse() == null ? null : task.getCourse().getName())
                 .totalPoints(task.getTotalPoints())
-                .taskType(task.getTaskType())
                 .teamType(task.getTeamType())
                 .resolveType(task.getResolveType())
                 .submissionClosed(task.getSubmissionClosed())

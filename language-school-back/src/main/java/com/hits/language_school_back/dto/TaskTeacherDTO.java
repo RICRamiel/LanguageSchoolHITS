@@ -1,7 +1,6 @@
 package com.hits.language_school_back.dto;
 
 import com.hits.language_school_back.enums.TaskResolveType;
-import com.hits.language_school_back.enums.TaskType;
 import com.hits.language_school_back.enums.TeamType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,7 +29,6 @@ public class TaskTeacherDTO {
     private Integer maxTeamsAmount;
     private Integer minTeamsAmount;
     private Integer votesThreshold;
-    private TaskType taskType;
     private TeamType teamType;
     private TaskResolveType resolveType;
     private Boolean submissionClosed;

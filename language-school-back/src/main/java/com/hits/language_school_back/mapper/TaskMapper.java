@@ -21,7 +21,6 @@ public class TaskMapper {
                 .minTeamsAmount(task.getMinTeamsAmount())
                 .votesThreshold(task.getVotesThreshold())
                 .teamsCreationTimeout(task.getTeamsCreationTimeout())
-                .taskType(task.getTaskType())
                 .teamType(task.getTeamType())
                 .resolveType(task.getResolveType())
                 .submissionClosed(task.getSubmissionClosed())
