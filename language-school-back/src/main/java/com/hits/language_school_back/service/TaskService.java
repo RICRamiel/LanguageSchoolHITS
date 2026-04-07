@@ -7,15 +7,16 @@ import com.hits.language_school_back.dto.UserFullDTO;
 import com.hits.language_school_back.model.Task;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface TaskService {
-    List<TaskTeacherDTO> getTasksByTeacherId(Long TeacherId);
-    List<TaskStudentDTO> getTasksByGroupName(String name, Long userId);
+    List<TaskTeacherDTO> getTasksByTeacherId(UUID teacherId);
+    List<TaskStudentDTO> getTasksByGroupName(String name, UUID userId);
     Task createTask(TaskDTO taskDTO, UserFullDTO userFullDTO);
-    void deleteTask(Long id);
-    Task editTask(TaskDTO taskDTO, Long taskId);
+    void deleteTask(UUID id);
+    Task editTask(TaskDTO taskDTO, UUID taskId);
 
-    void completeTask(Long taskId, Long userId);
+    void completeTask(UUID taskId, UUID userId);
 
     List<TaskStudentDTO> getTasksByGroupNameReal(String groupName);
 }

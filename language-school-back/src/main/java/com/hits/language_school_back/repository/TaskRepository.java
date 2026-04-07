@@ -9,9 +9,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface TaskRepository extends JpaRepository<Task, UUID> {
-    List<Task> findByUserId(UUID teacherId);
-
-    List<Task> findByGroupName(String groupName);
+    List<Task> findAllByOrderByDeadlineAsc();
 
     @Query(nativeQuery = true, value = "select * from attachments a where a.task_id = :taskid;")
     List<Attachment> getAttachmentsById(UUID taskid);

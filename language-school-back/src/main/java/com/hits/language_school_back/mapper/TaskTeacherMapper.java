@@ -39,7 +39,7 @@ public class TaskTeacherMapper {
         });
 
         dto.setAttachmentDownloadInfos(attachmentsInfo);
-        dto.setCommentList(task.getCommentList().stream().map(commentMapper::toDto).toList());
+        dto.setCommentList(task.getCommentList() == null ? List.of() : task.getCommentList().stream().map(commentMapper::toDto).toList());
 
         return dto;
     }

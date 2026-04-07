@@ -1,13 +1,14 @@
 package com.hits.language_school_back.infrastructure;
 
 import com.hits.language_school_back.dto.LanguageDTO;
+import com.hits.language_school_back.model.Language;
 import com.hits.language_school_back.repository.LanguageRepository;
 import com.hits.language_school_back.service.LanguageService;
-import com.hits.language_school_back.model.Language;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -23,7 +24,7 @@ public class LanguageServiceImpl implements LanguageService {
     }
 
     @Override
-    public Language editLanguageName(LanguageDTO languageDTO, Long languageId) {
+    public Language editLanguageName(LanguageDTO languageDTO, UUID languageId) {
         Language language = languageRepository.findById(languageId).orElseThrow();
         language.setName(languageDTO.getName());
         languageRepository.save(language);
@@ -31,7 +32,7 @@ public class LanguageServiceImpl implements LanguageService {
     }
 
     @Override
-    public void deleteLanguage(Long languageId) {
+    public void deleteLanguage(UUID languageId) {
         languageRepository.deleteById(languageId);
     }
 

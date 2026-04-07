@@ -18,7 +18,7 @@ public class NotificationDto {
 
     private String text;
 
-    private UUID groupId;
+    private UUID courseId;
 
     private LocalDate creationDate;
 

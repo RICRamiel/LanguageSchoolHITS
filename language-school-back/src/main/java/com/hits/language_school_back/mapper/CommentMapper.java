@@ -9,6 +9,7 @@ public class CommentMapper {
     public CommentDTO toDto(Comment model) {
 
         return CommentDTO.builder()
+                .id(model.getId())
                 .privateStatus(model.isPrivateStatus())
                 .taskId(model.getTask().getId())
                 .userId(model.getUser().getId())

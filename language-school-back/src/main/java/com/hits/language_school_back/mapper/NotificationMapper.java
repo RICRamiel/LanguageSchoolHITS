@@ -15,7 +15,7 @@ public class NotificationMapper {
                 .text(model.getText())
                 .createdByTeacherWithId(model.getCreatedBy().getId())
                 .creationDate(model.getCreationDate())
-                .groupId(model.getGroup().getId())
+                .courseId(model.getCourse().getId())
                 .attachments(model.getAttachmentList() == null ? List.of() : model.getAttachmentList().stream().map(attachment ->
                         AttachmentDownloadInfo.builder()
                                 .id(attachment.getId())

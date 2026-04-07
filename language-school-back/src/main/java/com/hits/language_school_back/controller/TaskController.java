@@ -4,15 +4,24 @@ import com.hits.language_school_back.dto.TaskDTO;
 import com.hits.language_school_back.dto.TaskStudentDTO;
 import com.hits.language_school_back.dto.TaskTeacherDTO;
 import com.hits.language_school_back.mapper.TaskMapper;
-import com.hits.language_school_back.service.TaskService;
 import com.hits.language_school_back.model.Task;
+import com.hits.language_school_back.service.TaskService;
 import com.hits.language_school_back.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 @RestController
@@ -30,18 +39,18 @@ public class TaskController {
     }
 
     @PutMapping("/{taskId}/edit")
-    public ResponseEntity<TaskDTO> editTask(@RequestBody TaskDTO taskDTO, @PathVariable Long taskId) {
+    public ResponseEntity<TaskDTO> editTask(@RequestBody TaskDTO taskDTO, @PathVariable UUID taskId) {
         Task task = taskService.editTask(taskDTO, taskId);
         return ResponseEntity.ok(taskMapper.toDto(task));
     }
 
     @DeleteMapping("/{taskId}/delete")
-    void deleteTask(@PathVariable Long taskId) {
+    void deleteTask(@PathVariable UUID taskId) {
         taskService.deleteTask(taskId);
     }
 
     @GetMapping("/{teacherId}/get_by_teacher")
-    public ResponseEntity<List<TaskTeacherDTO>> getByTeacherId(@PathVariable Long teacherId) {
+    public ResponseEntity<List<TaskTeacherDTO>> getByTeacherId(@PathVariable UUID teacherId) {
         List<TaskTeacherDTO> tasks = taskService.getTasksByTeacherId(teacherId);
         return ResponseEntity.ok(tasks);
     }
@@ -59,7 +68,7 @@ public class TaskController {
     }
 
     @PostMapping("/{taskId}/complete_task")
-    public void completeTask(@PathVariable Long taskId, HttpServletRequest request) {
+    public void completeTask(@PathVariable UUID taskId, HttpServletRequest request) {
         taskService.completeTask(taskId, userService.getMe(request).getId());
     }
 }

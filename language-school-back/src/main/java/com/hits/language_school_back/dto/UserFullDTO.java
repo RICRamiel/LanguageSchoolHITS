@@ -1,7 +1,6 @@
 package com.hits.language_school_back.dto;
 
 import com.hits.language_school_back.enums.Role;
-import com.hits.language_school_back.model.Group;
 import lombok.*;
 
 import java.util.List;

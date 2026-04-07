@@ -6,30 +6,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
 public class TaskStudentGroupMapper {
+    private final TaskStudentMapper taskStudentMapper;
 
     public TaskStudentDTO toDto(Task task) {
-
-        return TaskStudentDTO.builder()
-                .taskStatus(task.getTaskStatus())
-                .id(task.getId())
-                .deadline(task.getDeadline())
-                .description(task.getDescription())
-                .name(task.getName())
-                .build();
+        return taskStudentMapper.toDto(task);
     }
 
     public List<TaskStudentDTO> toDtoList(List<Task> tasks) {
-        if (tasks == null) {
-            return null;
-        }
-
-        return tasks.stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
+        return taskStudentMapper.toDtoList(tasks);
     }
 }
