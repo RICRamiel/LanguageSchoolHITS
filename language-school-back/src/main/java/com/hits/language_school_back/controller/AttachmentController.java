@@ -32,7 +32,7 @@ public class AttachmentController {
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public void uploadAttachment(
-            @RequestParam("taskId") Long taskId,
+            @RequestParam("taskId") UUID taskId,
             @RequestParam("file") MultipartFile file,
             HttpServletRequest request) {
         attachmentService.uploadAttachment(taskId, file, userService.getMe(request).getId());
@@ -47,12 +47,12 @@ public class AttachmentController {
     }
 
     @DeleteMapping("/{attachmentId}")
-    public void deleteAttachment(@PathVariable Long attachmentId) {
+    public void deleteAttachment(@PathVariable UUID attachmentId) {
         attachmentService.deleteAttachment(attachmentId);
     }
 
     @GetMapping("/{attachmentId}/download")
-    public ResponseEntity<Resource> downloadAttachment(@PathVariable Long attachmentId) {
+    public ResponseEntity<Resource> downloadAttachment(@PathVariable UUID attachmentId) {
         try {
             // Получаем информацию о файле
             AttachmentDownloadInfo info = attachmentService.getDownloadInfo(attachmentId);

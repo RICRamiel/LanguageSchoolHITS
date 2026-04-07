@@ -18,11 +18,11 @@ public class NotificationDto {
 
     private String text;
 
-    private Long groupId;
+    private UUID groupId;
 
     private LocalDate creationDate;
 
-    private Long createdByTeacherWithId;
+    private UUID createdByTeacherWithId;
 
     private List<AttachmentDownloadInfo> attachments;
 }

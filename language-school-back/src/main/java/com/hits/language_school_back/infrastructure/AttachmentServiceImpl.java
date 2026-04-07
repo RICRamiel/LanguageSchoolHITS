@@ -34,7 +34,7 @@ public class AttachmentServiceImpl implements AttachmentService {
     private final MinioConfig minioConfig;
 
     @Transactional
-    public Attachment uploadAttachment(Long taskId, MultipartFile file, Long userId) {
+    public Attachment uploadAttachment(UUID taskId, MultipartFile file, UUID userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + taskId));
         Task task = taskRepository.findById(taskId)
@@ -55,7 +55,7 @@ public class AttachmentServiceImpl implements AttachmentService {
     }
 
     @Override
-    public Attachment uploadAttachmentForNotification(UUID notificationId, MultipartFile file, Long userId) {
+    public Attachment uploadAttachmentForNotification(UUID notificationId, MultipartFile file, UUID userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
         Notification notification = notificationRepository.findById(notificationId)
@@ -76,7 +76,7 @@ public class AttachmentServiceImpl implements AttachmentService {
     }
 
     @Transactional
-    public void deleteAttachment(Long attachmentId) {
+    public void deleteAttachment(UUID attachmentId) {
         Attachment attachment = attachmentRepository.findById(attachmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Attachment not found: " + attachmentId));
 
@@ -86,14 +86,14 @@ public class AttachmentServiceImpl implements AttachmentService {
     }
 
     @Override
-    public InputStream downloadAttachment(Long attachmentId) {
+    public InputStream downloadAttachment(UUID attachmentId) {
         Attachment attachment = attachmentRepository.findById(attachmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Attachment not found: " + attachmentId));
 
         return minioService.downloadFile(attachment.getObjectKey());
     }
 
-    public String getDownloadLink(Long attachmentId) {
+    public String getDownloadLink(UUID attachmentId) {
         Attachment attachment = attachmentRepository.findById(attachmentId)
                 .orElseThrow(() -> new RuntimeException("Attachment not found"));
 
@@ -104,7 +104,7 @@ public class AttachmentServiceImpl implements AttachmentService {
     }
 
     @Override
-    public AttachmentDownloadInfo getDownloadInfo(Long attachmentId) {
+    public AttachmentDownloadInfo getDownloadInfo(UUID attachmentId) {
         Attachment attachment = attachmentRepository.findById(attachmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Attachment not found: " + attachmentId));
 

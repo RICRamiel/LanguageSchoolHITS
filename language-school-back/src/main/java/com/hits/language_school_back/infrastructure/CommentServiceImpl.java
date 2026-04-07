@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,7 +25,7 @@ public class CommentServiceImpl implements CommentService {
     private final TaskRepository taskRepository;
 
     @Override
-    public List<CommentDTO> getCommentsByTaskId(Long taskId) {
+    public List<CommentDTO> getCommentsByTaskId(UUID taskId) {
         return commentRepository.findByTaskId(taskId)
                 .stream()
                 .map(this::convertToDTO)
@@ -51,7 +52,7 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional
-    public Comment editComment(CommentDTO commentDTO, Long commentId) {
+    public Comment editComment(CommentDTO commentDTO, UUID commentId) {
 
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new RuntimeException("Comment not found with id: " + commentId));
@@ -64,7 +65,7 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
-    public void deleteComment(Long commentId) {
+    public void deleteComment(UUID commentId) {
         if (!commentRepository.existsById(commentId)) {
             throw new RuntimeException("Comment not found with id: " + commentId);
         }

@@ -1,6 +1,5 @@
 package com.hits.language_school_back.dto;
 
-import com.hits.language_school_back.model.Group;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

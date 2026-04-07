@@ -6,12 +6,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
+import java.util.UUID;
 
-public interface TaskRepository extends JpaRepository<Task, Long> {
-    List<Task> findByUserId(Long teacherId);
+public interface TaskRepository extends JpaRepository<Task, UUID> {
+    List<Task> findByUserId(UUID teacherId);
 
     List<Task> findByGroupName(String groupName);
 
     @Query(nativeQuery = true, value = "select * from attachments a where a.task_id = :taskid;")
-    List<Attachment> getAttachmentsById(Long taskid);
+    List<Attachment> getAttachmentsById(UUID taskid);
 }

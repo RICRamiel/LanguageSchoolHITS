@@ -9,15 +9,15 @@ import java.util.UUID;
 
 
 public interface AttachmentService {
-    Attachment uploadAttachment(Long taskId, MultipartFile file, Long userId);
+    Attachment uploadAttachment(UUID taskId, MultipartFile file, UUID userId);
 
-    Attachment uploadAttachmentForNotification(UUID notificationId, MultipartFile file, Long userId);
+    Attachment uploadAttachmentForNotification(UUID notificationId, MultipartFile file, UUID userId);
 
-    void deleteAttachment(Long attachmentId);
+    void deleteAttachment(UUID attachmentId);
 
-    public String getDownloadLink(Long attachmentId);
+    public String getDownloadLink(UUID attachmentId);
 
-    InputStream downloadAttachment(Long attachmentId);
+    InputStream downloadAttachment(UUID attachmentId);
 
-    AttachmentDownloadInfo getDownloadInfo(Long attachmentId);
+    AttachmentDownloadInfo getDownloadInfo(UUID attachmentId);
 }

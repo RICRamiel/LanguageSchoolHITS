@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.UUID;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -67,7 +68,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public UserFullDTO getStudentById(Long id) {
+    public UserFullDTO getStudentById(UUID id) {
 
         User user = userRepository.findByIdAndRole(id, Role.STUDENT)
                 .orElseThrow(() -> new NoSuchElementException("Student not found"));
@@ -76,7 +77,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public List<UserDTO> getAllStudents(Long group) {
+    public List<UserDTO> getAllStudents(UUID group) {
 
         return userRepository.findAll().stream()
                 .filter(u -> u.getRole() == Role.STUDENT)
@@ -100,7 +101,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public UserDTO updateStudent(Long id, StudentUpdateDTO dto) {
+    public UserDTO updateStudent(UUID id, StudentUpdateDTO dto) {
 
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Student not found"));
@@ -115,7 +116,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public void deleteStudent(Long id) {
+    public void deleteStudent(UUID id) {
         log.debug("Attempting to delete student with id: {}", id);
 
         User teacher = userRepository.findById(id)
@@ -149,7 +150,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public UserFullDTO getTeacherById(Long id) {
+    public UserFullDTO getTeacherById(UUID id) {
 
         User user = userRepository.findByIdAndRole(id, Role.TEACHER)
                 .orElseThrow(() -> new NoSuchElementException("Teacher not found"));
@@ -167,7 +168,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public UserDTO updateTeacher(Long id, TeacherUpdateDTO dto) {
+    public UserDTO updateTeacher(UUID id, TeacherUpdateDTO dto) {
 
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Teacher not found"));
@@ -181,7 +182,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public void deleteTeacher(Long id) {
+    public void deleteTeacher(UUID id) {
         log.debug("Attempting to delete teacher with id: {}", id);
 
         User teacher = userRepository.findById(id)
@@ -197,7 +198,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     // ---------- USERS ----------
 
     @Override
-    public List<UserDTO> getUsers(Long group) {
+    public List<UserDTO> getUsers(UUID group) {
 
         return userRepository.findAll().stream()
                 .filter(u -> group == null || u.getGroups().stream().map(Group::getId).toList().contains(group))

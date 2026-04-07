@@ -4,14 +4,16 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
+import java.util.UUID;
+
 @Data
 @AllArgsConstructor
 @RequiredArgsConstructor
 @Builder
 public class CommentDTO {
-    private Long id;
+    private UUID id;
     private String text;
-    private Long userId;
-    private Long taskId;
+    private UUID userId;
+    private UUID taskId;
     private boolean privateStatus;
 }

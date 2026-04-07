@@ -6,17 +6,14 @@ import com.hits.language_school_back.dto.users.StudentCreateDTO;
 import com.hits.language_school_back.dto.users.StudentUpdateDTO;
 import com.hits.language_school_back.dto.users.TeacherCreateDTO;
 import com.hits.language_school_back.dto.users.TeacherUpdateDTO;
-import com.hits.language_school_back.enums.Role;
 import com.hits.language_school_back.service.UserService;
-import com.hits.language_school_back.model.Group;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/users")
@@ -31,7 +28,7 @@ public class UserController {
     }
 
     @GetMapping
-    public List<UserDTO> getUsers(@RequestParam(required = false) Long groupId) {
+    public List<UserDTO> getUsers(@RequestParam(required = false) UUID groupId) {
         return userService.getUsers(groupId);
     }
 
@@ -42,7 +39,7 @@ public class UserController {
     }
 
     @GetMapping("/students")
-    public List<UserDTO> getAllStudents(@RequestParam(required = false) Long groupId) {
+    public List<UserDTO> getAllStudents(@RequestParam(required = false) UUID groupId) {
         return userService.getAllStudents(groupId);
     }
 
@@ -52,18 +49,18 @@ public class UserController {
     }
 
     @GetMapping("/students/{id}")
-    public UserFullDTO getStudentById(@PathVariable Long id) {
+    public UserFullDTO getStudentById(@PathVariable UUID id) {
         return userService.getStudentById(id);
     }
 
     @PutMapping("/students/{id}")
-    public UserDTO updateStudent(@PathVariable Long id, @RequestBody StudentUpdateDTO dto) {
+    public UserDTO updateStudent(@PathVariable UUID id, @RequestBody StudentUpdateDTO dto) {
         return userService.updateStudent(id, dto);
     }
 
     @DeleteMapping("/students/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteStudent(@PathVariable Long id) {
+    public void deleteStudent(@PathVariable UUID id) {
         userService.deleteStudent(id);
     }
 
@@ -79,18 +76,18 @@ public class UserController {
     }
 
     @GetMapping("/teachers/{id}")
-    public UserFullDTO getTeacherById(@PathVariable Long id) {
+    public UserFullDTO getTeacherById(@PathVariable UUID id) {
         return userService.getTeacherById(id);
     }
 
     @PutMapping("/teachers/{id}")
-    public UserDTO updateTeacher(@PathVariable Long id, @RequestBody TeacherUpdateDTO dto) {
+    public UserDTO updateTeacher(@PathVariable UUID id, @RequestBody TeacherUpdateDTO dto) {
         return userService.updateTeacher(id, dto);
     }
 
     @DeleteMapping("/teachers/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteTeacher(@PathVariable Long id) {
+    public void deleteTeacher(@PathVariable UUID id) {
         userService.deleteTeacher(id);
     }
 }

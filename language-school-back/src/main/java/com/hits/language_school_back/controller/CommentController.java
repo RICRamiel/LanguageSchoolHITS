@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 @RestController
@@ -24,18 +25,18 @@ public class CommentController {
     }
 
     @PutMapping("/{commentId}/edit")
-    public ResponseEntity<CommentDTO> editComment(@RequestBody CommentDTO commentDTO, @PathVariable Long commentId){
+    public ResponseEntity<CommentDTO> editComment(@RequestBody CommentDTO commentDTO, @PathVariable UUID commentId){
         Comment comment = commentService.editComment(commentDTO, commentId);
         return ResponseEntity.ok(commentMapper.toDto(comment));
     }
 
     @DeleteMapping("/{commentId}/delete")
-    void deleteComment(@PathVariable Long commentId){
+    void deleteComment(@PathVariable UUID commentId){
         commentService.deleteComment(commentId);
     }
 
     @GetMapping("/{taskId}/get")
-    public ResponseEntity<List<CommentDTO>> getCommentsByTaskId(@PathVariable Long taskId){
+    public ResponseEntity<List<CommentDTO>> getCommentsByTaskId(@PathVariable UUID taskId){
         List<CommentDTO> comments = commentService.getCommentsByTaskId(taskId);
         return ResponseEntity.ok(comments);
     }

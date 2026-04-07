@@ -2,15 +2,10 @@ package com.hits.language_school_back.mapper;
 
 import com.hits.language_school_back.dto.AttachmentDownloadInfo;
 import com.hits.language_school_back.dto.NotificationDto;
-import com.hits.language_school_back.dto.UserDTO;
-import com.hits.language_school_back.dto.UserFullDTO;
 import com.hits.language_school_back.model.Notification;
-import com.hits.language_school_back.model.User;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-
-import static java.util.stream.Collectors.toList;
 
 @Component
 public class NotificationMapper {

@@ -7,13 +7,14 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class TaskTeacherDTO {
-    private Long id;
+    private UUID id;
     private String name;
     private String description;
     private LocalDate deadline;
