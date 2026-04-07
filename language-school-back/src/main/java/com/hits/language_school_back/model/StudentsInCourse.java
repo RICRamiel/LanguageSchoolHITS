@@ -1,12 +1,14 @@
 package com.hits.language_school_back.model;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.persistence.UniqueConstraint;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,7 +20,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"course_id", "student_id"}))
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -27,12 +29,12 @@ public class StudentsInCourse {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @NotBlank
-    private Integer courseGrade;
+    @NotNull
+    private Double courseGrade;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Course course;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private User student;
 }

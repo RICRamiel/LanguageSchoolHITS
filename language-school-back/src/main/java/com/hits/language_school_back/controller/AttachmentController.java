@@ -1,11 +1,9 @@
 package com.hits.language_school_back.controller;
 
 import com.hits.language_school_back.dto.AttachmentDownloadInfo;
-import com.hits.language_school_back.exception.FileStorageException;
 import com.hits.language_school_back.service.AttachmentService;
 import com.hits.language_school_back.service.MinioService;
 import com.hits.language_school_back.service.UserService;
-import io.minio.MinioClient;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +13,13 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
@@ -46,6 +50,14 @@ public class AttachmentController {
         attachmentService.uploadAttachmentForNotification(notificationId, file, userService.getMe(request).getId());
     }
 
+    @PostMapping(value = "/to-participation", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public void uploadAttachmentForParticipation(
+            @RequestParam("participationId") UUID participationId,
+            @RequestParam("file") MultipartFile file,
+            HttpServletRequest request) {
+        attachmentService.uploadAttachmentForParticipation(participationId, file, userService.getMe(request).getId());
+    }
+
     @DeleteMapping("/{attachmentId}")
     public void deleteAttachment(@PathVariable UUID attachmentId) {
         attachmentService.deleteAttachment(attachmentId);
@@ -54,26 +66,18 @@ public class AttachmentController {
     @GetMapping("/{attachmentId}/download")
     public ResponseEntity<Resource> downloadAttachment(@PathVariable UUID attachmentId) {
         try {
-            // Получаем информацию о файле
             AttachmentDownloadInfo info = attachmentService.getDownloadInfo(attachmentId);
-
-            // Скачиваем файл
             InputStream fileStream = attachmentService.downloadAttachment(attachmentId);
-
-            // Создаем ресурс
             InputStreamResource resource = new InputStreamResource(fileStream);
 
-            // Определяем Content-Type
             MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
             if (info.getFileType() != null) {
                 try {
                     mediaType = MediaType.parseMediaType(info.getFileType());
-                } catch (Exception e) {
-                    // игнорируем, оставляем OCTET_STREAM
+                } catch (Exception ignored) {
                 }
             }
 
-            // Возвращаем файл
             return ResponseEntity.ok()
                     .contentType(mediaType)
                     .contentLength(info.getFileSize())

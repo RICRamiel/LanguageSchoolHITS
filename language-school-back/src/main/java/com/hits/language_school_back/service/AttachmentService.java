@@ -7,15 +7,16 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.InputStream;
 import java.util.UUID;
 
-
 public interface AttachmentService {
     Attachment uploadAttachment(UUID taskId, MultipartFile file, UUID userId);
 
     Attachment uploadAttachmentForNotification(UUID notificationId, MultipartFile file, UUID userId);
 
+    Attachment uploadAttachmentForParticipation(UUID participationId, MultipartFile file, UUID userId);
+
     void deleteAttachment(UUID attachmentId);
 
-    public String getDownloadLink(UUID attachmentId);
+    String getDownloadLink(UUID attachmentId);
 
     InputStream downloadAttachment(UUID attachmentId);
 

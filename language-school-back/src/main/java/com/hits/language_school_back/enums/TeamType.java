@@ -4,6 +4,7 @@ import lombok.Getter;
 
 @Getter
 public enum TeamType {
+    SOLO("Индивидуально"),
     RANDOM("Случайно"),
     FREEROAM("Свободный выбор"),
     DRAFT("Драфт");

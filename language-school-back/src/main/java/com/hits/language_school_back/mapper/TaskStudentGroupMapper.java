@@ -6,17 +6,18 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
 public class TaskStudentGroupMapper {
     private final TaskStudentMapper taskStudentMapper;
 
-    public TaskStudentDTO toDto(Task task) {
-        return taskStudentMapper.toDto(task);
+    public TaskStudentDTO toDto(Task task, UUID userId) {
+        return taskStudentMapper.toDto(task, userId);
     }
 
-    public List<TaskStudentDTO> toDtoList(List<Task> tasks) {
-        return taskStudentMapper.toDtoList(tasks);
+    public List<TaskStudentDTO> toDtoList(List<Task> tasks, UUID userId) {
+        return taskStudentMapper.toDtoList(tasks, userId);
     }
 }

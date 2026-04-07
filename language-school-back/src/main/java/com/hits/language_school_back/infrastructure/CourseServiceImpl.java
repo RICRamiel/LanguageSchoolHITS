@@ -73,14 +73,14 @@ public class CourseServiceImpl {
             throw new UserNotFoundException("Students with one of ids" + studentIds + " not found");
         }
         Course currCourse = courseRepository.findById(courseId).orElseThrow(() -> new CourseNotFound("Course with id" + courseId + " not found"));
-        List<StudentsInCourse> currStudents = currCourse.getStudents();
+        List<StudentsInCourse> currStudents = currCourse.getStudents() == null ? List.of() : currCourse.getStudents();
         List<User> studentsToAdd = userRepository.findAllById(studentIds);
         List<User> currStudentsUser = currStudents.stream().map(StudentsInCourse::getStudent).collect(Collectors.toList());
         studentsToAdd.addAll(currStudentsUser);
         Set<User> toAdd = new HashSet<>(studentsToAdd);
         List<StudentsInCourse> to = toAdd.stream()
                 .map(student -> StudentsInCourse.builder()
-                        .courseGrade(0)
+                        .courseGrade(0D)
                         .course(currCourse)
                         .student(student)
                         .build()).toList();
