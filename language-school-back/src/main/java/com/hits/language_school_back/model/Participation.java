@@ -1,7 +1,7 @@
 package com.hits.language_school_back.model;
 
+import com.hits.language_school_back.enums.SolutionStatus;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -9,31 +9,38 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+@Getter
+@Setter
 @Entity
-@Data
-@Table(name = "notification")
-public class Notification {
+@Table
+public class Participation {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @NotBlank
-    private String text;
+    private Boolean isCaptain;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    private Course course;
+    @NotBlank
+    private Integer mark;
 
-    private LocalDate creationDate;
+    @ManyToOne
+    private User student;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    private User createdBy;
-
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "notification")
+    @OneToMany(mappedBy = "participation")
     private List<Attachment> attachmentList;
+
+    @ManyToOne
+    private Team team;
+
+    private SolutionStatus solutionStatus;
+
+    @OneToMany(mappedBy = "participation")
+    private List<Vote> vote;
 }

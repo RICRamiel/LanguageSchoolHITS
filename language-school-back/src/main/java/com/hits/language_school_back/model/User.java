@@ -1,8 +1,8 @@
 package com.hits.language_school_back.model;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.hits.language_school_back.enums.Role;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -10,6 +10,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -20,31 +21,28 @@ import java.util.List;
 @Table(name = "users")
 public class User implements UserDetails {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
+    @NotBlank
     private String firstName;
+    @NotBlank
     private String lastName;
+    @NotBlank
     private String email;
+    @NotBlank
     private String password;
+
     private String grade;
 
-    @OneToMany
-    private List<Attachment> attachmentList;
+    @OneToMany(mappedBy = "student")
+    private List<StudentsInCourse> course;
 
-    @ManyToMany
-    @JoinTable(
-            name = "user_groups",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "group_id")
-    )
-    private List<Group> groups;
+    @OneToMany(mappedBy = "student")
+    private List<Participation> participationList;
 
-    @OneToMany
-    private List<Notification> createdNotifications;
-
-    @ManyToMany(fetch = FetchType.LAZY)
-    private List<Language> languages;
+    @OneToMany(mappedBy = "user")
+    private List<Vote> voteList;
 
     @Enumerated(EnumType.STRING)
     private Role role;
