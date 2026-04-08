@@ -17,6 +17,7 @@ import com.hits.language_school_back.repository.StudentsInCourseRepository;
 import com.hits.language_school_back.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
@@ -59,7 +60,7 @@ public class CourseServiceImpl {
     }
 
     public List<CourseDTO> findAll() {
-        return courseRepository.findAll().stream().map(CourseMapper::courseToCourseDTO).collect(Collectors.toList());
+        return courseRepository.findAll().stream().map(CourseMapper::courseToCourseDTO).toList();
     }
 
     public boolean checkStudentInCourse(UUID courseId, UUID studentId) {
@@ -68,24 +69,40 @@ public class CourseServiceImpl {
                 && studentsInCourseRepository.existsByStudentIdAndCourseId(studentId, courseId);
     }
 
+    @Transactional
     public boolean addStudentsToCourse(UUID courseId, List<UUID> studentIds) {
-        if (!userRepository.existsAllById(studentIds, studentIds.size())) {
-            throw new UserNotFoundException("Students with one of ids" + studentIds + " not found");
+        if (studentIds == null || studentIds.isEmpty()) {
+            return false;
         }
-        Course currCourse = courseRepository.findById(courseId).orElseThrow(() -> new CourseNotFound("Course with id" + courseId + " not found"));
-        List<StudentsInCourse> currStudents = currCourse.getStudents() == null ? List.of() : currCourse.getStudents();
+
+        Course currCourse = courseRepository.findById(courseId)
+                .orElseThrow(() -> new CourseNotFound("Course with id " + courseId + " not found"));
+
         List<User> studentsToAdd = userRepository.findAllById(studentIds);
-        List<User> currStudentsUser = currStudents.stream().map(StudentsInCourse::getStudent).collect(Collectors.toList());
-        studentsToAdd.addAll(currStudentsUser);
-        Set<User> toAdd = new HashSet<>(studentsToAdd);
-        List<StudentsInCourse> to = toAdd.stream()
+        if (studentsToAdd.size() != studentIds.size()) {
+            Set<UUID> foundIds = studentsToAdd.stream().map(User::getId).collect(Collectors.toSet());
+            List<UUID> missingIds = studentIds.stream().filter(id -> !foundIds.contains(id)).toList();
+            throw new UserNotFoundException("Students with ids " + missingIds + " not found");
+        }
+
+        Set<UUID> alreadyEnrolledIds = new HashSet<>(
+                studentsInCourseRepository.findAlreadyEnrolledStudentIds(courseId, studentIds)
+        );
+
+        List<User> actualStudentsToAdd = studentsToAdd.stream()
+                .filter(student -> !alreadyEnrolledIds.contains(student.getId()))
+                .toList();
+        if (actualStudentsToAdd.isEmpty()) {
+            return false;
+        }
+        List<StudentsInCourse> newEnrollments = actualStudentsToAdd.stream()
                 .map(student -> StudentsInCourse.builder()
                         .courseGrade(0D)
                         .course(currCourse)
                         .student(student)
-                        .build()).toList();
-
-        List<StudentsInCourse> saved = studentsInCourseRepository.saveAll(to);
-        return saved.isEmpty();
+                        .build())
+                .toList();
+        List<StudentsInCourse> saved = studentsInCourseRepository.saveAll(newEnrollments);
+        return !saved.isEmpty();
     }
 }

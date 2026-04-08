@@ -1,14 +1,18 @@
 package com.hits.language_school_back.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 import java.util.UUID;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class CourseStudentAddDTO {
-    private UUID CourseId;
-    private List<UUID> StudentIds;
+    private UUID courseId;
+    private List<UUID> studentIds;
 }
