@@ -5,14 +5,12 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
 import java.util.UUID;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class CourseStudentAddDTO {
-    private UUID courseId;
-    private List<UUID> studentIds;
+public class TaskSolutionSubmitDTO {
+    private UUID teamId;
 }
