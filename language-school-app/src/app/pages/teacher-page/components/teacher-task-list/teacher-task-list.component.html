@@ -1,8 +1,8 @@
 ﻿<div class="tasks-section">
   <div class="tasks-section__header">
-    <h3 class="tasks-section__title">Task List</h3>
+    <h3 class="tasks-section__title">Список заданий</h3>
     <button class="tasks-section__create" type="button" (click)="createTask.emit()">
-      Create Task
+      Создать задание
     </button>
   </div>
 
@@ -71,7 +71,7 @@
               type="button"
               (click)="openGrading.emit({ taskId: task.id, group: task.group, title: task.title })"
             >
-              Set Grades
+              Выставить оценки
             </button>
             <button
               class="task-card__details"
@@ -86,7 +86,7 @@
                 />
                 <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" />
               </svg>
-              Details
+              Подробнее
             </button>
           </div>
         </div>

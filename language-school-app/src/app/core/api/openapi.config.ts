@@ -1,6 +1,6 @@
 import { API_URL } from '../../../secrets';
 
-const OPENAPI_SERVER_URL = 'http://worker.thallassianangel.su';
+const OPENAPI_SERVER_URL = 'http://api.thallassianangel.su:5461';
 
 export const OPENAPI_PATHS = {
   auth: {
@@ -11,13 +11,14 @@ export const OPENAPI_PATHS = {
     me: '/api/users/me',
   },
   notifications: {
-    byGroup: (groupId: number) => `/notification/by-group/${groupId}`,
-    forStudent: (studentId: number) => `/notification/for-students/${studentId}`,
+    byCourse: (courseId: number | string) => `/notification/by-course/${encodeURIComponent(String(courseId))}`,
+    byGroup: (groupId: number | string) => `/notification/by-group/${encodeURIComponent(String(groupId))}`,
+    forStudent: (studentId: number | string) => `/notification/for-students/${encodeURIComponent(String(studentId))}`,
     create: '/notification/create',
   },
   comments: {
     create: '/comment/create',
-    byTask: (taskId: number) => `/comment/${taskId}/get`,
+    byTask: (taskId: number | string) => `/comment/${encodeURIComponent(String(taskId))}/get`,
   },
   attachments: {
     upload: '/attachments',
@@ -25,17 +26,21 @@ export const OPENAPI_PATHS = {
     download: (attachmentId: number | string) => `/attachments/${attachmentId}/download`,
   },
   tasks: {
+    byCourse: (courseId: number | string) => `/task/course/${encodeURIComponent(String(courseId))}`,
     byGroupName: (groupName: string) =>
       `/task/get_by_group_name?groupName=${encodeURIComponent(groupName)}`,
     byGroupNameReal: (groupName: string) =>
       `/task/get_by_group_name_real?groupName=${encodeURIComponent(groupName)}`,
   },
   teacher: {
-    tasksByTeacher: (teacherId: number) => `/task/${teacherId}/get_by_teacher`,
+    tasksByTeacher: (teacherId: number | string) => `/task/${encodeURIComponent(String(teacherId))}/get_by_teacher`,
     createTask: '/task/create',
-    groupsByTeacher: (teacherId: number) => `/group/${teacherId}/get_groups_by_teacher`,
+    groupsByTeacher: (teacherId: number | string) => `/group/${encodeURIComponent(String(teacherId))}/get_groups_by_teacher`,
     groupsWithFilters: '/group/get-groups-with-filters',
-    commentsByTask: (taskId: number) => `/comment/${taskId}/get`,
+    commentsByTask: (taskId: number | string) => `/comment/${encodeURIComponent(String(taskId))}/get`,
+  },
+  courses: {
+    list: '/course',
   },
   admin: {
     languages: {
@@ -54,18 +59,18 @@ export const OPENAPI_PATHS = {
     },
     students: {
       list: '/api/users/students',
-      listByGroup: (groupId: number) => `/api/users/students?groupId=${groupId}`,
+      listByGroup: (groupId: number | string) => `/api/users/students?groupId=${encodeURIComponent(String(groupId))}`,
       create: '/api/users/students',
-      get: (id: number) => `/api/users/students/${id}`,
-      update: (id: number) => `/api/users/students/${id}`,
-      delete: (id: number) => `/api/users/students/${id}`,
+      get: (id: number | string) => `/api/users/students/${encodeURIComponent(String(id))}`,
+      update: (id: number | string) => `/api/users/students/${encodeURIComponent(String(id))}`,
+      delete: (id: number | string) => `/api/users/students/${encodeURIComponent(String(id))}`,
     },
     teachers: {
       list: '/api/users/teachers',
       create: '/api/users/teachers', // POST to same path
-      get: (id: number) => `/api/users/teachers/${id}`,
-      update: (id: number) => `/api/users/teachers/${id}`,
-      delete: (id: number) => `/api/users/teachers/${id}`,
+      get: (id: number | string) => `/api/users/teachers/${encodeURIComponent(String(id))}`,
+      update: (id: number | string) => `/api/users/teachers/${encodeURIComponent(String(id))}`,
+      delete: (id: number | string) => `/api/users/teachers/${encodeURIComponent(String(id))}`,
     },
   },
 } as const;

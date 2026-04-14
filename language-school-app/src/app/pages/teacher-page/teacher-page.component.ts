@@ -1,4 +1,4 @@
-import { AsyncPipe } from '@angular/common';
+﻿import { AsyncPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -55,7 +55,7 @@ export class TeacherPageComponent implements OnInit {
   private readonly teacherService = inject(TeacherService);
   private readonly destroyRef = inject(DestroyRef);
 
-  private teacherId: number | null = null;
+  private teacherId: string | null = null;
 
   private readonly groupsSubject = new BehaviorSubject<TeacherGroup[]>([]);
   private readonly allTasksSubject = new BehaviorSubject<TeacherTask[]>([]);
@@ -68,7 +68,7 @@ export class TeacherPageComponent implements OnInit {
 
   fullName = '';
   email = '';
-  badge = 'Teacher';
+  badge = 'Преподаватель';
   selectedGroupFilter = 'all';
 
   readonly groups$ = this.groupsSubject.asObservable();
@@ -81,7 +81,7 @@ export class TeacherPageComponent implements OnInit {
       if (selectedGroupFilter === 'all') {
         return notifications;
       }
-      const groupId = Number(selectedGroupFilter);
+      const groupId = selectedGroupFilter;
       return notifications.filter((item) => item.groupId === groupId);
     }),
     shareReplay({ bufferSize: 1, refCount: true }),
@@ -97,13 +97,13 @@ export class TeacherPageComponent implements OnInit {
         return of(allTasks);
       }
 
-      const groupId = Number(selectedGroupFilter);
+      const groupId = selectedGroupFilter;
       const selectedGroup = groups.find((group) => group.id === groupId);
       if (!selectedGroup) {
         return of(allTasks);
       }
 
-      return this.teacherService.getTasksByGroupName(selectedGroup.name).pipe(
+      return this.teacherService.getTasksByCourseId(selectedGroup.id).pipe(
         catchError(() => of([] as TeacherTask[])),
       );
     }),
@@ -122,7 +122,7 @@ export class TeacherPageComponent implements OnInit {
   notificationAttachmentUploading = false;
   gradingStudentsLoading = false;
   gradingStudentsError: string | null = null;
-  gradingTaskId: number | null = null;
+  gradingTaskId: string | null = null;
   gradingTaskTitle = '';
   selectedTask: TeacherTask | null = null;
   selectedTaskSection: TeacherTaskDetailsSection = 'overview';
@@ -193,7 +193,7 @@ export class TeacherPageComponent implements OnInit {
     this.selectedTaskSection = payload.section;
     this.isTaskDetailsModalOpen = true;
 
-    if (task.id > 0) {
+    if (task.id) {
       this.teacherService.getTaskComments(task.id).pipe(
         takeUntilDestroyed(this.destroyRef),
       ).subscribe({
@@ -206,7 +206,7 @@ export class TeacherPageComponent implements OnInit {
 
   onSubmitTaskComment(text: string): void {
     const taskId = this.selectedTask?.id;
-    if (!taskId || taskId <= 0 || !this.teacherId) {
+    if (!taskId || !this.teacherId) {
       return;
     }
 
@@ -247,7 +247,7 @@ export class TeacherPageComponent implements OnInit {
             return;
           }
 
-          this.downloadBlob(result.blob, result.fileName || attachment.fileName || 'attachment');
+          this.downloadBlob(result.blob, result.fileName || attachment.fileName || 'вложение');
         },
       });
   }
@@ -277,7 +277,7 @@ export class TeacherPageComponent implements OnInit {
             return;
           }
 
-          this.downloadBlob(result.blob, result.fileName || attachment.fileName || 'attachment');
+          this.downloadBlob(result.blob, result.fileName || attachment.fileName || 'вложение');
         },
       });
   }
@@ -364,7 +364,7 @@ export class TeacherPageComponent implements OnInit {
     this.loadStudentsForGrading();
   }
 
-  onStudentGradeInput(studentId: number, grade: string): void {
+  onStudentGradeInput(studentId: string, grade: string): void {
     this.gradeStudentsSubject.next(
       this.gradeStudentsSubject.value.map((student) =>
         student.id === studentId
@@ -378,7 +378,7 @@ export class TeacherPageComponent implements OnInit {
     );
   }
 
-  onSaveStudentGrade(studentId: number): void {
+  onSaveStudentGrade(studentId: string): void {
     const student = this.gradeStudentsSubject.value.find((item) => item.id === studentId);
     if (!student) {
       return;
@@ -417,7 +417,7 @@ export class TeacherPageComponent implements OnInit {
               item.id === studentId
                 ? {
                     ...item,
-                    error: 'Failed to save grade',
+                    error: 'Не удалось сохранить оценку',
                   }
                 : item,
             ),
@@ -429,7 +429,7 @@ export class TeacherPageComponent implements OnInit {
       .subscribe();
   }
 
-  onOpenGradingFromTask(payload: { taskId: number; group: string; title: string }): void {
+  onOpenGradingFromTask(payload: { taskId: string; group: string; title: string }): void {
     this.gradingTaskId = payload.taskId;
     this.gradingTaskTitle = payload.title;
 
@@ -454,17 +454,17 @@ export class TeacherPageComponent implements OnInit {
       .getMe()
       .pipe(
         tap((profile) => {
-          this.teacherId = profile.id;
+          this.teacherId = String(profile.id ?? '').trim() || null;
           this.fullName = [profile.lastName, profile.firstName].filter(Boolean).join(' ').trim();
           this.email = profile.email;
         }),
         switchMap((profile) => {
           const fallbackGroups: TeacherGroup[] = (profile.groups ?? [])
             .map((group) => ({
-              id: Number(group.id),
+              id: String(group.id ?? '').trim(),
               name: (group.name ?? '').trim(),
             }))
-            .filter((group) => Number.isFinite(group.id) && group.id > 0 && Boolean(group.name));
+            .filter((group) => Boolean(group.id) && Boolean(group.name));
 
           const groups$ = this.teacherService
             .getGroupsByTeacher(profile.id)
@@ -534,7 +534,7 @@ export class TeacherPageComponent implements OnInit {
           this.gradingStudentsLoading = false;
         }),
         catchError(() => {
-          this.gradingStudentsError = 'Failed to load students for group';
+          this.gradingStudentsError = 'Не удалось загрузить студентов курса';
           return of([] as TeacherStudentGrade[]);
         }),
         takeUntilDestroyed(this.destroyRef),
@@ -546,12 +546,11 @@ export class TeacherPageComponent implements OnInit {
       });
   }
 
-  private extractSelectedGroupId(): number | null {
+  private extractSelectedGroupId(): string | null {
     if (this.selectedGroupFilter === 'all') {
       return null;
     }
-    const groupId = Number(this.selectedGroupFilter);
-    return Number.isFinite(groupId) && groupId > 0 ? groupId : null;
+    return this.selectedGroupFilter.trim() || null;
   }
 
   private buildTabs(notificationCount: number) {
@@ -561,14 +560,14 @@ export class TeacherPageComponent implements OnInit {
     ];
   }
 
-  private applyTaskComments(taskId: number, comments: TeacherTaskComment[]): void {
+  private applyTaskComments(taskId: string, comments: TeacherTaskComment[]): void {
     this.allTasksSubject.next(
       this.allTasksSubject.value.map((item) =>
         item.id === taskId
           ? {
               ...item,
               taskComments: comments,
-              comments: `${comments.length} comments`,
+              comments: `${comments.length} комментариев`,
             }
           : item,
       ),
@@ -578,7 +577,7 @@ export class TeacherPageComponent implements OnInit {
       this.selectedTask = {
         ...this.selectedTask,
         taskComments: comments,
-        comments: `${comments.length} comments`,
+        comments: `${comments.length} комментариев`,
       };
     }
   }
@@ -608,6 +607,7 @@ export class TeacherPageComponent implements OnInit {
     URL.revokeObjectURL(url);
   }
 }
+
 
 
 

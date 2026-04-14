@@ -9,12 +9,12 @@ export type TaskResolveType =
   | 'AT_LEAST_VOTES_SOLUTION';
 
 export type TaskDetailsOpenPayload = {
-  taskId: number;
+  taskId: string;
   section: TeacherTaskDetailsSection;
 };
 
 export type TeacherTaskSubmission = {
-  id: number | null;
+  id: string | number | null;
   fileName: string;
   fileType: string;
   fileSize: number | null;
@@ -28,7 +28,7 @@ export type TeacherTaskComment = {
 };
 
 export type TeacherTask = {
-  id: number;
+  id: string;
   title: string;
   description: string;
   dueDate: string;
@@ -54,12 +54,12 @@ export type TeacherNotification = {
   title: string;
   text: string;
   date: string;
-  groupId: number;
+  groupId: string;
   attachment: NotificationAttachment | null;
 };
 
 export type NotificationAttachment = {
-  id: number | null;
+  id: string | number | null;
   objectKey: string | null;
   fileName: string;
   fileType: string;
@@ -67,12 +67,12 @@ export type NotificationAttachment = {
 };
 
 export type TeacherGroup = {
-  id: number;
+  id: string;
   name: string;
 };
 
 export type TeacherStudentGrade = {
-  id: number;
+  id: string;
   firstName: string;
   lastName: string;
   fullName: string;
@@ -86,7 +86,7 @@ export type CreateTaskPayload = {
   title: string;
   description: string;
   dueDate: string;
-  groupId: number;
+  groupId: string;
   groupName: string;
   assignmentType: TaskAssignmentType;
   teamType: TaskTeamType;
@@ -96,11 +96,12 @@ export type CreateTaskPayload = {
   minTeamsAmount: number | null;
   maxTeamsAmount: number | null;
   votesThreshold: number | null;
+  teamsCreationTimeout: string | null;
 };
 
 export type CreateNotificationPayload = {
   title: string;
   content: string;
-  groupId: number;
+  groupId: string;
   attachmentFile?: File | null;
 };

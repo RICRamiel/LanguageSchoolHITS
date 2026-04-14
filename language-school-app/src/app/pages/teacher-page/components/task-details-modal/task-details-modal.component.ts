@@ -1,5 +1,5 @@
-import {Component, OnInit, input, output, signal, ChangeDetectionStrategy} from '@angular/core';
-import {TeacherTask, TeacherTaskDetailsSection, TeacherTaskSubmission} from '../../teacher-page.types';
+﻿import { Component, OnInit, input, output, signal, ChangeDetectionStrategy } from '@angular/core';
+import { TeacherTask, TeacherTaskDetailsSection, TeacherTaskSubmission } from '../../teacher-page.types';
 
 @Component({
   selector: 'app-task-details-modal',
@@ -18,11 +18,11 @@ export class TaskDetailsModalComponent implements OnInit {
   readonly selectedSection = signal<TeacherTaskDetailsSection>('overview');
   readonly commentText = signal('');
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.selectedSection.set(this.activeSection());
   }
 
-  setSection(section: TeacherTaskDetailsSection) {
+  setSection(section: TeacherTaskDetailsSection): void {
     this.selectedSection.set(section);
   }
 

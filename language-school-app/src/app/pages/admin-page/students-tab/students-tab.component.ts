@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
+﻿import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { ButtonComponent } from '../../../shared/ui/button/button.component';
 import { StudentFormComponent, type StudentFormValue } from '../student-form/student-form.component';
 import { AssignGroupModalComponent } from '../assign-group-modal/assign-group-modal.component';
@@ -274,7 +274,7 @@ export class StudentsTabComponent implements OnInit {
           this.cdr.detectChanges();
         }),
         catchError((err) => {
-          this.error = err?.message ?? 'Ошибка привязки к группе';
+          this.error = err?.message ?? 'Ошибка привязки к курсу';
           this.cdr.detectChanges();
           return EMPTY;
         }),

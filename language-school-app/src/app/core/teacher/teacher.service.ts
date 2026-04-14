@@ -15,18 +15,20 @@ import {
 } from './teacher.models';
 
 type TeacherComment = {
-  id?: number;
+  id?: number | string;
   text?: string;
-  userId?: number;
-  taskId?: number;
+  userId?: number | string;
+  taskId?: number | string;
   privateStatus?: boolean;
 };
 
 type TeacherTaskResponse = {
-  id?: number;
+  id?: number | string;
   name?: string;
   description?: string;
   deadline?: string;
+  courseId?: number | string;
+  courseName?: string;
   teamType?: TeacherTask['teamType'];
   resolveType?: TeacherTask['resolveType'];
   maxTeamSize?: number | null;
@@ -39,12 +41,12 @@ type TeacherTaskResponse = {
   taskStatus?: 'COMPLETE' | 'OVERDUE' | 'PENDING';
   groupName?: string;
   teacher?: {
-    id?: number;
+    id?: number | string;
     firstName?: string;
     lastName?: string;
     email?: string;
     groups?: Array<{
-      id?: number;
+      id?: number | string;
       name?: string;
     }>;
     role?: 'TEACHER' | 'STUDENT' | 'ADMIN';
@@ -52,12 +54,12 @@ type TeacherTaskResponse = {
 };
 
 type TeacherGroupResponse = {
-  id?: number;
+  id?: number | string;
   name?: string;
 };
 
 type TeacherStudentResponse = {
-  id?: number;
+  id?: number | string;
   firstName?: string;
   lastName?: string;
   email?: string;
@@ -66,7 +68,8 @@ type TeacherStudentResponse = {
 type TeacherNotificationResponse = {
   id?: string;
   text?: string;
-  groupId?: number;
+  groupId?: number | string;
+  courseId?: number | string;
   creationDate?: string;
   attachmentDownloadInfo?: TeacherAttachmentResponse | null;
   attachmentDownloadInfos?: TeacherAttachmentResponse[] | null;
@@ -75,8 +78,8 @@ type TeacherNotificationResponse = {
 };
 
 type TeacherAttachmentResponse = {
-  id?: number;
-  attachmentId?: number;
+  id?: number | string;
+  attachmentId?: number | string;
   fileName?: string;
   name?: string;
   fileType?: string;
@@ -90,8 +93,8 @@ type TeacherAttachmentResponse = {
 export class TeacherService {
   private readonly http = inject(HttpClient);
 
-  getStudentsByGroup(groupId: number): Observable<TeacherStudentGrade[]> {
-    if (!Number.isFinite(groupId) || groupId <= 0) {
+  getStudentsByGroup(groupId: string): Observable<TeacherStudentGrade[]> {
+    if (!String(groupId).trim()) {
       return of([]);
     }
 
@@ -101,14 +104,14 @@ export class TeacherService {
         map((students) =>
           (students ?? [])
             .map((student) => {
-              const id = Number(student.id);
-              if (!Number.isFinite(id) || id <= 0) {
+              const id = String(student.id ?? '').trim();
+              if (!id) {
                 return null;
               }
 
               const firstName = (student.firstName ?? '').trim();
               const lastName = (student.lastName ?? '').trim();
-              const fullName = [lastName, firstName].filter(Boolean).join(' ').trim() || `Student #${id}`;
+              const fullName = [lastName, firstName].filter(Boolean).join(' ').trim() || `Студент #${id}`;
 
               return {
                 id,
@@ -141,43 +144,17 @@ export class TeacherService {
       .pipe(map(() => void 0));
   }
 
-  getGroupsByTeacher(teacherId: number): Observable<TeacherGroup[]> {
-    const teacherGroups$ = this.http
-      .get<TeacherGroupResponse[]>(withOpenApiBase(OPENAPI_PATHS.teacher.groupsByTeacher(teacherId)))
+  getGroupsByTeacher(teacherId: string | number): Observable<TeacherGroup[]> {
+    return this.http
+      .get<TeacherGroupResponse[]>(withOpenApiBase(OPENAPI_PATHS.courses.list))
       .pipe(
         map((groups) => this.normalizeGroups(groups)),
+        map((groups) => this.sortGroups(groups)),
         catchError(() => of([] as TeacherGroup[])),
       );
-
-    const filteredGroups$ = this.http
-      .get<TeacherGroupResponse[]>(withOpenApiBase(OPENAPI_PATHS.teacher.groupsWithFilters))
-      .pipe(
-        map((groups) => this.normalizeGroups(groups)),
-        catchError(() => of([] as TeacherGroup[])),
-      );
-
-    return forkJoin({ teacherGroups: teacherGroups$, filteredGroups: filteredGroups$ }).pipe(
-      map(({ teacherGroups, filteredGroups }) => {
-        if (!teacherGroups.length) {
-          return [];
-        }
-
-        if (!filteredGroups.length) {
-          return this.sortGroups(teacherGroups);
-        }
-
-        const teacherIds = new Set(teacherGroups.map((group) => group.id));
-        const intersection = filteredGroups.filter((group) => teacherIds.has(group.id));
-        if (!intersection.length) {
-          return this.sortGroups(teacherGroups);
-        }
-
-        return this.sortGroups(intersection);
-      }),
-    );
   }
 
-  getTasksByTeacher(teacherId: number): Observable<TeacherTask[]> {
+  getTasksByTeacher(teacherId: string | number): Observable<TeacherTask[]> {
     return this.http
       .get<unknown>(withOpenApiBase(OPENAPI_PATHS.teacher.tasksByTeacher(teacherId)))
       .pipe(
@@ -185,44 +162,42 @@ export class TeacherService {
           this.normalizeTaskList(tasks).map((task, index) =>
             this.mapTask(
               task,
-              (task.groupName ?? '').trim() || 'Group',
-              task.id && Number.isFinite(task.id) ? task.id : -(index + 1),
+              (task.groupName ?? '').trim() || 'Курс',
+              String(task.id ?? `-${index + 1}`),
             ),
           ),
         ),
       );
   }
 
-  getTasksByGroupName(groupName: string): Observable<TeacherTask[]> {
-    const normalizedGroupName = groupName.trim();
-    if (!normalizedGroupName) {
+  getTasksByCourseId(courseId: number | string): Observable<TeacherTask[]> {
+    const normalizedCourseId = String(courseId).trim();
+    if (!normalizedCourseId) {
       return of([]);
     }
 
     return this.http
-      .get<unknown>(
-        withOpenApiBase(OPENAPI_PATHS.tasks.byGroupNameReal(normalizedGroupName)),
-      )
+      .get<unknown>(withOpenApiBase(OPENAPI_PATHS.tasks.byCourse(normalizedCourseId)))
       .pipe(
         map((tasks) =>
           this.normalizeTaskList(tasks).map((task, index) =>
             this.mapTask(
               task,
-              normalizedGroupName,
-              task.id && Number.isFinite(task.id) ? task.id : -(index + 1),
+              (task.courseName ?? task.groupName ?? '').trim(),
+              String(task.id ?? `-${index + 1}`),
             ),
           ),
         ),
       );
   }
 
-  getTaskComments(taskId: number): Observable<TeacherTask['taskComments']> {
+  getTaskComments(taskId: string): Observable<TeacherTask['taskComments']> {
     return this.http
       .get<TeacherComment[]>(withOpenApiBase(OPENAPI_PATHS.teacher.commentsByTask(taskId)))
       .pipe(
         map((comments) =>
           (comments ?? []).map((comment) => ({
-            studentName: comment.userId ? `User #${comment.userId}` : 'Student',
+            studentName: comment.userId ? `Пользователь #${comment.userId}` : 'Студент',
             text: (comment.text ?? '').trim(),
             createdAt: '',
           })),
@@ -231,8 +206,8 @@ export class TeacherService {
   }
 
   createComment(
-    taskId: number,
-    userId: number,
+    taskId: string,
+    userId: string,
     text: string,
   ): Observable<TeacherTask['taskComments'][number]> {
     return this.http
@@ -244,7 +219,7 @@ export class TeacherService {
       })
       .pipe(
         map((comment) => ({
-          studentName: comment?.userId ? `User #${comment.userId}` : 'Student',
+          studentName: comment?.userId ? `Пользователь #${comment.userId}` : 'Студент',
           text: (comment?.text ?? text).trim(),
           createdAt: '',
         })),
@@ -259,7 +234,8 @@ export class TeacherService {
         name: payload.title,
         description: payload.description,
         deadline: payload.dueDate,
-        groupName: payload.groupName,
+        courseId: payload.groupId,
+        courseName: payload.groupName,
         teamType: payload.teamType === 'CUSTOM' ? 'FREEROAM' : payload.teamType,
         resolveType: payload.resolveType,
         maxTeamSize: isTeamTask ? payload.maxTeamSize : null,
@@ -267,17 +243,18 @@ export class TeacherService {
         maxTeamsAmount: isTeamTask ? payload.maxTeamsAmount : null,
         minTeamsAmount: isTeamTask ? payload.minTeamsAmount : null,
         votesThreshold: payload.resolveType === 'AT_LEAST_VOTES_SOLUTION' ? payload.votesThreshold : null,
+        teamsCreationTimeout: isTeamTask && payload.teamType === 'DRAFT' ? payload.teamsCreationTimeout : null,
       })
       .pipe(
         map((task) => {
-          const id = task?.id && Number.isFinite(task.id) ? task.id : Date.now();
+          const id = String(task?.id ?? Date.now());
           return this.mapTask(task, payload.groupName, id, payload.assignmentType);
         }),
       );
   }
 
-  getNotificationsByGroupIds(groupIds: number[]): Observable<TeacherNotification[]> {
-    const uniqueGroupIds = [...new Set(groupIds.filter((groupId) => Number.isFinite(groupId) && groupId > 0))];
+  getNotificationsByGroupIds(groupIds: string[]): Observable<TeacherNotification[]> {
+    const uniqueGroupIds = [...new Set(groupIds.map((groupId) => String(groupId).trim()).filter(Boolean))];
     if (!uniqueGroupIds.length) {
       return of([]);
     }
@@ -285,7 +262,7 @@ export class TeacherService {
     return forkJoin(
       uniqueGroupIds.map((groupId) =>
         this.http.get<TeacherNotificationResponse[]>(
-          withOpenApiBase(OPENAPI_PATHS.notifications.byGroup(groupId)),
+          withOpenApiBase(OPENAPI_PATHS.notifications.byCourse(groupId)),
         ),
       ),
     ).pipe(
@@ -317,7 +294,7 @@ export class TeacherService {
       switchMap((files) =>
         this.http.post<TeacherNotificationResponse>(withOpenApiBase(OPENAPI_PATHS.notifications.create), {
           text: composedText,
-          groupId: payload.groupId,
+          courseId: payload.groupId,
           files,
         }),
       ),
@@ -326,7 +303,7 @@ export class TeacherService {
           {
             ...notification,
             text: notification?.text ?? composedText,
-            groupId: notification?.groupId ?? payload.groupId,
+            courseId: notification?.courseId ?? payload.groupId,
           },
           normalizedTitle,
         ),
@@ -370,7 +347,7 @@ export class TeacherService {
       return {
         id: null,
         objectKey: null,
-        fileName: fallbackFile.name || 'attachment',
+        fileName: fallbackFile.name || 'вложение',
         fileType: fallbackFile.type || '',
         fileSize: fallbackFile.size,
       };
@@ -384,7 +361,7 @@ export class TeacherService {
         : null;
     const objectKey = this.asTrimmedString(raw['objectKey']) || null;
 
-    const fileName = this.asTrimmedString(raw['fileName'] ?? raw['name']) || fallbackFile.name || 'attachment';
+    const fileName = this.asTrimmedString(raw['fileName'] ?? raw['name']) || fallbackFile.name || 'вложение';
     const fileType = this.asTrimmedString(raw['fileType'] ?? raw['contentType']) || fallbackFile.type || '';
     const sizeCandidate = raw['fileSize'] ?? raw['size'];
     const fileSize =
@@ -423,7 +400,7 @@ export class TeacherService {
       const id = this.resolveAttachmentId(candidate.id ?? candidate.attachmentId);
       const objectKey = (candidate.objectKey ?? '').trim() || null;
       const fileName =
-        (candidate.fileName ?? candidate.name ?? candidate.objectKey ?? '').trim() || 'attachment';
+        (candidate.fileName ?? candidate.name ?? candidate.objectKey ?? '').trim() || 'вложение';
       const fileType = (candidate.fileType ?? candidate.contentType ?? '').trim();
       const sizeCandidate = candidate.fileSize ?? candidate.size;
       const fileSize =
@@ -445,17 +422,24 @@ export class TeacherService {
     return null;
   }
 
-  private resolveAttachmentId(value: unknown): number | null {
-    return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : null;
+  private resolveAttachmentId(value: unknown): string | null {
+    if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+      return String(value);
+    }
+    if (typeof value === 'string') {
+      const normalized = value.trim();
+      return normalized || null;
+    }
+    return null;
   }
 
   private normalizeGroups(groups: TeacherGroupResponse[] | null | undefined): TeacherGroup[] {
     return (groups ?? [])
       .map((group) => ({
-        id: Number(group.id),
+        id: String(group.id ?? '').trim(),
         name: (group.name ?? '').trim(),
       }))
-      .filter((group) => Number.isFinite(group.id) && group.id > 0 && Boolean(group.name));
+      .filter((group) => Boolean(group.id) && Boolean(group.name));
   }
 
   private sortGroups(groups: TeacherGroup[]): TeacherGroup[] {
@@ -518,7 +502,7 @@ export class TeacherService {
       reader.onload = () => {
         const result = reader.result;
         if (typeof result !== 'string') {
-          observer.error(new Error('Failed to read file'));
+          observer.error(new Error('Не удалось прочитать файл'));
           return;
         }
 
@@ -528,7 +512,7 @@ export class TeacherService {
       };
 
       reader.onerror = () => {
-        observer.error(new Error('Failed to read file'));
+        observer.error(new Error('Не удалось прочитать файл'));
       };
 
       reader.readAsDataURL(file);
@@ -538,7 +522,7 @@ export class TeacherService {
   private mapTask(
     task: TeacherTaskResponse | null | undefined,
     groupName: string,
-    id: number,
+    id: string,
     fallbackAssignmentType: TaskAssignmentType = 'TEAM',
   ): TeacherTask {
     const minTeamSize = this.normalizeNullableNumber(task?.minTeamSize);
@@ -553,19 +537,19 @@ export class TeacherService {
     const votesThreshold = this.normalizeNullableNumber(task?.votesThreshold);
     const commentCount = task?.commentList?.length ?? 0;
     const attachedWorks = this.mapTaskAttachments(task);
-    const responseGroupName = (task?.groupName ?? '').trim();
+    const responseGroupName = (task?.courseName ?? task?.groupName ?? '').trim();
     const teacherGroupName = (task?.teacher?.groups?.[0]?.name ?? '').trim();
-    const resolvedGroupName = responseGroupName || teacherGroupName || groupName || 'Group';
+    const resolvedGroupName = responseGroupName || teacherGroupName || groupName || 'Курс';
     const teacherName = [task?.teacher?.lastName, task?.teacher?.firstName].filter(Boolean).join(' ').trim();
     return {
       id,
-      title: (task?.name ?? '').trim() || `Task #${id}`,
+      title: (task?.name ?? '').trim() || `Задание ${id}`,
       description: (task?.description ?? '').trim(),
       dueDate: this.formatDate(task?.deadline),
       status: task?.taskStatus ?? 'PENDING',
-      teacherName: teacherName || 'Teacher',
-      submissions: `${attachedWorks.length} files`,
-      comments: `${commentCount} comments`,
+      teacherName: teacherName || 'Преподаватель',
+      submissions: `${attachedWorks.length} файлов`,
+      comments: `${commentCount} комментариев`,
       group: resolvedGroupName,
       attachedWorks,
       taskComments: [],
@@ -590,7 +574,7 @@ export class TeacherService {
         const id = this.resolveAttachmentId(attachment?.id ?? attachment?.attachmentId);
         const objectKey = (attachment?.objectKey ?? '').trim() || null;
         const fileName =
-          (attachment?.fileName ?? attachment?.name ?? attachment?.objectKey ?? '').trim() || 'attachment';
+          (attachment?.fileName ?? attachment?.name ?? attachment?.objectKey ?? '').trim() || 'вложение';
         const fileType = (attachment?.fileType ?? attachment?.contentType ?? '').trim();
         const sizeCandidate = attachment?.fileSize ?? attachment?.size;
         const fileSize =
@@ -620,7 +604,7 @@ export class TeacherService {
       title: titleOverride?.trim() || this.getTitleFromText(text),
       text,
       date: this.formatDate(notification?.creationDate),
-      groupId: notification?.groupId ?? 0,
+      groupId: String(notification?.courseId ?? notification?.groupId ?? ''),
       attachment: this.mapNotificationAttachment(notification),
     };
   }
@@ -628,7 +612,7 @@ export class TeacherService {
   private getTitleFromText(text: string): string {
     const normalized = text.trim();
     if (!normalized) {
-      return 'Notification';
+      return 'Уведомление';
     }
     return normalized.length > 50 ? `${normalized.slice(0, 50)}...` : normalized;
   }

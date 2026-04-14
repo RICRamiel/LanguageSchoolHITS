@@ -1,4 +1,4 @@
-import { Component, inject, signal, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+﻿import { Component, inject, signal, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { HeaderComponent } from '../../shared/ui/header/header.component';
@@ -30,7 +30,7 @@ export class AdminPageComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly tabs = [
-    { id: 'groups', label: 'Группы' },
+    { id: 'groups', label: 'Курсы' },
     { id: 'students', label: 'Студенты' },
     { id: 'teachers', label: 'Преподаватели' },
     { id: 'languages', label: 'Языки' },

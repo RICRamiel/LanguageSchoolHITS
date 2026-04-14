@@ -70,7 +70,7 @@
           @for (comment of comments(); track $index) {
             <li class="modal__comment-item">
               <p class="modal__comment-author">
-                {{ comment.userId ? ('User #' + comment.userId) : '\u0421\u0442\u0443\u0434\u0435\u043D\u0442' }}
+                {{ comment.userId ? ('Пользователь #' + comment.userId) : '\u0421\u0442\u0443\u0434\u0435\u043D\u0442' }}
               </p>
               <p class="modal__comment-text">{{ comment.text }}</p>
             </li>

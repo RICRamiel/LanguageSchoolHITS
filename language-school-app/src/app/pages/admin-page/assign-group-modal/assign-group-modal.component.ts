@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, input, output } from '@angular/core';
+﻿import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonComponent } from '../../../shared/ui/button/button.component';
 import type { Group } from '../admin-page.models';
@@ -16,7 +16,7 @@ export class AssignGroupModalComponent {
 
   readonly groups = input<Group[]>([]);
   readonly currentGroupId = input<number | null>(null);
-  /** Группы, в которых пользователь уже состоит (кнопка «Сохранить» неактивна при выборе такой группы) */
+  /** Курсы, в которых пользователь уже состоит (кнопка "Сохранить" неактивна при выборе такого курса). */
   readonly currentGroupIds = input<number[]>([]);
   readonly save = output<number>();
   readonly close = output<void>();

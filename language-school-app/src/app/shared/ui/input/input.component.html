@@ -1,7 +1,9 @@
 <input
   [id]="id()"
+  [attr.name]="name() || null"
   [type]="type()"
   [placeholder]="placeholder()"
+  [attr.autocomplete]="autocomplete() || null"
   [required]="required()"
   [disabled]="disabled"
   [value]="value"

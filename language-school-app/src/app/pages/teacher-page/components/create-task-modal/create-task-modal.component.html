@@ -2,7 +2,7 @@
   <section class="modal" (click)="$event.stopPropagation()">
     <button class="modal__close" type="button" (click)="close.emit()">×</button>
     <h3 class="modal__title">Создать задание</h3>
-    <p class="modal__subtitle">Добавьте новое задание для группы</p>
+    <p class="modal__subtitle">Добавьте новое задание для курса</p>
 
     <label class="modal__label" for="task-title">Название задания</label>
     <input
@@ -53,7 +53,7 @@
           id="task-team-type"
           class="modal__select"
           [value]="teamType"
-          (change)="teamType = $any($event.target).value"
+          (change)="onTeamTypeChange($any($event.target).value)"
         >
           @for (option of teamTypes; track option.value) {
             <option [value]="option.value">{{ option.label }}</option>
@@ -63,7 +63,7 @@
 
       <div class="modal__grid-2">
         <div>
-          <label class="modal__label" for="task-min-team-size">Min людей в команде</label>
+          <label class="modal__label" for="task-min-team-size">Минимум людей в команде</label>
           <input
             id="task-min-team-size"
             class="modal__input"
@@ -74,7 +74,7 @@
           />
         </div>
         <div>
-          <label class="modal__label" for="task-max-team-size">Max людей в команде</label>
+          <label class="modal__label" for="task-max-team-size">Максимум людей в команде</label>
           <input
             id="task-max-team-size"
             class="modal__input"
@@ -88,7 +88,7 @@
 
       <div class="modal__grid-2">
         <div>
-          <label class="modal__label" for="task-min-teams-amount">Min кол-во команд</label>
+          <label class="modal__label" for="task-min-teams-amount">Минимум команд</label>
           <input
             id="task-min-teams-amount"
             class="modal__input"
@@ -99,7 +99,7 @@
           />
         </div>
         <div>
-          <label class="modal__label" for="task-max-teams-amount">Max кол-во команд</label>
+          <label class="modal__label" for="task-max-teams-amount">Максимум команд</label>
           <input
             id="task-max-teams-amount"
             class="modal__input"
@@ -110,6 +110,20 @@
           />
         </div>
       </div>
+
+      @if (teamType === 'DRAFT') {
+        <label class="modal__label" for="task-teams-timeout">
+          Время на формирование команд (часы)
+        </label>
+        <input
+          id="task-teams-timeout"
+          class="modal__input"
+          type="number"
+          min="1"
+          [value]="draftTeamsCreationHours ?? ''"
+          (input)="onNumberInput('draftTeamsCreationHours', $any($event.target).value)"
+        />
+      }
     }
 
     <label class="modal__label" for="task-resolve-type">Тип сдачи решения</label>
@@ -138,10 +152,10 @@
       />
     }
 
-    <label class="modal__label" for="task-group">Группа</label>
+    <label class="modal__label" for="task-group">Курс</label>
     <div class="modal__group-select">
       <button class="modal__group-trigger" type="button" (click)="toggleGroupList()">
-        {{ groupQuery || 'Выберите группу' }}
+        {{ groupQuery || 'Выберите курс' }}
       </button>
       @if (isGroupListOpen) {
         <div class="modal__group-panel">
@@ -149,7 +163,7 @@
             id="task-group"
             class="modal__group-search"
             type="text"
-            placeholder="Поиск по группам..."
+            placeholder="Поиск по курсам..."
             [value]="groupQuery"
             (input)="onGroupQueryInput($any($event.target).value)"
           />
@@ -178,3 +192,4 @@
     </div>
   </section>
 </div>
+

@@ -13,17 +13,17 @@ export class TeacherTaskListComponent {
   readonly tasks = input<TeacherTask[]>([]);
   readonly createTask = output<void>();
   readonly openTaskDetails = output<TaskDetailsOpenPayload>();
-  readonly openGrading = output<{ taskId: number; group: string; title: string }>();
+  readonly openGrading = output<{ taskId: string; group: string; title: string }>();
 
   getStatusLabel(status: TeacherTask['status']): string {
     switch (status) {
       case 'COMPLETE':
-        return 'Complete';
+        return 'Выполнено';
       case 'OVERDUE':
-        return 'Overdue';
+        return 'Просрочено';
       case 'PENDING':
       default:
-        return 'In Progress';
+        return 'В процессе';
     }
   }
 
