@@ -32,6 +32,112 @@
       (input)="dueDate = $any($event.target).value"
     />
 
+    <label class="modal__label" for="task-assignment-type">Тип задания</label>
+    <div class="modal__select-wrap">
+      <select
+        id="task-assignment-type"
+        class="modal__select"
+        [value]="assignmentType"
+        (change)="onAssignmentTypeChange($any($event.target).value)"
+      >
+        @for (option of assignmentTypes; track option.value) {
+          <option [value]="option.value">{{ option.label }}</option>
+        }
+      </select>
+    </div>
+
+    @if (assignmentType === 'TEAM') {
+      <label class="modal__label" for="task-team-type">Тип команд</label>
+      <div class="modal__select-wrap">
+        <select
+          id="task-team-type"
+          class="modal__select"
+          [value]="teamType"
+          (change)="teamType = $any($event.target).value"
+        >
+          @for (option of teamTypes; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="modal__grid-2">
+        <div>
+          <label class="modal__label" for="task-min-team-size">Min людей в команде</label>
+          <input
+            id="task-min-team-size"
+            class="modal__input"
+            type="number"
+            min="1"
+            [value]="minTeamSize ?? ''"
+            (input)="onNumberInput('minTeamSize', $any($event.target).value)"
+          />
+        </div>
+        <div>
+          <label class="modal__label" for="task-max-team-size">Max людей в команде</label>
+          <input
+            id="task-max-team-size"
+            class="modal__input"
+            type="number"
+            min="1"
+            [value]="maxTeamSize ?? ''"
+            (input)="onNumberInput('maxTeamSize', $any($event.target).value)"
+          />
+        </div>
+      </div>
+
+      <div class="modal__grid-2">
+        <div>
+          <label class="modal__label" for="task-min-teams-amount">Min кол-во команд</label>
+          <input
+            id="task-min-teams-amount"
+            class="modal__input"
+            type="number"
+            min="1"
+            [value]="minTeamsAmount ?? ''"
+            (input)="onNumberInput('minTeamsAmount', $any($event.target).value)"
+          />
+        </div>
+        <div>
+          <label class="modal__label" for="task-max-teams-amount">Max кол-во команд</label>
+          <input
+            id="task-max-teams-amount"
+            class="modal__input"
+            type="number"
+            min="1"
+            [value]="maxTeamsAmount ?? ''"
+            (input)="onNumberInput('maxTeamsAmount', $any($event.target).value)"
+          />
+        </div>
+      </div>
+    }
+
+    <label class="modal__label" for="task-resolve-type">Тип сдачи решения</label>
+    <div class="modal__select-wrap">
+      <select
+        id="task-resolve-type"
+        class="modal__select"
+        [value]="resolveType"
+        (change)="onResolveTypeChange($any($event.target).value)"
+      >
+        @for (option of resolveTypes; track option.value) {
+          <option [value]="option.value">{{ option.label }}</option>
+        }
+      </select>
+    </div>
+
+    @if (resolveType === 'AT_LEAST_VOTES_SOLUTION') {
+      <label class="modal__label" for="task-votes-threshold">Порог голосов</label>
+      <input
+        id="task-votes-threshold"
+        class="modal__input"
+        type="number"
+        min="1"
+        [value]="votesThreshold ?? ''"
+        (input)="onNumberInput('votesThreshold', $any($event.target).value)"
+      />
+    }
+
     <label class="modal__label" for="task-group">Группа</label>
     <div class="modal__group-select">
       <button class="modal__group-trigger" type="button" (click)="toggleGroupList()">
@@ -61,6 +167,10 @@
         </div>
       }
     </div>
+
+    @if (validationError) {
+      <p class="modal__error">{{ validationError }}</p>
+    }
 
     <div class="modal__actions">
       <button class="modal__btn modal__btn--ghost" type="button" (click)="close.emit()">Отменить</button>

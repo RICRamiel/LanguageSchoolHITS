@@ -1,4 +1,4 @@
-﻿import { AsyncPipe } from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -13,6 +13,7 @@ import {
   TaskDetailsOpenPayload,
   TeacherGroup,
   TeacherNotification,
+  TeacherStudentGrade,
   TeacherTask,
   TeacherTaskComment,
   TeacherTaskDetailsSection,
@@ -60,6 +61,7 @@ export class TeacherPageComponent implements OnInit {
   private readonly allTasksSubject = new BehaviorSubject<TeacherTask[]>([]);
   private readonly allNotificationsSubject = new BehaviorSubject<TeacherNotification[]>([]);
   private readonly selectedGroupFilterSubject = new BehaviorSubject<string>('all');
+  private readonly gradeStudentsSubject = new BehaviorSubject<TeacherStudentGrade[]>([]);
 
   private tasksSnapshot: TeacherTask[] = [];
   private notificationsSnapshot: TeacherNotification[] = [];
@@ -118,9 +120,14 @@ export class TeacherPageComponent implements OnInit {
   isTaskDetailsModalOpen = false;
   isNotificationDetailsModalOpen = false;
   notificationAttachmentUploading = false;
+  gradingStudentsLoading = false;
+  gradingStudentsError: string | null = null;
+  gradingTaskId: number | null = null;
+  gradingTaskTitle = '';
   selectedTask: TeacherTask | null = null;
   selectedTaskSection: TeacherTaskDetailsSection = 'overview';
   selectedNotification: TeacherNotification | null = null;
+  readonly gradingStudents$ = this.gradeStudentsSubject.asObservable();
 
   ngOnInit(): void {
     this.tasks$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((tasks) => {
@@ -147,7 +154,9 @@ export class TeacherPageComponent implements OnInit {
   }
 
   submitTask(payload: CreateTaskPayload): void {
-    this.teacherService.createTask(payload).subscribe({
+    this.teacherService.createTask(payload).pipe(
+        takeUntilDestroyed(this.destroyRef),
+      ).subscribe({
       next: (task) => {
         this.allTasksSubject.next([task, ...this.allTasksSubject.value]);
         this.closeCreateTaskModal();
@@ -164,7 +173,9 @@ export class TeacherPageComponent implements OnInit {
   }
 
   submitNotification(payload: CreateNotificationPayload): void {
-    this.teacherService.createNotification(payload).subscribe({
+    this.teacherService.createNotification(payload).pipe(
+        takeUntilDestroyed(this.destroyRef),
+      ).subscribe({
       next: (notification) => {
         this.allNotificationsSubject.next([notification, ...this.allNotificationsSubject.value]);
         this.closeCreateNotificationModal();
@@ -183,7 +194,9 @@ export class TeacherPageComponent implements OnInit {
     this.isTaskDetailsModalOpen = true;
 
     if (task.id > 0) {
-      this.teacherService.getTaskComments(task.id).subscribe({
+      this.teacherService.getTaskComments(task.id).pipe(
+        takeUntilDestroyed(this.destroyRef),
+      ).subscribe({
         next: (comments) => {
           this.applyTaskComments(task.id, comments);
         },
@@ -200,7 +213,9 @@ export class TeacherPageComponent implements OnInit {
     this.teacherService
       .createComment(taskId, this.teacherId, text)
       .pipe(switchMap(() => this.teacherService.getTaskComments(taskId)))
-      .subscribe({
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+      ).subscribe({
         next: (comments) => {
           this.applyTaskComments(taskId, comments);
         },
@@ -224,7 +239,9 @@ export class TeacherPageComponent implements OnInit {
         })),
         catchError(() => of(null)),
       )
-      .subscribe({
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+      ).subscribe({
         next: (result) => {
           if (!result?.blob) {
             return;
@@ -252,7 +269,9 @@ export class TeacherPageComponent implements OnInit {
         })),
         catchError(() => of(null)),
       )
-      .subscribe({
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+      ).subscribe({
         next: (result) => {
           if (!result?.blob) {
             return;
@@ -300,7 +319,9 @@ export class TeacherPageComponent implements OnInit {
           this.notificationAttachmentUploading = false;
         }),
       )
-      .subscribe({
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+      ).subscribe({
         next: (attachment) => {
           if (!attachment) {
             return;
@@ -328,7 +349,9 @@ export class TeacherPageComponent implements OnInit {
   }
 
   onLogout(): void {
-    this.authService.logout().subscribe({
+    this.authService.logout().pipe(
+        takeUntilDestroyed(this.destroyRef),
+      ).subscribe({
       next: () => {
         void this.router.navigateByUrl('/');
       },
@@ -338,6 +361,92 @@ export class TeacherPageComponent implements OnInit {
   onGroupFilterChange(value: string): void {
     this.selectedGroupFilter = value;
     this.selectedGroupFilterSubject.next(value);
+    this.loadStudentsForGrading();
+  }
+
+  onStudentGradeInput(studentId: number, grade: string): void {
+    this.gradeStudentsSubject.next(
+      this.gradeStudentsSubject.value.map((student) =>
+        student.id === studentId
+          ? {
+              ...student,
+              grade,
+              error: null,
+            }
+          : student,
+      ),
+    );
+  }
+
+  onSaveStudentGrade(studentId: number): void {
+    const student = this.gradeStudentsSubject.value.find((item) => item.id === studentId);
+    if (!student) {
+      return;
+    }
+
+    this.gradeStudentsSubject.next(
+      this.gradeStudentsSubject.value.map((item) =>
+        item.id === studentId
+          ? {
+              ...item,
+              saving: true,
+              error: null,
+            }
+          : item,
+      ),
+    );
+
+    this.teacherService
+      .updateStudentGrade(student)
+      .pipe(
+        finalize(() => {
+          this.gradeStudentsSubject.next(
+            this.gradeStudentsSubject.value.map((item) =>
+              item.id === studentId
+                ? {
+                    ...item,
+                    saving: false,
+                  }
+                : item,
+            ),
+          );
+        }),
+        catchError(() => {
+          this.gradeStudentsSubject.next(
+            this.gradeStudentsSubject.value.map((item) =>
+              item.id === studentId
+                ? {
+                    ...item,
+                    error: 'Failed to save grade',
+                  }
+                : item,
+            ),
+          );
+          return of(void 0);
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe();
+  }
+
+  onOpenGradingFromTask(payload: { taskId: number; group: string; title: string }): void {
+    this.gradingTaskId = payload.taskId;
+    this.gradingTaskTitle = payload.title;
+
+    const normalized = payload.group.trim().toLowerCase();
+    const match = this.groupsSubject.value.find((group) => group.name.trim().toLowerCase() === normalized);
+    if (match) {
+      const value = String(match.id);
+      this.selectedGroupFilter = value;
+      this.selectedGroupFilterSubject.next(value);
+      this.loadStudentsForGrading();
+    }
+
+    if (typeof document !== 'undefined') {
+      requestAnimationFrame(() => {
+        document.getElementById('teacher-grading')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
   }
 
   private loadTeacherDashboard(): void {
@@ -379,20 +488,70 @@ export class TeacherPageComponent implements OnInit {
           );
         }),
       )
-      .subscribe({
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+      ).subscribe({
         next: ({ groups, tasks, notifications }) => {
           this.groupsSubject.next(groups);
           this.allTasksSubject.next(tasks);
           this.allNotificationsSubject.next(notifications);
+          if (this.selectedGroupFilter === 'all' && groups.length > 0) {
+            const firstGroupId = String(groups[0].id);
+            this.selectedGroupFilter = firstGroupId;
+            this.selectedGroupFilterSubject.next(firstGroupId);
+          }
+          this.loadStudentsForGrading();
         },
         error: () => {
           this.groupsSubject.next([]);
           this.allTasksSubject.next([]);
           this.allNotificationsSubject.next([]);
+          this.gradeStudentsSubject.next([]);
+          this.gradingStudentsLoading = false;
+          this.gradingStudentsError = null;
           this.selectedGroupFilter = 'all';
           this.selectedGroupFilterSubject.next('all');
         },
       });
+  }
+
+  private loadStudentsForGrading(): void {
+    const groupId = this.extractSelectedGroupId();
+    if (!groupId) {
+      this.gradeStudentsSubject.next([]);
+      this.gradingStudentsLoading = false;
+      this.gradingStudentsError = null;
+      return;
+    }
+
+    this.gradingStudentsLoading = true;
+    this.gradingStudentsError = null;
+
+    this.teacherService
+      .getStudentsByGroup(groupId)
+      .pipe(
+        finalize(() => {
+          this.gradingStudentsLoading = false;
+        }),
+        catchError(() => {
+          this.gradingStudentsError = 'Failed to load students for group';
+          return of([] as TeacherStudentGrade[]);
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (students) => {
+          this.gradeStudentsSubject.next(students);
+        },
+      });
+  }
+
+  private extractSelectedGroupId(): number | null {
+    if (this.selectedGroupFilter === 'all') {
+      return null;
+    }
+    const groupId = Number(this.selectedGroupFilter);
+    return Number.isFinite(groupId) && groupId > 0 ? groupId : null;
   }
 
   private buildTabs(notificationCount: number) {
@@ -449,6 +608,7 @@ export class TeacherPageComponent implements OnInit {
     URL.revokeObjectURL(url);
   }
 }
+
 
 
 

@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { catchError, finalize, forkJoin, map, Observable, of, switchMap, timeout } from 'rxjs';
@@ -98,6 +99,7 @@ export class StudentPageComponent implements OnInit {
   private readonly attachmentApi = inject(AttachmentControllerService);
   private readonly taskApi = inject(TaskControllerService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly destroyRef = inject(DestroyRef);
 
   studentId = 0;
   fullName = '';
@@ -130,6 +132,7 @@ export class StudentPageComponent implements OnInit {
   taskComments: StudentTaskComment[] = [];
 
   ngOnInit(): void {
+    this.destroyRef.onDestroy(() => this.clearUploadedFileLink());
     this.loadCurrentUser();
   }
 
@@ -215,7 +218,9 @@ export class StudentPageComponent implements OnInit {
           this.cdr.detectChanges();
         }),
       )
-      .subscribe({
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+      ).subscribe({
         next: (downloadUrl) => {
           if (downloadUrl) {
             this.clearUploadedFileLink();
@@ -244,7 +249,9 @@ export class StudentPageComponent implements OnInit {
           this.cdr.detectChanges();
         }),
       )
-      .subscribe({
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+      ).subscribe({
         next: (result) => {
           if (result === false) {
             return;
@@ -299,7 +306,9 @@ export class StudentPageComponent implements OnInit {
           this.cdr.detectChanges();
         }),
       )
-      .subscribe({
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+      ).subscribe({
         next: (comments) => {
           this.taskComments = comments;
           this.cdr.detectChanges();
@@ -308,7 +317,9 @@ export class StudentPageComponent implements OnInit {
   }
 
   onLogout() {
-    this.authService.logout().subscribe({
+    this.authService.logout().pipe(
+        takeUntilDestroyed(this.destroyRef),
+      ).subscribe({
       next: () => {
         void this.router.navigateByUrl('/');
       },
@@ -333,7 +344,9 @@ export class StudentPageComponent implements OnInit {
         })),
         catchError(() => of(null)),
       )
-      .subscribe({
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+      ).subscribe({
         next: (result) => {
           if (!result?.blob) {
             return;
@@ -407,7 +420,9 @@ export class StudentPageComponent implements OnInit {
           );
         }),
       )
-      .subscribe({
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+      ).subscribe({
         next: ({ groups, tasks, notifications }) => {
           this.groups = groups;
           if (
@@ -481,7 +496,9 @@ export class StudentPageComponent implements OnInit {
           this.cdr.detectChanges();
         }),
       )
-      .subscribe({
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+      ).subscribe({
         next: (comments) => {
           this.taskComments = this.mapTaskComments(comments);
         },
@@ -805,3 +822,4 @@ export class StudentPageComponent implements OnInit {
     ];
   }
 }
+

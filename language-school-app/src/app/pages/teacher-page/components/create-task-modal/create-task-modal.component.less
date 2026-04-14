@@ -1,1 +1,21 @@
 @import '../create-notification-modal/create-notification-modal.component.less';
+
+.modal__grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.modal__error {
+  margin: 0 0 12px;
+  color: #b91c1c;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+@media (max-width: 768px) {
+  .modal__grid-2 {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}

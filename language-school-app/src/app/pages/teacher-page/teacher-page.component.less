@@ -57,6 +57,115 @@
   font-size: 14px;
 }
 
+.teacher-tasks-layout {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 20px;
+  align-items: start;
+}
+
+.teacher-grading {
+  margin-top: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 16px;
+  background: #fff;
+}
+
+.teacher-grading__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.teacher-grading__title {
+  margin: 0;
+  font-size: 22px;
+  color: #111827;
+}
+
+.teacher-grading__hint {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.teacher-grading__state {
+  margin: 12px 0 0;
+  color: #374151;
+  font-size: 14px;
+}
+
+.teacher-grading__state--error {
+  color: #b91c1c;
+}
+
+.teacher-grading__list {
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.teacher-grading__item {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  background: #fafafa;
+}
+
+.teacher-grading__student {
+  margin-bottom: 10px;
+}
+
+.teacher-grading__name {
+  margin: 0;
+  color: #111827;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.teacher-grading__email {
+  margin: 2px 0 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.teacher-grading__controls {
+  display: flex;
+  gap: 8px;
+}
+
+.teacher-grading__input {
+  width: 160px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.teacher-grading__save {
+  border: 0;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 14px;
+  background: #2563eb;
+  color: #fff;
+  cursor: pointer;
+}
+
+.teacher-grading__save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.teacher-grading__error {
+  margin: 8px 0 0;
+  color: #b91c1c;
+  font-size: 13px;
+}
+
 @media (max-width: 1024px) {
   .teacher-panel__title {
     font-size: 28px;
@@ -80,5 +189,22 @@
   .teacher-panel__filter {
     min-width: 0;
     width: 100%;
+  }
+
+  .teacher-grading__head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .teacher-grading__controls {
+    flex-direction: column;
+  }
+
+  .teacher-grading__input {
+    width: 100%;
+  }
+
+  .teacher-tasks-layout {
+    grid-template-columns: 1fr;
   }
 }

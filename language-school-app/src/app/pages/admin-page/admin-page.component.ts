@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { HeaderComponent } from '../../shared/ui/header/header.component';
 import { TabsComponent } from '../../shared/ui/tabs/tabs.component';
@@ -26,22 +27,25 @@ import { LanguagesTabComponent } from './languages-tab/languages-tab.component';
 export class AdminPageComponent {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
+  private readonly destroyRef = inject(DestroyRef);
 
-  tabs = [
+  readonly tabs = [
     { id: 'groups', label: 'Группы' },
     { id: 'students', label: 'Студенты' },
     { id: 'teachers', label: 'Преподаватели' },
     { id: 'languages', label: 'Языки' },
   ];
 
-  activeTab = 'groups';
+  activeTab = signal('groups');
 
   onTabChange(tabId: string): void {
-    this.activeTab = tabId;
+    this.activeTab.set(tabId);
   }
 
   onLogout(): void {
-    this.authService.logout().subscribe({
+    this.authService.logout().pipe(
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
       next: () => {
         void this.router.navigateByUrl('/');
       },

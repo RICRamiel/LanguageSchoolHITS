@@ -1,4 +1,12 @@
 export type TeacherTaskDetailsSection = 'overview' | 'submissions' | 'comments';
+export type TaskAssignmentType = 'INDIVIDUAL' | 'TEAM';
+export type TaskTeamType = 'RANDOM' | 'FREEROAM' | 'DRAFT' | 'CUSTOM';
+export type TaskResolveType =
+  | 'FIRST_SUBMITTED_SOLUTION'
+  | 'LAST_SUBMITTED_SOLUTION'
+  | 'CAPTAINS_SOLUTION'
+  | 'MOST_VOTES_SOLUTION'
+  | 'AT_LEAST_VOTES_SOLUTION';
 
 export type TaskDetailsOpenPayload = {
   taskId: number;
@@ -31,6 +39,14 @@ export type TeacherTask = {
   group: string;
   attachedWorks: TeacherTaskSubmission[];
   taskComments: TeacherTaskComment[];
+  assignmentType: TaskAssignmentType;
+  teamType: TaskTeamType;
+  resolveType: TaskResolveType;
+  minTeamSize: number | null;
+  maxTeamSize: number | null;
+  minTeamsAmount: number | null;
+  maxTeamsAmount: number | null;
+  votesThreshold: number | null;
 };
 
 export type TeacherNotification = {
@@ -55,12 +71,31 @@ export type TeacherGroup = {
   name: string;
 };
 
+export type TeacherStudentGrade = {
+  id: number;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  email: string;
+  grade: string;
+  saving: boolean;
+  error: string | null;
+};
+
 export type CreateTaskPayload = {
   title: string;
   description: string;
   dueDate: string;
   groupId: number;
   groupName: string;
+  assignmentType: TaskAssignmentType;
+  teamType: TaskTeamType;
+  resolveType: TaskResolveType;
+  minTeamSize: number | null;
+  maxTeamSize: number | null;
+  minTeamsAmount: number | null;
+  maxTeamsAmount: number | null;
+  votesThreshold: number | null;
 };
 
 export type CreateNotificationPayload = {

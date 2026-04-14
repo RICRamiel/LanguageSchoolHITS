@@ -1,4 +1,5 @@
-﻿import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ButtonComponent } from '../../shared/ui/button/button.component';
@@ -25,6 +26,7 @@ export class LoginPageComponent {
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
@@ -43,7 +45,9 @@ export class LoginPageComponent {
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.authService.login(this.form.getRawValue()).subscribe({
+    this.authService.login(this.form.getRawValue()).pipe(
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
       next: (result) => {
         void this.router.navigateByUrl(result.redirectPath);
       },
@@ -57,3 +61,4 @@ export class LoginPageComponent {
     });
   }
 }
+

@@ -7,8 +7,10 @@ import {
   CreateNotificationPayload,
   CreateTaskPayload,
   NotificationAttachment,
+  TaskAssignmentType,
   TeacherGroup,
   TeacherNotification,
+  TeacherStudentGrade,
   TeacherTask,
 } from './teacher.models';
 
@@ -25,6 +27,13 @@ type TeacherTaskResponse = {
   name?: string;
   description?: string;
   deadline?: string;
+  teamType?: TeacherTask['teamType'];
+  resolveType?: TeacherTask['resolveType'];
+  maxTeamSize?: number | null;
+  minTeamSize?: number | null;
+  maxTeamsAmount?: number | null;
+  minTeamsAmount?: number | null;
+  votesThreshold?: number | null;
   commentList?: TeacherComment[];
   attachmentDownloadInfos?: TeacherAttachmentResponse[] | null;
   taskStatus?: 'COMPLETE' | 'OVERDUE' | 'PENDING';
@@ -45,6 +54,13 @@ type TeacherTaskResponse = {
 type TeacherGroupResponse = {
   id?: number;
   name?: string;
+};
+
+type TeacherStudentResponse = {
+  id?: number;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
 };
 
 type TeacherNotificationResponse = {
@@ -73,6 +89,57 @@ type TeacherAttachmentResponse = {
 @Injectable({ providedIn: 'root' })
 export class TeacherService {
   private readonly http = inject(HttpClient);
+
+  getStudentsByGroup(groupId: number): Observable<TeacherStudentGrade[]> {
+    if (!Number.isFinite(groupId) || groupId <= 0) {
+      return of([]);
+    }
+
+    return this.http
+      .get<TeacherStudentResponse[]>(withOpenApiBase(OPENAPI_PATHS.admin.students.listByGroup(groupId)))
+      .pipe(
+        map((students) =>
+          (students ?? [])
+            .map((student) => {
+              const id = Number(student.id);
+              if (!Number.isFinite(id) || id <= 0) {
+                return null;
+              }
+
+              const firstName = (student.firstName ?? '').trim();
+              const lastName = (student.lastName ?? '').trim();
+              const fullName = [lastName, firstName].filter(Boolean).join(' ').trim() || `Student #${id}`;
+
+              return {
+                id,
+                firstName,
+                lastName,
+                fullName,
+                email: (student.email ?? '').trim(),
+                grade: '',
+                saving: false,
+                error: null,
+              } as TeacherStudentGrade;
+            })
+            .filter((student): student is TeacherStudentGrade => student !== null),
+        ),
+      );
+  }
+
+  updateStudentGrade(student: TeacherStudentGrade): Observable<void> {
+    const normalizedGrade = student.grade.trim();
+
+    return this.http
+      .put(
+        withOpenApiBase(OPENAPI_PATHS.admin.students.update(student.id)),
+        {
+          firstName: student.firstName,
+          lastName: student.lastName,
+          grade: normalizedGrade,
+        },
+      )
+      .pipe(map(() => void 0));
+  }
 
   getGroupsByTeacher(teacherId: number): Observable<TeacherGroup[]> {
     const teacherGroups$ = this.http
@@ -185,17 +252,26 @@ export class TeacherService {
   }
 
   createTask(payload: CreateTaskPayload): Observable<TeacherTask> {
+    const isTeamTask = payload.assignmentType === 'TEAM';
+
     return this.http
       .post<TeacherTaskResponse>(withOpenApiBase(OPENAPI_PATHS.teacher.createTask), {
         name: payload.title,
         description: payload.description,
         deadline: payload.dueDate,
         groupName: payload.groupName,
+        teamType: payload.teamType === 'CUSTOM' ? 'FREEROAM' : payload.teamType,
+        resolveType: payload.resolveType,
+        maxTeamSize: isTeamTask ? payload.maxTeamSize : null,
+        minTeamSize: isTeamTask ? payload.minTeamSize : null,
+        maxTeamsAmount: isTeamTask ? payload.maxTeamsAmount : null,
+        minTeamsAmount: isTeamTask ? payload.minTeamsAmount : null,
+        votesThreshold: payload.resolveType === 'AT_LEAST_VOTES_SOLUTION' ? payload.votesThreshold : null,
       })
       .pipe(
         map((task) => {
           const id = task?.id && Number.isFinite(task.id) ? task.id : Date.now();
-          return this.mapTask(task, payload.groupName, id);
+          return this.mapTask(task, payload.groupName, id, payload.assignmentType);
         }),
       );
   }
@@ -459,7 +535,22 @@ export class TeacherService {
     });
   }
 
-  private mapTask(task: TeacherTaskResponse | null | undefined, groupName: string, id: number): TeacherTask {
+  private mapTask(
+    task: TeacherTaskResponse | null | undefined,
+    groupName: string,
+    id: number,
+    fallbackAssignmentType: TaskAssignmentType = 'TEAM',
+  ): TeacherTask {
+    const minTeamSize = this.normalizeNullableNumber(task?.minTeamSize);
+    const maxTeamSize = this.normalizeNullableNumber(task?.maxTeamSize);
+    const minTeamsAmount = this.normalizeNullableNumber(task?.minTeamsAmount);
+    const maxTeamsAmount = this.normalizeNullableNumber(task?.maxTeamsAmount);
+    const hasTeamBounds =
+      minTeamSize !== null || maxTeamSize !== null || minTeamsAmount !== null || maxTeamsAmount !== null;
+    const assignmentType: TaskAssignmentType = hasTeamBounds ? 'TEAM' : fallbackAssignmentType;
+    const teamType = (task?.teamType ?? 'FREEROAM') as TeacherTask['teamType'];
+    const resolveType = (task?.resolveType ?? 'LAST_SUBMITTED_SOLUTION') as TeacherTask['resolveType'];
+    const votesThreshold = this.normalizeNullableNumber(task?.votesThreshold);
     const commentCount = task?.commentList?.length ?? 0;
     const attachedWorks = this.mapTaskAttachments(task);
     const responseGroupName = (task?.groupName ?? '').trim();
@@ -478,7 +569,19 @@ export class TeacherService {
       group: resolvedGroupName,
       attachedWorks,
       taskComments: [],
+      assignmentType,
+      teamType,
+      resolveType,
+      minTeamSize,
+      maxTeamSize,
+      minTeamsAmount,
+      maxTeamsAmount,
+      votesThreshold,
     };
+  }
+
+  private normalizeNullableNumber(value: unknown): number | null {
+    return typeof value === 'number' && Number.isFinite(value) ? value : null;
   }
 
   private mapTaskAttachments(task: TeacherTaskResponse | null | undefined): TeacherTask['attachedWorks'] {
