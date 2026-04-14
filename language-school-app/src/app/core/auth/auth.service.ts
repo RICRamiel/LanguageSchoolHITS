@@ -61,11 +61,7 @@ export class AuthService {
       .post(withOpenApiBase(OPENAPI_PATHS.auth.logout), {}, { responseType: 'text' })
       .pipe(
         tap(() => {
-          this.userService.clearCachedMe();
-          this.authTokenService.setToken(null);
-          if (isPlatformBrowser(this.platformId)) {
-            localStorage.removeItem(TOKEN_KEY);
-          }
+          this.clearAuthState();
         }),
         map(() => void 0),
       );
@@ -102,6 +98,14 @@ export class AuthService {
       case 'STUDENT':
       default:
         return '/student';
+    }
+  }
+
+  private clearAuthState(): void {
+    this.userService.clearCachedMe();
+    this.authTokenService.setToken(null);
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.removeItem(TOKEN_KEY);
     }
   }
 }

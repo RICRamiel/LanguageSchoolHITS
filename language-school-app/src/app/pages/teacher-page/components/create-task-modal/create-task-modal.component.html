@@ -2,7 +2,7 @@
   <section class="modal" (click)="$event.stopPropagation()">
     <button class="modal__close" type="button" (click)="close.emit()">×</button>
     <h3 class="modal__title">Создать задание</h3>
-    <p class="modal__subtitle">Добавьте новое задание для группы</p>
+    <p class="modal__subtitle">Добавьте новое задание для курса</p>
 
     <label class="modal__label" for="task-title">Название задания</label>
     <input
@@ -32,10 +32,130 @@
       (input)="dueDate = $any($event.target).value"
     />
 
-    <label class="modal__label" for="task-group">Группа</label>
+    <label class="modal__label" for="task-assignment-type">Тип задания</label>
+    <div class="modal__select-wrap">
+      <select
+        id="task-assignment-type"
+        class="modal__select"
+        [value]="assignmentType"
+        (change)="onAssignmentTypeChange($any($event.target).value)"
+      >
+        @for (option of assignmentTypes; track option.value) {
+          <option [value]="option.value">{{ option.label }}</option>
+        }
+      </select>
+    </div>
+
+    @if (assignmentType === 'TEAM') {
+      <label class="modal__label" for="task-team-type">Тип команд</label>
+      <div class="modal__select-wrap">
+        <select
+          id="task-team-type"
+          class="modal__select"
+          [value]="teamType"
+          (change)="onTeamTypeChange($any($event.target).value)"
+        >
+          @for (option of teamTypes; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="modal__grid-2">
+        <div>
+          <label class="modal__label" for="task-min-team-size">Минимум людей в команде</label>
+          <input
+            id="task-min-team-size"
+            class="modal__input"
+            type="number"
+            min="1"
+            [value]="minTeamSize ?? ''"
+            (input)="onNumberInput('minTeamSize', $any($event.target).value)"
+          />
+        </div>
+        <div>
+          <label class="modal__label" for="task-max-team-size">Максимум людей в команде</label>
+          <input
+            id="task-max-team-size"
+            class="modal__input"
+            type="number"
+            min="1"
+            [value]="maxTeamSize ?? ''"
+            (input)="onNumberInput('maxTeamSize', $any($event.target).value)"
+          />
+        </div>
+      </div>
+
+      <div class="modal__grid-2">
+        <div>
+          <label class="modal__label" for="task-min-teams-amount">Минимум команд</label>
+          <input
+            id="task-min-teams-amount"
+            class="modal__input"
+            type="number"
+            min="1"
+            [value]="minTeamsAmount ?? ''"
+            (input)="onNumberInput('minTeamsAmount', $any($event.target).value)"
+          />
+        </div>
+        <div>
+          <label class="modal__label" for="task-max-teams-amount">Максимум команд</label>
+          <input
+            id="task-max-teams-amount"
+            class="modal__input"
+            type="number"
+            min="1"
+            [value]="maxTeamsAmount ?? ''"
+            (input)="onNumberInput('maxTeamsAmount', $any($event.target).value)"
+          />
+        </div>
+      </div>
+
+      @if (teamType === 'DRAFT') {
+        <label class="modal__label" for="task-teams-timeout">
+          Время на формирование команд (часы)
+        </label>
+        <input
+          id="task-teams-timeout"
+          class="modal__input"
+          type="number"
+          min="1"
+          [value]="draftTeamsCreationHours ?? ''"
+          (input)="onNumberInput('draftTeamsCreationHours', $any($event.target).value)"
+        />
+      }
+    }
+
+    <label class="modal__label" for="task-resolve-type">Тип сдачи решения</label>
+    <div class="modal__select-wrap">
+      <select
+        id="task-resolve-type"
+        class="modal__select"
+        [value]="resolveType"
+        (change)="onResolveTypeChange($any($event.target).value)"
+      >
+        @for (option of resolveTypes; track option.value) {
+          <option [value]="option.value">{{ option.label }}</option>
+        }
+      </select>
+    </div>
+
+    @if (resolveType === 'AT_LEAST_VOTES_SOLUTION') {
+      <label class="modal__label" for="task-votes-threshold">Порог голосов</label>
+      <input
+        id="task-votes-threshold"
+        class="modal__input"
+        type="number"
+        min="1"
+        [value]="votesThreshold ?? ''"
+        (input)="onNumberInput('votesThreshold', $any($event.target).value)"
+      />
+    }
+
+    <label class="modal__label" for="task-group">Курс</label>
     <div class="modal__group-select">
       <button class="modal__group-trigger" type="button" (click)="toggleGroupList()">
-        {{ groupQuery || 'Выберите группу' }}
+        {{ groupQuery || 'Выберите курс' }}
       </button>
       @if (isGroupListOpen) {
         <div class="modal__group-panel">
@@ -43,7 +163,7 @@
             id="task-group"
             class="modal__group-search"
             type="text"
-            placeholder="Поиск по группам..."
+            placeholder="Поиск по курсам..."
             [value]="groupQuery"
             (input)="onGroupQueryInput($any($event.target).value)"
           />
@@ -62,9 +182,14 @@
       }
     </div>
 
+    @if (validationError) {
+      <p class="modal__error">{{ validationError }}</p>
+    }
+
     <div class="modal__actions">
       <button class="modal__btn modal__btn--ghost" type="button" (click)="close.emit()">Отменить</button>
       <button class="modal__btn modal__btn--primary" type="button" (click)="onSubmit()">Создать</button>
     </div>
   </section>
 </div>
+

@@ -17,8 +17,10 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 })
 export class InputComponent implements ControlValueAccessor {
   readonly id = input<string>('');
+  readonly name = input<string>('');
   readonly type = input<string>('text');
   readonly placeholder = input<string>('');
+  readonly autocomplete = input<string>('');
   readonly class = input<string>('');
   readonly required = input<boolean>(false);
 

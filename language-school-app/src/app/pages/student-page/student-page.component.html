@@ -1,4 +1,4 @@
-<div class="student-page">
+﻿<div class="student-page">
   <app-header
     [fullName]="fullName"
     [email]="email"
@@ -10,14 +10,14 @@
     <div class="student-page__top">
       <div class="student-page__top-spacer"></div>
       <div class="student-page__filter">
-        <label class="student-page__filter-label" for="student-group-filter">Группа</label>
+        <label class="student-page__filter-label" for="student-group-filter">Курс</label>
         <select
           id="student-group-filter"
           class="teacher-panel__filter-select"
           [value]="selectedGroupFilter"
           (change)="onGroupFilterChange($any($event.target).value)"
         >
-          <option value="all">Все группы</option>
+          <option value="all">Все курсы</option>
           @for (group of groups; track group.id) {
             <option [value]="group.id">{{ group.name }}</option>
           }

@@ -4,6 +4,7 @@ export type {
   CreateTaskPayload,
   TaskDetailsOpenPayload,
   TeacherGroup,
+  TeacherStudentGrade,
   TeacherNotification,
   TeacherTask,
   TeacherTaskComment,

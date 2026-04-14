@@ -11,14 +11,14 @@
       <div class="teacher-panel__top">
         <h2 class="teacher-panel__title">Панель учителя</h2>
         <div class="teacher-panel__filter">
-          <label class="teacher-panel__filter-label" for="teacher-group-filter">Группа</label>
+          <label class="teacher-panel__filter-label" for="teacher-group-filter">Курс</label>
           <select
             id="teacher-group-filter"
             class="teacher-panel__filter-select"
             [value]="selectedGroupFilter"
             (change)="onGroupFilterChange($any($event.target).value)"
           >
-            <option value="all">Все группы</option>
+            <option value="all">Все курсы</option>
             @for (group of (groups$ | async) ?? []; track group.id) {
               <option [value]="group.id">{{ group.name }}</option>
             }
@@ -33,11 +33,63 @@
       />
 
       @if (activeTab === 'tasks') {
-        <app-teacher-task-list
-          [tasks]="(tasks$ | async) ?? []"
-          (createTask)="onCreateTask()"
-          (openTaskDetails)="onOpenTaskDetails($event)"
-        />
+        <div class="teacher-tasks-layout">
+          <app-teacher-task-list
+            [tasks]="(tasks$ | async) ?? []"
+            (createTask)="onCreateTask()"
+            (openTaskDetails)="onOpenTaskDetails($event)"
+            (openGrading)="onOpenGradingFromTask($event)"
+          />
+          <section class="teacher-grading" id="teacher-grading">
+            <div class="teacher-grading__head">
+              <h3 class="teacher-grading__title">Оценивание</h3>
+              @if (selectedGroupFilter === 'all') {
+                <p class="teacher-grading__hint">Выберите курс для выставления оценок</p>
+              }
+            </div>
+
+            @if (selectedGroupFilter !== 'all') {
+              @if (gradingStudentsLoading) {
+                <p class="teacher-grading__state">Загрузка студентов...</p>
+              } @else if (gradingStudentsError) {
+                <p class="teacher-grading__state teacher-grading__state--error">{{ gradingStudentsError }}</p>
+              } @else if (((gradingStudents$ | async) ?? []).length === 0) {
+                <p class="teacher-grading__state">На этом курсе пока нет студентов</p>
+              } @else {
+                <div class="teacher-grading__list">
+                  @for (student of (gradingStudents$ | async) ?? []; track student.id) {
+                    <article class="teacher-grading__item">
+                      <div class="teacher-grading__student">
+                        <p class="teacher-grading__name">{{ student.fullName }}</p>
+                        <p class="teacher-grading__email">{{ student.email }}</p>
+                      </div>
+                      <div class="teacher-grading__controls">
+                        <input
+                          class="teacher-grading__input"
+                          type="text"
+                          placeholder="Оценка"
+                          [value]="student.grade"
+                          (input)="onStudentGradeInput(student.id, $any($event.target).value)"
+                        />
+                        <button
+                          class="teacher-grading__save"
+                          type="button"
+                          [disabled]="student.saving || !student.grade.trim()"
+                          (click)="onSaveStudentGrade(student.id)"
+                        >
+                          {{ student.saving ? 'Сохранение...' : 'Сохранить' }}
+                        </button>
+                      </div>
+                      @if (student.error) {
+                        <p class="teacher-grading__error">{{ student.error }}</p>
+                      }
+                    </article>
+                  }
+                </div>
+              }
+            }
+          </section>
+        </div>
       } @else {
         <app-teacher-notifications
           [notifications]="(notifications$ | async) ?? []"
@@ -84,4 +136,5 @@
     />
   }
 </div>
+
 

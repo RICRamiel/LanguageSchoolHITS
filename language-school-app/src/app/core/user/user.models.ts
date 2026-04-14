@@ -1,11 +1,11 @@
 export type UserMeResponse = {
-  id: number;
+  id: string | number;
   firstName: string;
   lastName: string;
   email: string;
   role: 'ADMIN' | 'TEACHER' | 'STUDENT';
   groups: Array<{
-    id: number;
+    id: string | number;
     name: string;
   }>;
 };

@@ -1,4 +1,4 @@
-<section class="admin-section">
+﻿<section class="admin-section">
   <div class="admin-section__head">
     <h3 class="section-title">Преподаватели</h3>
     <app-button type="button" (click)="openAdd()" [disabled]="saving">Добавить преподавателя</app-button>
@@ -22,7 +22,7 @@
       <thead>
         <tr>
           <th>ФИО</th>
-          <th>Email</th>
+          <th>Почта</th>
           <th>Языки</th>
           <th></th>
         </tr>
@@ -34,9 +34,7 @@
             <td>{{ t.email }}</td>
             <td>{{ t.languages }}</td>
             <td class="admin-table__actions">
-              <app-button type="button" class="outline small" (click)="openAssignModal(t)"
-                >Привязать к группе</app-button
-              >
+              <app-button type="button" class="outline small" (click)="openAssignModal(t)">Привязать к курсу</app-button>
               <app-button type="button" class="outline small" (click)="openEdit(t)">Изменить</app-button>
               <app-button type="button" class="outline small" (click)="deleteTeacher(t.id)">Удалить</app-button>
             </td>

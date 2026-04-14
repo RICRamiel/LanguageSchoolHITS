@@ -1,4 +1,4 @@
-<app-card class="admin-form-card">
+﻿<app-card class="admin-form-card">
   <app-card-header>
     <app-card-title>{{ title }}</app-card-title>
   </app-card-header>
@@ -6,7 +6,7 @@
     <form (ngSubmit)="onSubmit()" class="admin-form" [formGroup]="form">
       <div class="form-row">
         <app-label for="group-name">Название</app-label>
-        <app-input id="group-name" formControlName="name" placeholder="Название группы" />
+        <app-input id="group-name" formControlName="name" placeholder="Название курса" />
         @if (form.get('name')?.invalid && form.get('name')?.touched) {
           <span class="form-error">{{ getErrorMessage('name') }}</span>
         }

@@ -23,18 +23,18 @@
       (input)="content = $any($event.target).value"
     ></textarea>
 
-    <label class="modal__label" for="notify-group">Группа</label>
+    <label class="modal__label" for="notify-group-trigger">Курс</label>
     <div class="modal__group-select">
-      <button class="modal__group-trigger" type="button" (click)="toggleGroupList()">
-        {{ groupQuery || 'Выберите группу' }}
+      <button id="notify-group-trigger" class="modal__group-trigger" type="button" (click)="toggleGroupList()">
+        {{ groupQuery || 'Выберите курс' }}
       </button>
       @if (isGroupListOpen) {
         <div class="modal__group-panel">
           <input
-            id="notify-group"
+            id="notify-group-search"
             class="modal__group-search"
             type="text"
-            placeholder="Поиск по группам..."
+            placeholder="Поиск по курсам..."
             [value]="groupQuery"
             (input)="onGroupQueryInput($any($event.target).value)"
           />
@@ -70,3 +70,4 @@
     </div>
   </section>
 </div>
+

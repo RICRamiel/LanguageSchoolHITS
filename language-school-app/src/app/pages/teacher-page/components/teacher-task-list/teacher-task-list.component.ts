@@ -1,4 +1,4 @@
-import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
+﻿import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { TaskDetailsOpenPayload, TeacherTask } from '../../teacher-page.types';
 
 @Component({
@@ -13,6 +13,7 @@ export class TeacherTaskListComponent {
   readonly tasks = input<TeacherTask[]>([]);
   readonly createTask = output<void>();
   readonly openTaskDetails = output<TaskDetailsOpenPayload>();
+  readonly openGrading = output<{ taskId: string; group: string; title: string }>();
 
   getStatusLabel(status: TeacherTask['status']): string {
     switch (status) {

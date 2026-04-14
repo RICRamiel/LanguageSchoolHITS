@@ -2,11 +2,13 @@
   <app-login-card>
     <form [formGroup]="form" (ngSubmit)="onLogin($event)" class="login-form">
       <div class="form-group">
-        <app-label for="email">Email</app-label>
+        <app-label for="email">Почта</app-label>
         <app-input
           id="email"
+          name="email"
           type="email"
-          placeholder="your@email.com"
+          autocomplete="email"
+          placeholder="почта@пример.рф"
           formControlName="email"
         ></app-input>
       </div>
@@ -14,7 +16,9 @@
         <app-label for="password">Пароль</app-label>
         <app-input
           id="password"
+          name="password"
           type="password"
+          autocomplete="current-password"
           placeholder="••••••••"
           formControlName="password"
         ></app-input>

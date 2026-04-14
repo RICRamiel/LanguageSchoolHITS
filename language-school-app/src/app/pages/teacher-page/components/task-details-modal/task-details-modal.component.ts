@@ -1,4 +1,4 @@
-import { Component, OnInit, input, output, signal, ChangeDetectionStrategy } from '@angular/core';
+﻿import { Component, OnInit, input, output, signal, ChangeDetectionStrategy } from '@angular/core';
 import { TeacherTask, TeacherTaskDetailsSection, TeacherTaskSubmission } from '../../teacher-page.types';
 
 @Component({
@@ -18,11 +18,11 @@ export class TaskDetailsModalComponent implements OnInit {
   readonly selectedSection = signal<TeacherTaskDetailsSection>('overview');
   readonly commentText = signal('');
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.selectedSection.set(this.activeSection());
   }
 
-  setSection(section: TeacherTaskDetailsSection) {
+  setSection(section: TeacherTaskDetailsSection): void {
     this.selectedSection.set(section);
   }
 
@@ -45,5 +45,39 @@ export class TaskDetailsModalComponent implements OnInit {
       return;
     }
     this.downloadAttachment.emit(work);
+  }
+
+  getAssignmentTypeLabel(value: TeacherTask['assignmentType']): string {
+    return value === 'INDIVIDUAL' ? 'Индивидуальное' : 'Командное';
+  }
+
+  getTeamTypeLabel(value: TeacherTask['teamType']): string {
+    switch (value) {
+      case 'RANDOM':
+        return 'Случайный';
+      case 'DRAFT':
+        return 'Драфт';
+      case 'CUSTOM':
+        return 'Кастомный';
+      case 'FREEROAM':
+      default:
+        return 'Свободный';
+    }
+  }
+
+  getResolveTypeLabel(value: TeacherTask['resolveType']): string {
+    switch (value) {
+      case 'FIRST_SUBMITTED_SOLUTION':
+        return 'Первое решение';
+      case 'CAPTAINS_SOLUTION':
+        return 'Решение капитана';
+      case 'MOST_VOTES_SOLUTION':
+        return 'Демократическое большинство';
+      case 'AT_LEAST_VOTES_SOLUTION':
+        return 'Квалифицированное большинство';
+      case 'LAST_SUBMITTED_SOLUTION':
+      default:
+        return 'Последнее решение';
+    }
   }
 }

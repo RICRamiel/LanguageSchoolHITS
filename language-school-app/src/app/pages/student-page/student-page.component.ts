@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { catchError, finalize, forkJoin, map, Observable, of, switchMap, timeout } from 'rxjs';
@@ -12,7 +13,6 @@ import { StudentTaskDetailsModalComponent } from './components/student-task-deta
 import { StudentNotificationModalComponent } from './components/student-notification-modal/student-notification-modal.component';
 import { StudentNotification, StudentTask, StudentTaskComment } from './student-page.types';
 import { OPENAPI_PATHS, withOpenApiBase } from '../../core/api/openapi.config';
-import { AttachmentControllerService, TaskControllerService } from '../../api';
 import { CommentDTO } from '../../api/model/commentDTO';
 import { NotificationAttachment } from '../../core/teacher/teacher.models';
 
@@ -20,8 +20,9 @@ type StudentNotificationResponse = {
   id?: string;
   text?: string;
   creationDate?: string;
-  groupId?: number;
-  createdByTeacherWithId?: number;
+  groupId?: number | string;
+  courseId?: number | string;
+  createdByTeacherWithId?: number | string;
   attachmentDownloadInfo?: StudentAttachmentResponse | null;
   attachmentDownloadInfos?: StudentAttachmentResponse[] | null;
   attachment?: StudentAttachmentResponse | null;
@@ -29,8 +30,8 @@ type StudentNotificationResponse = {
 };
 
 type StudentAttachmentResponse = {
-  id?: number;
-  attachmentId?: number;
+  id?: number | string;
+  attachmentId?: number | string;
   fileName?: string;
   name?: string;
   fileType?: string;
@@ -41,10 +42,12 @@ type StudentAttachmentResponse = {
 };
 
 type StudentTaskResponse = {
-  id?: number;
+  id?: number | string;
   name?: string;
   description?: string;
   deadline?: string;
+  courseId?: number | string;
+  courseName?: string;
   taskStatus?: 'COMPLETE' | 'OVERDUE' | 'PENDING';
   teacher?: {
     firstName?: string;
@@ -53,12 +56,12 @@ type StudentTaskResponse = {
 };
 
 type StudentGroupResponse = {
-  id?: number;
+  id?: number | string;
   name?: string;
 };
 
 type StudentGroup = {
-  id: number;
+  id: string;
   name: string;
 };
 
@@ -68,8 +71,8 @@ const RU = {
   task: '\u0417\u0430\u0434\u0430\u043D\u0438\u0435',
   notification: '\u0423\u0432\u0435\u0434\u043E\u043C\u043B\u0435\u043D\u0438\u0435',
   teacher: '\u041F\u0440\u0435\u043F\u043E\u0434\u0430\u0432\u0430\u0442\u0435\u043B\u044C',
-  group: '\u0413\u0440\u0443\u043F\u043F\u0430',
-  allGroups: '\u0412\u0441\u0435 \u0433\u0440\u0443\u043F\u043F\u044B',
+  group: '\u041A\u0443\u0440\u0441',
+  allGroups: '\u0412\u0441\u0435 \u043A\u0443\u0440\u0441\u044B',
   completed: '\u0412\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u043E',
   overdue: '\u041F\u0440\u043E\u0441\u0440\u043E\u0447\u0435\u043D\u043E',
   inProgress: '\u0412 \u043F\u0440\u043E\u0446\u0435\u0441\u0441\u0435',
@@ -95,11 +98,10 @@ export class StudentPageComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly userService = inject(UserService);
-  private readonly attachmentApi = inject(AttachmentControllerService);
-  private readonly taskApi = inject(TaskControllerService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly destroyRef = inject(DestroyRef);
 
-  studentId = 0;
+  studentId = '';
   fullName = '';
   email = '';
   groupName = '';
@@ -130,6 +132,7 @@ export class StudentPageComponent implements OnInit {
   taskComments: StudentTaskComment[] = [];
 
   ngOnInit(): void {
+    this.destroyRef.onDestroy(() => this.clearUploadedFileLink());
     this.loadCurrentUser();
   }
 
@@ -143,7 +146,7 @@ export class StudentPageComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  openTaskDetails(taskId: number) {
+  openTaskDetails(taskId: string) {
     const task = this.tasks.find((item) => item.id === taskId);
     if (!task) {
       return;
@@ -190,8 +193,13 @@ export class StudentPageComponent implements OnInit {
     this.uploadInProgress = true;
     this.cdr.detectChanges();
 
-    this.attachmentApi
-      .uploadAttachment(taskId, file)
+    const formData = new FormData();
+    formData.append('file', file);
+
+    this.http
+      .post<unknown>(withOpenApiBase(OPENAPI_PATHS.attachments.upload), formData, {
+        params: { taskId },
+      })
       .pipe(
         timeout(15000),
         switchMap((response) => {
@@ -215,7 +223,9 @@ export class StudentPageComponent implements OnInit {
           this.cdr.detectChanges();
         }),
       )
-      .subscribe({
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+      ).subscribe({
         next: (downloadUrl) => {
           if (downloadUrl) {
             this.clearUploadedFileLink();
@@ -234,19 +244,21 @@ export class StudentPageComponent implements OnInit {
     this.completeInProgress = true;
     this.cdr.detectChanges();
 
-    this.taskApi
-      .completeTask(taskId)
+    this.http
+      .post<unknown>(withOpenApiBase(`/task/${encodeURIComponent(taskId)}/complete_task`), {})
       .pipe(
         timeout(15000),
-        catchError(() => of(false)),
+        catchError(() => of(null)),
         finalize(() => {
           this.completeInProgress = false;
           this.cdr.detectChanges();
         }),
       )
-      .subscribe({
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+      ).subscribe({
         next: (result) => {
-          if (result === false) {
+          if (result === null) {
             return;
           }
           this.tasks = this.tasks.map((task) =>
@@ -299,7 +311,9 @@ export class StudentPageComponent implements OnInit {
           this.cdr.detectChanges();
         }),
       )
-      .subscribe({
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+      ).subscribe({
         next: (comments) => {
           this.taskComments = comments;
           this.cdr.detectChanges();
@@ -308,7 +322,9 @@ export class StudentPageComponent implements OnInit {
   }
 
   onLogout() {
-    this.authService.logout().subscribe({
+    this.authService.logout().pipe(
+        takeUntilDestroyed(this.destroyRef),
+      ).subscribe({
       next: () => {
         void this.router.navigateByUrl('/');
       },
@@ -333,13 +349,15 @@ export class StudentPageComponent implements OnInit {
         })),
         catchError(() => of(null)),
       )
-      .subscribe({
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+      ).subscribe({
         next: (result) => {
           if (!result?.blob) {
             return;
           }
 
-          this.downloadBlob(result.blob, result.fileName || attachment.fileName || 'attachment');
+          this.downloadBlob(result.blob, result.fileName || attachment.fileName || 'вложение');
         },
       });
   }
@@ -351,28 +369,28 @@ export class StudentPageComponent implements OnInit {
         switchMap((profile) => {
           this.fullName = [profile.lastName, profile.firstName].filter(Boolean).join(' ').trim();
           this.email = profile.email;
-          this.studentId = profile.id;
+          this.studentId = String(profile.id ?? '');
           this.groupName = profile.groups[0]?.name ?? '';
 
           const fallbackGroups: StudentGroup[] = (profile.groups ?? [])
             .map((group) => ({
-              id: Number(group.id),
+              id: String(group.id ?? '').trim(),
               name: (group.name ?? '').trim(),
             }))
-            .filter((group) => Number.isFinite(group.id) && group.id > 0 && Boolean(group.name));
+            .filter((group) => Boolean(group.id) && Boolean(group.name));
 
           const groups$ = this.http
             .get<StudentGroupResponse[]>(
-              withOpenApiBase(OPENAPI_PATHS.teacher.groupsByTeacher(profile.id)),
+              withOpenApiBase(OPENAPI_PATHS.courses.list),
             )
             .pipe(
               map((groups) =>
                 (groups ?? [])
                   .map((group) => ({
-                    id: Number(group.id),
+                    id: String(group.id ?? '').trim(),
                     name: (group.name ?? '').trim(),
                   }))
-                  .filter((group) => Number.isFinite(group.id) && group.id > 0 && Boolean(group.name)),
+                  .filter((group) => Boolean(group.id) && Boolean(group.name)),
               ),
               map((groups) =>
                 groups.length ? groups.sort((a, b) => a.name.localeCompare(b.name, 'ru')) : fallbackGroups,
@@ -407,7 +425,9 @@ export class StudentPageComponent implements OnInit {
           );
         }),
       )
-      .subscribe({
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+      ).subscribe({
         next: ({ groups, tasks, notifications }) => {
           this.groups = groups;
           if (
@@ -426,7 +446,7 @@ export class StudentPageComponent implements OnInit {
         error: () => {
           this.fullName = '';
           this.email = '';
-          this.studentId = 0;
+          this.studentId = '';
           this.groupName = '';
           this.groups = [];
           this.allTasks = [];
@@ -456,18 +476,18 @@ export class StudentPageComponent implements OnInit {
       .trim();
 
     return {
-      id: Number(task?.id) || Date.now(),
+      id: String(task?.id ?? Date.now()),
       title,
       pillText: this.mapTaskStatusLabel(status),
       pillVariant: status === 'COMPLETE' ? 'success' : 'neutral',
       teacher: teacherName || RU.teacher,
       description,
       dueText: this.formatDate(task?.deadline),
-      groupId: group?.id ?? null,
+      groupId: group?.id ?? (task?.courseId != null ? String(task.courseId) : null),
     };
   }
 
-  private loadTaskComments(taskId: number): void {
+  private loadTaskComments(taskId: string): void {
     this.commentsLoading = true;
     this.taskComments = [];
     this.cdr.detectChanges();
@@ -481,7 +501,9 @@ export class StudentPageComponent implements OnInit {
           this.cdr.detectChanges();
         }),
       )
-      .subscribe({
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+      ).subscribe({
         next: (comments) => {
           this.taskComments = this.mapTaskComments(comments);
         },
@@ -490,14 +512,14 @@ export class StudentPageComponent implements OnInit {
 
   private mapTaskComments(comments: unknown): StudentTaskComment[] {
     return this.normalizeComments(comments).map((comment) => ({
-      userId: comment.userId ?? null,
+      userId: comment.userId != null ? String(comment.userId) : null,
       text: this.normalizeText(comment.text),
     }));
   }
 
   private mapTaskComment(comment: CommentDTO | null | undefined): StudentTaskComment {
     return {
-      userId: comment?.userId ?? null,
+      userId: comment?.userId != null ? String(comment.userId) : null,
       text: this.normalizeText(comment?.text),
     };
   }
@@ -628,7 +650,7 @@ export class StudentPageComponent implements OnInit {
       text,
       tag: RU.group,
       attachments: this.mapNotificationAttachments(notification),
-      groupId: notification?.groupId ?? 0,
+      groupId: String(notification?.courseId ?? notification?.groupId ?? ''),
     };
   }
 
@@ -651,7 +673,7 @@ export class StudentPageComponent implements OnInit {
       const id = this.resolveAttachmentId(candidate.id ?? candidate.attachmentId);
       const objectKey = (candidate.objectKey ?? '').trim() || null;
       const fileName =
-        (candidate.fileName ?? candidate.name ?? candidate.objectKey ?? '').trim() || 'attachment';
+        (candidate.fileName ?? candidate.name ?? candidate.objectKey ?? '').trim() || 'вложение';
       const fileType = (candidate.fileType ?? candidate.contentType ?? '').trim();
       const sizeCandidate = candidate.fileSize ?? candidate.size;
       const fileSize =
@@ -702,29 +724,51 @@ export class StudentPageComponent implements OnInit {
     }
   }
 
-  private extractAttachmentId(response: unknown): number | null {
+  private extractAttachmentId(response: unknown): string | null {
     if (typeof response === 'number' && Number.isFinite(response) && response > 0) {
-      return response;
+      return String(response);
+    }
+
+    if (typeof response === 'string') {
+      const normalized = response.trim();
+      return normalized || null;
     }
 
     if (response && typeof response === 'object') {
       const candidate = response as Record<string, unknown>;
       const id = candidate['id'] ?? candidate['attachmentId'];
       if (typeof id === 'number' && Number.isFinite(id) && id > 0) {
-        return id;
+        return String(id);
+      }
+      if (typeof id === 'string') {
+        const normalized = id.trim();
+        return normalized || null;
       }
     }
 
     return null;
   }
 
-  private resolveAttachmentId(value: unknown): number | null {
-    return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : null;
+  private resolveAttachmentId(value: unknown): string | null {
+    if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+      return String(value);
+    }
+    if (typeof value === 'string') {
+      const normalized = value.trim();
+      return normalized || null;
+    }
+    return null;
   }
 
   private resolveAttachmentRef(attachment: NotificationAttachment): number | string | null {
-    if (attachment.id && attachment.id > 0) {
-      return attachment.id;
+    if (typeof attachment.id === 'number' && Number.isFinite(attachment.id) && attachment.id > 0) {
+      return String(attachment.id);
+    }
+    if (typeof attachment.id === 'string') {
+      const normalizedId = attachment.id.trim();
+      if (normalizedId) {
+        return normalizedId;
+      }
     }
 
     const objectKey = attachment.objectKey?.trim();
@@ -772,7 +816,7 @@ export class StudentPageComponent implements OnInit {
       groups.map((group) =>
         this.http
           .get<StudentTaskResponse[]>(
-            withOpenApiBase(OPENAPI_PATHS.tasks.byGroupNameReal(group.name)),
+            withOpenApiBase(OPENAPI_PATHS.tasks.byCourse(group.id)),
           )
           .pipe(
             map((tasks) => (tasks ?? []).map((task) => this.mapTask(task, group))),
@@ -782,7 +826,7 @@ export class StudentPageComponent implements OnInit {
     ).pipe(
       map((chunks) => chunks.flat()),
       map((tasks) => {
-        const deduplicated = new Map<number, StudentTask>();
+      const deduplicated = new Map<string, StudentTask>();
         tasks.forEach((task) => deduplicated.set(task.id, task));
         return [...deduplicated.values()];
       }),
@@ -794,7 +838,7 @@ export class StudentPageComponent implements OnInit {
       this.tasks = [...this.allTasks];
       this.notifications = [...this.allNotifications];
     } else {
-      const groupId = Number(this.selectedGroupFilter);
+      const groupId = this.selectedGroupFilter;
       this.tasks = this.allTasks.filter((task) => task.groupId === groupId);
       this.notifications = this.allNotifications.filter((item) => item.groupId === groupId);
     }
@@ -805,3 +849,4 @@ export class StudentPageComponent implements OnInit {
     ];
   }
 }
+

@@ -1,18 +1,18 @@
 import { NotificationAttachment } from '../../core/teacher/teacher.models';
 
 export type StudentTask = {
-  id: number;
+  id: string;
   title: string;
   pillText: string | null;
   pillVariant: 'success' | 'neutral';
   teacher: string;
   description: string;
   dueText: string;
-  groupId: number | null;
+  groupId: string | null;
 };
 
 export type StudentTaskComment = {
-  userId: number | null;
+  userId: string | null;
   text: string;
 };
 
@@ -25,5 +25,5 @@ export type StudentNotification = {
   text: string;
   tag: string;
   attachments: NotificationAttachment[];
-  groupId: number;
+  groupId: string;
 };

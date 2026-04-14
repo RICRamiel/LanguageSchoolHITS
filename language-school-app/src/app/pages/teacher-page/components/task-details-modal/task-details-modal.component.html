@@ -39,6 +39,34 @@
           <dd>{{ task().dueDate }}</dd>
         </div>
         <div class="modal__meta-row">
+          <dt>Тип задания:</dt>
+          <dd>{{ getAssignmentTypeLabel(task().assignmentType) }}</dd>
+        </div>
+        <div class="modal__meta-row">
+          <dt>Тип сдачи:</dt>
+          <dd>{{ getResolveTypeLabel(task().resolveType) }}</dd>
+        </div>
+        @if (task().assignmentType === 'TEAM') {
+          <div class="modal__meta-row">
+            <dt>Тип команд:</dt>
+            <dd>{{ getTeamTypeLabel(task().teamType) }}</dd>
+          </div>
+          <div class="modal__meta-row">
+            <dt>Людей в команде:</dt>
+            <dd>{{ task().minTeamSize ?? '-' }} - {{ task().maxTeamSize ?? '-' }}</dd>
+          </div>
+          <div class="modal__meta-row">
+            <dt>Количество команд:</dt>
+            <dd>{{ task().minTeamsAmount ?? '-' }} - {{ task().maxTeamsAmount ?? '-' }}</dd>
+          </div>
+        }
+        @if (task().resolveType === 'AT_LEAST_VOTES_SOLUTION') {
+          <div class="modal__meta-row">
+            <dt>Порог голосов:</dt>
+            <dd>{{ task().votesThreshold ?? '-' }}</dd>
+          </div>
+        }
+        <div class="modal__meta-row">
           <dt>Работ:</dt>
           <dd>{{ task().submissions }}</dd>
         </div>
@@ -55,7 +83,7 @@
               <p class="modal__item-title">{{ work.fileName }}</p>
               <p class="modal__item-meta">{{ work.fileType || 'Файл' }}</p>
               <p class="modal__item-meta">
-                {{ work.fileSize !== null ? (work.fileSize + ' bytes') : 'Размер неизвестен' }}
+                {{ work.fileSize !== null ? (work.fileSize + ' байт') : 'Размер неизвестен' }}
               </p>
               <button
                 class="modal__download modal__download--small"

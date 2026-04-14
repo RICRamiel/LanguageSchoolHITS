@@ -32,13 +32,13 @@ export class CreateNotificationModalComponent {
         return;
       }
 
-      const exists = groups.some((group) => String(group.id) === this.groupId);
+      const exists = groups.some((group) => group.id === this.groupId);
       if (!exists) {
-        this.groupId = String(groups[0].id);
+        this.groupId = groups[0].id;
       }
 
       if (!this.groupQuery.trim()) {
-        const selected = groups.find((group) => String(group.id) === this.groupId);
+        const selected = groups.find((group) => group.id === this.groupId);
         this.groupQuery = selected?.name ?? '';
       }
     });
@@ -76,7 +76,7 @@ export class CreateNotificationModalComponent {
   }
 
   selectGroup(group: TeacherGroup): void {
-    this.groupId = String(group.id);
+    this.groupId = group.id;
     this.groupQuery = group.name;
     this.isGroupListOpen = false;
   }
@@ -96,7 +96,7 @@ export class CreateNotificationModalComponent {
       return null;
     }
 
-    const selected = groups.find((group) => String(group.id) === this.groupId);
+    const selected = groups.find((group) => group.id === this.groupId);
     return selected ?? groups[0];
   }
 }

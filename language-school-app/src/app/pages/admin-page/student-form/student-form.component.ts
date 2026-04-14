@@ -1,4 +1,4 @@
-import { Component, effect, inject, input, output, ChangeDetectionStrategy } from '@angular/core';
+﻿import { Component, effect, inject, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators, FormsModule } from '@angular/forms';
 import { ButtonComponent } from '../../../shared/ui/button/button.component';
 import { InputComponent } from '../../../shared/ui/input/input.component';
@@ -125,7 +125,7 @@ export class StudentFormComponent {
     const c = this.form.get(controlName);
     if (!c?.errors) return '';
     if (c.errors['required']) return 'Обязательное поле';
-    if (c.errors['email']) return 'Неверный формат email';
+    if (c.errors['email']) return 'Неверный формат почты';
     if (c.errors['minlength']) return `Минимум ${c.errors['minlength'].requiredLength} символов`;
     if (c.errors['maxlength']) return `Максимум ${c.errors['maxlength'].requiredLength} символов`;
     return 'Неверное значение';
