@@ -13,6 +13,10 @@ export interface GroupFormValue {
   name: string;
   teacherId: string;
   languageId: string;
+  description: string;
+  satisfactoryThreshold: number;
+  goodThreshold: number;
+  excellentThreshold: number;
 }
 
 @Component({
@@ -45,6 +49,10 @@ export class GroupFormComponent {
     name: ['', [Validators.required, Validators.minLength(1)]],
     teacherId: [''],
     languageId: [''],
+    description: ['', [Validators.required, Validators.minLength(1)]],
+    satisfactoryThreshold: [60, [Validators.required, Validators.min(0), Validators.max(100)]],
+    goodThreshold: [75, [Validators.required, Validators.min(0), Validators.max(100)]],
+    excellentThreshold: [90, [Validators.required, Validators.min(0), Validators.max(100)]],
   });
 
   constructor() {
@@ -54,13 +62,30 @@ export class GroupFormComponent {
         this.form.patchValue({ name: v.name, teacherId: '', languageId: '' });
         this.form.get('teacherId')?.clearValidators();
         this.form.get('languageId')?.clearValidators();
+        this.form.get('description')?.clearValidators();
+        this.form.get('satisfactoryThreshold')?.clearValidators();
+        this.form.get('goodThreshold')?.clearValidators();
+        this.form.get('excellentThreshold')?.clearValidators();
       } else {
-        this.form.reset({ name: '', teacherId: '', languageId: '' });
+        this.form.reset({
+          name: '',
+          teacherId: '',
+          languageId: '',
+          description: '',
+          satisfactoryThreshold: 60,
+          goodThreshold: 75,
+          excellentThreshold: 90,
+        });
         this.form.get('teacherId')?.setValidators(Validators.required);
         this.form.get('languageId')?.setValidators(Validators.required);
+        this.form.get('description')?.setValidators([Validators.required, Validators.minLength(1)]);
+        this.form.get('satisfactoryThreshold')?.setValidators([Validators.required, Validators.min(0), Validators.max(100)]);
+        this.form.get('goodThreshold')?.setValidators([Validators.required, Validators.min(0), Validators.max(100)]);
+        this.form.get('excellentThreshold')?.setValidators([Validators.required, Validators.min(0), Validators.max(100)]);
       }
-      this.form.get('teacherId')?.updateValueAndValidity();
-      this.form.get('languageId')?.updateValueAndValidity();
+      ['teacherId', 'languageId', 'description', 'satisfactoryThreshold', 'goodThreshold', 'excellentThreshold'].forEach(
+        (f) => this.form.get(f)?.updateValueAndValidity(),
+      );
     });
   }
 
@@ -89,6 +114,8 @@ export class GroupFormComponent {
     if (!c?.errors) return '';
     if (c.errors['required']) return 'Обязательное поле';
     if (c.errors['minlength']) return 'Минимум 1 символ';
+    if (c.errors['min']) return 'Минимум 0';
+    if (c.errors['max']) return 'Максимум 100';
     return 'Неверное значение';
   }
 }

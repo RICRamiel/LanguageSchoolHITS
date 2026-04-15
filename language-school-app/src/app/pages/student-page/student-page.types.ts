@@ -1,5 +1,12 @@
 import { NotificationAttachment } from '../../core/teacher/teacher.models';
 
+export type StudentTeam = {
+  id: string;
+  name: string;
+  membersCount: number | null;
+  captainId: string | null;
+};
+
 export type StudentTask = {
   id: string;
   title: string;
@@ -9,6 +16,9 @@ export type StudentTask = {
   description: string;
   dueText: string;
   groupId: string | null;
+  teamType: string | null;
+  currentTeamId: string | null;
+  teams: StudentTeam[];
 };
 
 export type StudentTaskComment = {

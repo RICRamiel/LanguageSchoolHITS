@@ -62,10 +62,13 @@
       [uploadedFileLink]="uploadedFileLink"
       [commentsLoading]="commentsLoading"
       [commentSubmitting]="commentSubmitting"
+      [teamActionInProgress]="teamActionInProgress"
       [comments]="taskComments"
       (uploadFile)="onUploadTaskFile($event)"
       (completeTask)="onCompleteTask()"
       (submitComment)="onSubmitComment($event)"
+      (createTeam)="onCreateTeam($event)"
+      (joinTeam)="onJoinTeam($event)"
       (close)="closeTaskDetailsModal()"
     />
   }

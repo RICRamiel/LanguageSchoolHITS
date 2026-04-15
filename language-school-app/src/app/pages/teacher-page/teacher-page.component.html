@@ -120,8 +120,10 @@
     <app-task-details-modal
       [task]="selectedTask"
       [activeSection]="selectedTaskSection"
+      [teamCreating]="teamCreating"
       (submitComment)="onSubmitTaskComment($event)"
       (downloadAttachment)="onDownloadTaskAttachment($event)"
+      (createTeam)="onCreateTeam($event)"
       (close)="closeTaskDetailsModal()"
     />
   }

@@ -1,5 +1,5 @@
 ﻿import { Component, OnInit, input, output, signal, ChangeDetectionStrategy } from '@angular/core';
-import { TeacherTask, TeacherTaskDetailsSection, TeacherTaskSubmission } from '../../teacher-page.types';
+import { TeacherTask, TaskTeam, TeacherTaskDetailsSection, TeacherTaskSubmission } from '../../teacher-page.types';
 
 @Component({
   selector: 'app-task-details-modal',
@@ -15,8 +15,11 @@ export class TaskDetailsModalComponent implements OnInit {
   readonly close = output<void>();
   readonly submitComment = output<string>();
   readonly downloadAttachment = output<TeacherTaskSubmission>();
+  readonly createTeam = output<string>();
+  readonly teamCreating = input<boolean>(false);
   readonly selectedSection = signal<TeacherTaskDetailsSection>('overview');
   readonly commentText = signal('');
+  readonly newTeamName = signal('');
 
   ngOnInit(): void {
     this.selectedSection.set(this.activeSection());
@@ -38,6 +41,20 @@ export class TaskDetailsModalComponent implements OnInit {
     }
     this.submitComment.emit(value);
     this.commentText.set('');
+  }
+
+  onTeamNameInput(event: Event): void {
+    const target = event.target as HTMLInputElement | null;
+    this.newTeamName.set(target?.value ?? '');
+  }
+
+  onCreateTeam(): void {
+    const name = this.newTeamName().trim();
+    if (!name || this.teamCreating()) {
+      return;
+    }
+    this.createTeam.emit(name);
+    this.newTeamName.set('');
   }
 
   requestAttachmentDownload(work: TeacherTaskSubmission): void {

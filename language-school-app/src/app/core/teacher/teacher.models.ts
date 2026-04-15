@@ -1,4 +1,4 @@
-export type TeacherTaskDetailsSection = 'overview' | 'submissions' | 'comments';
+export type TeacherTaskDetailsSection = 'overview' | 'submissions' | 'comments' | 'teams';
 export type TaskAssignmentType = 'INDIVIDUAL' | 'TEAM';
 export type TaskTeamType = 'RANDOM' | 'FREEROAM' | 'DRAFT' | 'CUSTOM';
 export type TaskResolveType =
@@ -27,6 +27,13 @@ export type TeacherTaskComment = {
   createdAt: string;
 };
 
+export type TaskTeam = {
+  id: string;
+  name: string;
+  membersCount: number | null;
+  captainId: string | null;
+};
+
 export type TeacherTask = {
   id: string;
   title: string;
@@ -47,6 +54,7 @@ export type TeacherTask = {
   minTeamsAmount: number | null;
   maxTeamsAmount: number | null;
   votesThreshold: number | null;
+  teams: TaskTeam[];
 };
 
 export type TeacherNotification = {

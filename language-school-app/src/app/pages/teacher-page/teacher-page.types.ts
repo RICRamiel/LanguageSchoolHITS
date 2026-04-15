@@ -3,6 +3,7 @@ export type {
   NotificationAttachment,
   CreateTaskPayload,
   TaskDetailsOpenPayload,
+  TaskTeam,
   TeacherGroup,
   TeacherStudentGrade,
   TeacherNotification,

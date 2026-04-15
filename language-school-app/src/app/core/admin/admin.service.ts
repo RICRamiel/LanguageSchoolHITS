@@ -71,10 +71,18 @@ export class AdminService {
       );
   }
 
-  createGroup(name: string, teacherId: string, languageId: string): Observable<AdminGroupDTO> {
+  createGroup(
+    name: string,
+    teacherId: string,
+    languageId: string,
+    description: string,
+    satisfactorilyMarkThreshold: number,
+    goodMarkThreshold: number,
+    excellentMarkThreshold: number,
+  ): Observable<AdminGroupDTO> {
     return this.http.post<AdminGroupDTO>(
       withOpenApiBase(OPENAPI_PATHS.admin.groups.create),
-      { name, teacherId, languageId },
+      { name, teacherId, languageId, description, satisfactorilyMarkThreshold, goodMarkThreshold, excellentMarkThreshold },
     );
   }
 

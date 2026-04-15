@@ -11,7 +11,7 @@ import { TabsComponent } from '../../shared/ui/tabs/tabs.component';
 import { TaskCardComponent } from '../../shared/ui/task-card/task-card.component';
 import { StudentTaskDetailsModalComponent } from './components/student-task-details-modal/student-task-details-modal.component';
 import { StudentNotificationModalComponent } from './components/student-notification-modal/student-notification-modal.component';
-import { StudentNotification, StudentTask, StudentTaskComment } from './student-page.types';
+import { StudentNotification, StudentTask, StudentTaskComment, StudentTeam } from './student-page.types';
 import { OPENAPI_PATHS, withOpenApiBase } from '../../core/api/openapi.config';
 import { CommentDTO } from '../../api/model/commentDTO';
 import { NotificationAttachment } from '../../core/teacher/teacher.models';
@@ -41,6 +41,13 @@ type StudentAttachmentResponse = {
   objectKey?: string;
 };
 
+type StudentTeamResponse = {
+  id?: string;
+  name?: string;
+  membersCount?: number | null;
+  captainId?: string | null;
+};
+
 type StudentTaskResponse = {
   id?: number | string;
   name?: string;
@@ -49,6 +56,9 @@ type StudentTaskResponse = {
   courseId?: number | string;
   courseName?: string;
   taskStatus?: 'COMPLETE' | 'OVERDUE' | 'PENDING';
+  teamType?: string | null;
+  currentTeamId?: string | null;
+  teams?: StudentTeamResponse[] | null;
   teacher?: {
     firstName?: string;
     lastName?: string;
@@ -129,6 +139,7 @@ export class StudentPageComponent implements OnInit {
   completeInProgress = false;
   commentsLoading = false;
   commentSubmitting = false;
+  teamActionInProgress = false;
   taskComments: StudentTaskComment[] = [];
 
   ngOnInit(): void {
@@ -166,6 +177,7 @@ export class StudentPageComponent implements OnInit {
     this.completeInProgress = false;
     this.commentsLoading = false;
     this.commentSubmitting = false;
+    this.teamActionInProgress = false;
     this.taskComments = [];
   }
 
@@ -274,6 +286,80 @@ export class StudentPageComponent implements OnInit {
               pillVariant: 'success',
             };
           }
+          this.cdr.detectChanges();
+        },
+      });
+  }
+
+  onCreateTeam(name: string): void {
+    const taskId = this.selectedTask?.id;
+    if (!taskId || this.teamActionInProgress) {
+      return;
+    }
+    this.teamActionInProgress = true;
+    this.cdr.detectChanges();
+    this.http
+      .post<StudentTeamResponse>(withOpenApiBase(OPENAPI_PATHS.tasks.teams(taskId)), {
+        name,
+        captainId: this.studentId || null,
+      })
+      .pipe(
+        catchError(() => of(null)),
+        finalize(() => {
+          this.teamActionInProgress = false;
+          this.cdr.detectChanges();
+        }),
+      )
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (team) => {
+          if (!team || !this.selectedTask) return;
+          const newTeam: StudentTeam = {
+            id: String(team.id ?? ''),
+            name: (team.name ?? name).trim() || 'Команда',
+            membersCount: typeof team.membersCount === 'number' ? team.membersCount : null,
+            captainId: team.captainId ? String(team.captainId) : this.studentId || null,
+          };
+          const updatedTask: StudentTask = {
+            ...this.selectedTask,
+            currentTeamId: newTeam.id || this.selectedTask.currentTeamId,
+            teams: [...this.selectedTask.teams, newTeam],
+          };
+          this.selectedTask = updatedTask;
+          this.allTasks = this.allTasks.map((t) => t.id === updatedTask.id ? updatedTask : t);
+          this.tasks = this.tasks.map((t) => t.id === updatedTask.id ? updatedTask : t);
+          this.cdr.detectChanges();
+        },
+      });
+  }
+
+  onJoinTeam(teamId: string): void {
+    const taskId = this.selectedTask?.id;
+    if (!taskId || this.teamActionInProgress) {
+      return;
+    }
+    this.teamActionInProgress = true;
+    this.cdr.detectChanges();
+    this.http
+      .post<StudentTeamResponse>(withOpenApiBase(OPENAPI_PATHS.tasks.joinTeam(taskId, teamId)), {})
+      .pipe(
+        catchError(() => of(null)),
+        finalize(() => {
+          this.teamActionInProgress = false;
+          this.cdr.detectChanges();
+        }),
+      )
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (team) => {
+          if (!this.selectedTask) return;
+          const updatedTask: StudentTask = {
+            ...this.selectedTask,
+            currentTeamId: team?.id ? String(team.id) : teamId,
+          };
+          this.selectedTask = updatedTask;
+          this.allTasks = this.allTasks.map((t) => t.id === updatedTask.id ? updatedTask : t);
+          this.tasks = this.tasks.map((t) => t.id === updatedTask.id ? updatedTask : t);
           this.cdr.detectChanges();
         },
       });
@@ -484,6 +570,14 @@ export class StudentPageComponent implements OnInit {
       description,
       dueText: this.formatDate(task?.deadline),
       groupId: group?.id ?? (task?.courseId != null ? String(task.courseId) : null),
+      teamType: task?.teamType ?? null,
+      currentTeamId: task?.currentTeamId ?? null,
+      teams: (task?.teams ?? []).map((t): StudentTeam => ({
+        id: String(t.id ?? ''),
+        name: (t.name ?? '').trim() || 'Команда',
+        membersCount: typeof t.membersCount === 'number' ? t.membersCount : null,
+        captainId: t.captainId ? String(t.captainId) : null,
+      })),
     };
   }
 

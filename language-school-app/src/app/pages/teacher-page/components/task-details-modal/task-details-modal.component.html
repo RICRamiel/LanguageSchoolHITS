@@ -29,6 +29,16 @@
       >
         Комментарии
       </button>
+      @if (task().assignmentType === 'TEAM' && task().teamType === 'DRAFT') {
+        <button
+          class="modal__tab"
+          type="button"
+          [class.modal__tab--active]="selectedSection() === 'teams'"
+          (click)="setSection('teams')"
+        >
+          Команды
+        </button>
+      }
     </nav>
 
     @if (selectedSection() === 'overview') {
@@ -97,6 +107,38 @@
           }
         } @else {
           <p class="modal__empty">Прикрепленных работ пока нет.</p>
+        }
+      </div>
+    } @else if (selectedSection() === 'teams') {
+      <div class="modal__teams">
+        <div class="modal__team-create">
+          <input
+            class="modal__team-input"
+            type="text"
+            [value]="newTeamName()"
+            (input)="onTeamNameInput($event)"
+            placeholder="Название команды"
+          />
+          <button
+            class="modal__action-btn"
+            type="button"
+            [disabled]="!newTeamName().trim() || teamCreating()"
+            (click)="onCreateTeam()"
+          >
+            {{ teamCreating() ? 'Создание...' : 'Создать команду' }}
+          </button>
+        </div>
+        @if (task().teams.length) {
+          <ul class="modal__team-list">
+            @for (team of task().teams; track team.id) {
+              <li class="modal__team-item">
+                <span class="modal__team-name">{{ team.name }}</span>
+                <span class="modal__team-meta">{{ team.membersCount ?? 0 }} чел.</span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="modal__empty">Команд пока нет.</p>
         }
       </div>
     } @else {

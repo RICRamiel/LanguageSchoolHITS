@@ -36,6 +36,34 @@
             <span class="form-error">{{ getErrorMessage('languageId') }}</span>
           }
         </div>
+        <div class="form-row">
+          <app-label for="group-description">Описание</app-label>
+          <app-input id="group-description" formControlName="description" placeholder="Описание курса" />
+          @if (form.get('description')?.invalid && form.get('description')?.touched) {
+            <span class="form-error">{{ getErrorMessage('description') }}</span>
+          }
+        </div>
+        <div class="form-row">
+          <app-label for="group-satisfactory">Порог «Удовл.» (%)</app-label>
+          <app-input id="group-satisfactory" formControlName="satisfactoryThreshold" type="number" placeholder="60" />
+          @if (form.get('satisfactoryThreshold')?.invalid && form.get('satisfactoryThreshold')?.touched) {
+            <span class="form-error">{{ getErrorMessage('satisfactoryThreshold') }}</span>
+          }
+        </div>
+        <div class="form-row">
+          <app-label for="group-good">Порог «Хорошо» (%)</app-label>
+          <app-input id="group-good" formControlName="goodThreshold" type="number" placeholder="75" />
+          @if (form.get('goodThreshold')?.invalid && form.get('goodThreshold')?.touched) {
+            <span class="form-error">{{ getErrorMessage('goodThreshold') }}</span>
+          }
+        </div>
+        <div class="form-row">
+          <app-label for="group-excellent">Порог «Отлично» (%)</app-label>
+          <app-input id="group-excellent" formControlName="excellentThreshold" type="number" placeholder="90" />
+          @if (form.get('excellentThreshold')?.invalid && form.get('excellentThreshold')?.touched) {
+            <span class="form-error">{{ getErrorMessage('excellentThreshold') }}</span>
+          }
+        </div>
       }
       <div class="form-actions">
         <app-button type="submit" class="small">Сохранить</app-button>

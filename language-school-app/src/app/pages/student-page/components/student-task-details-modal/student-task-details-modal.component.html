@@ -54,6 +54,59 @@
       </a>
     }
 
+    @if (task().teamType && task().teamType !== 'RANDOM' && task().teamType !== 'INDIVIDUAL') {
+      <div class="modal__teams">
+        <h4 class="modal__teams-title">Команды</h4>
+        @if (task().currentTeamId) {
+          <p class="modal__team-status">Вы в команде</p>
+        } @else {
+          <p class="modal__team-status">Вы не в команде</p>
+        }
+        @if (task().teamType === 'FREEROAM' || task().teamType === 'CUSTOM') {
+          <div class="modal__team-create">
+            <input
+              class="modal__team-input"
+              type="text"
+              [value]="newTeamName()"
+              (input)="onTeamNameInput($event)"
+              placeholder="Название команды"
+              [disabled]="teamActionInProgress() || !!task().currentTeamId"
+            />
+            <button
+              class="modal__action-btn"
+              type="button"
+              [disabled]="!newTeamName().trim() || teamActionInProgress() || !!task().currentTeamId"
+              (click)="onCreateTeam()"
+            >
+              {{ teamActionInProgress() ? 'Загрузка...' : 'Создать команду' }}
+            </button>
+          </div>
+        }
+        @if (task().teams.length) {
+          <ul class="modal__team-list">
+            @for (team of task().teams; track team.id) {
+              <li class="modal__team-item">
+                <span class="modal__team-name">{{ team.name }}</span>
+                <span class="modal__team-meta">{{ team.membersCount ?? 0 }} чел.</span>
+                @if (!task().currentTeamId && team.id !== task().currentTeamId) {
+                  <button
+                    class="modal__action-btn modal__action-btn--small"
+                    type="button"
+                    [disabled]="teamActionInProgress()"
+                    (click)="onJoinTeam(team.id)"
+                  >
+                    Вступить
+                  </button>
+                }
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="modal__empty">Команд пока нет.</p>
+        }
+      </div>
+    }
+
     <div class="modal__comments">
       <h4 class="modal__comments-title">&#1050;&#1086;&#1084;&#1084;&#1077;&#1085;&#1090;&#1072;&#1088;&#1080;&#1080;</h4>
 

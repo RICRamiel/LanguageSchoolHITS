@@ -124,6 +124,7 @@ export class TeacherPageComponent implements OnInit {
   gradingStudentsError: string | null = null;
   gradingTaskId: string | null = null;
   gradingTaskTitle = '';
+  teamCreating = false;
   selectedTask: TeacherTask | null = null;
   selectedTaskSection: TeacherTaskDetailsSection = 'overview';
   selectedNotification: TeacherNotification | null = null;
@@ -296,6 +297,29 @@ export class TeacherPageComponent implements OnInit {
     this.selectedTask = null;
     this.selectedTaskSection = 'overview';
     this.isTaskDetailsModalOpen = false;
+    this.teamCreating = false;
+  }
+
+  onCreateTeam(name: string): void {
+    const taskId = this.selectedTask?.id;
+    if (!taskId || this.teamCreating) {
+      return;
+    }
+    this.teamCreating = true;
+    this.teacherService.createTeam(taskId, name).pipe(
+      finalize(() => { this.teamCreating = false; }),
+      catchError(() => of(null)),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: (team) => {
+        if (!team || !this.selectedTask) return;
+        const updatedTask = { ...this.selectedTask, teams: [...this.selectedTask.teams, team] };
+        this.selectedTask = updatedTask;
+        this.allTasksSubject.next(
+          this.allTasksSubject.value.map((t) => t.id === updatedTask.id ? updatedTask : t),
+        );
+      },
+    });
   }
 
   closeNotificationDetailsModal(): void {

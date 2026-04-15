@@ -8,6 +8,7 @@ import {
   CreateTaskPayload,
   NotificationAttachment,
   TaskAssignmentType,
+  TaskTeam,
   TeacherGroup,
   TeacherNotification,
   TeacherStudentGrade,
@@ -20,6 +21,13 @@ type TeacherComment = {
   userId?: number | string;
   taskId?: number | string;
   privateStatus?: boolean;
+};
+
+type TeacherTeamResponse = {
+  id?: string;
+  name?: string;
+  membersCount?: number | null;
+  captainId?: string | null;
 };
 
 type TeacherTaskResponse = {
@@ -40,6 +48,7 @@ type TeacherTaskResponse = {
   attachmentDownloadInfos?: TeacherAttachmentResponse[] | null;
   taskStatus?: 'COMPLETE' | 'OVERDUE' | 'PENDING';
   groupName?: string;
+  teams?: TeacherTeamResponse[] | null;
   teacher?: {
     id?: number | string;
     firstName?: string;
@@ -224,6 +233,12 @@ export class TeacherService {
           createdAt: '',
         })),
       );
+  }
+
+  createTeam(taskId: string, name: string): Observable<TaskTeam> {
+    return this.http
+      .post<TeacherTeamResponse>(withOpenApiBase(OPENAPI_PATHS.tasks.teams(taskId)), { name })
+      .pipe(map((team) => this.mapTeam(team)));
   }
 
   createTask(payload: CreateTaskPayload): Observable<TeacherTask> {
@@ -561,6 +576,16 @@ export class TeacherService {
       minTeamsAmount,
       maxTeamsAmount,
       votesThreshold,
+      teams: (task?.teams ?? []).map((t) => this.mapTeam(t)),
+    };
+  }
+
+  private mapTeam(team: TeacherTeamResponse | null | undefined): TaskTeam {
+    return {
+      id: (team?.id ?? '').trim(),
+      name: (team?.name ?? '').trim() || 'Команда',
+      membersCount: typeof team?.membersCount === 'number' ? team.membersCount : null,
+      captainId: (team?.captainId ?? null) ? String(team!.captainId) : null,
     };
   }
 

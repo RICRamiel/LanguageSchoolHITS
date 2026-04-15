@@ -112,7 +112,15 @@ export class GroupsTabComponent implements OnInit {
     const req =
       id !== null
         ? this.adminService.editGroup(id, value.name)
-        : this.adminService.createGroup(value.name, value.teacherId, value.languageId);
+        : this.adminService.createGroup(
+            value.name,
+            value.teacherId,
+            value.languageId,
+            value.description,
+            value.satisfactoryThreshold,
+            value.goodThreshold,
+            value.excellentThreshold,
+          );
 
     req
       .pipe(

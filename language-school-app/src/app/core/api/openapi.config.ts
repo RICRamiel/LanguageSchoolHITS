@@ -30,6 +30,11 @@ export const OPENAPI_PATHS = {
       `/task/get_by_group_name?groupName=${encodeURIComponent(groupName)}`,
     byGroupNameReal: (groupName: string) =>
       `/task/get_by_group_name_real?groupName=${encodeURIComponent(groupName)}`,
+    teams: (taskId: string) => `/task/${encodeURIComponent(taskId)}/teams`,
+    joinTeam: (taskId: string, teamId: string) =>
+      `/task/${encodeURIComponent(taskId)}/teams/${encodeURIComponent(teamId)}/join`,
+    addStudentToTeam: (taskId: string, teamId: string, studentId: string) =>
+      `/task/${encodeURIComponent(taskId)}/teams/${encodeURIComponent(teamId)}/students/${encodeURIComponent(studentId)}`,
   },
   teacher: {
     tasksByTeacher: (teacherId: string | number) => `/task/${encodeURIComponent(String(teacherId))}/get_by_teacher`,
