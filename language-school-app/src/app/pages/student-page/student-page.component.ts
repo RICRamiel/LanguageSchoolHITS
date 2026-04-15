@@ -140,6 +140,7 @@ export class StudentPageComponent implements OnInit {
   commentsLoading = false;
   commentSubmitting = false;
   teamActionInProgress = false;
+  teamError: string | null = null;
   taskComments: StudentTaskComment[] = [];
 
   ngOnInit(): void {
@@ -178,6 +179,7 @@ export class StudentPageComponent implements OnInit {
     this.commentsLoading = false;
     this.commentSubmitting = false;
     this.teamActionInProgress = false;
+    this.teamError = null;
     this.taskComments = [];
   }
 
@@ -338,12 +340,19 @@ export class StudentPageComponent implements OnInit {
     if (!taskId || this.teamActionInProgress) {
       return;
     }
+    this.teamError = null;
     this.teamActionInProgress = true;
     this.cdr.detectChanges();
     this.http
       .post<StudentTeamResponse>(withOpenApiBase(OPENAPI_PATHS.tasks.joinTeam(taskId, teamId)), {})
       .pipe(
-        catchError(() => of(null)),
+        catchError((err: unknown) => {
+          const body = (err as { error?: Record<string, unknown> })?.error;
+          const detail = typeof body?.['detail'] === 'string' ? body['detail'] : null;
+          this.teamError = detail ?? 'Не удалось вступить в команду';
+          this.cdr.detectChanges();
+          return of(null);
+        }),
         finalize(() => {
           this.teamActionInProgress = false;
           this.cdr.detectChanges();
@@ -352,10 +361,11 @@ export class StudentPageComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (team) => {
-          if (!this.selectedTask) return;
+          if (!team || !this.selectedTask) return;
+          this.teamError = null;
           const updatedTask: StudentTask = {
             ...this.selectedTask,
-            currentTeamId: team?.id ? String(team.id) : teamId,
+            currentTeamId: team.id ? String(team.id) : teamId,
           };
           this.selectedTask = updatedTask;
           this.allTasks = this.allTasks.map((t) => t.id === updatedTask.id ? updatedTask : t);

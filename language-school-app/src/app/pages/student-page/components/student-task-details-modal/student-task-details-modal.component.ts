@@ -19,6 +19,7 @@ export class StudentTaskDetailsModalComponent {
   readonly uploadedFileLink = input<string | null>(null);
   readonly comments = input<StudentTaskComment[]>([]);
   readonly teamActionInProgress = input<boolean>(false);
+  readonly teamError = input<string | null>(null);
   readonly close = output<void>();
   readonly uploadFile = output<File>();
   readonly completeTask = output<void>();

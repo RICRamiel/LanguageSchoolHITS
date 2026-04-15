@@ -82,12 +82,15 @@
             </button>
           </div>
         }
+        @if (teamError()) {
+          <p class="modal__team-error">{{ teamError() }}</p>
+        }
         @if (task().teams.length) {
           <ul class="modal__team-list">
             @for (team of task().teams; track team.id) {
               <li class="modal__team-item">
                 <span class="modal__team-name">{{ team.name }}</span>
-                <span class="modal__team-meta">{{ team.membersCount ?? 0 }} чел.</span>
+                <span class="modal__team-meta"> {{ team.membersCount ?? 0 }} чел.</span>
                 @if (!task().currentTeamId && team.id !== task().currentTeamId) {
                   <button
                     class="modal__action-btn modal__action-btn--small"
