@@ -1,6 +1,8 @@
 ﻿import { Component, OnInit, input, output, signal, ChangeDetectionStrategy } from '@angular/core';
 import { TeacherTask, TaskTeam, TeacherTaskDetailsSection, TeacherTaskSubmission } from '../../teacher-page.types';
 
+export type CourseStudent = { id: string; fullName: string };
+
 @Component({
   selector: 'app-task-details-modal',
   standalone: true,
@@ -12,14 +14,18 @@ import { TeacherTask, TaskTeam, TeacherTaskDetailsSection, TeacherTaskSubmission
 export class TaskDetailsModalComponent implements OnInit {
   readonly task = input.required<TeacherTask>();
   readonly activeSection = input<TeacherTaskDetailsSection>('overview');
+  readonly courseStudents = input<CourseStudent[]>([]);
+  readonly teamCreating = input<boolean>(false);
+  readonly studentAdding = input<boolean>(false);
   readonly close = output<void>();
   readonly submitComment = output<string>();
   readonly downloadAttachment = output<TeacherTaskSubmission>();
   readonly createTeam = output<string>();
-  readonly teamCreating = input<boolean>(false);
+  readonly addStudentToTeam = output<{ teamId: string; studentId: string }>();
   readonly selectedSection = signal<TeacherTaskDetailsSection>('overview');
   readonly commentText = signal('');
   readonly newTeamName = signal('');
+  readonly selectedStudentForTeam = signal<Record<string, string>>({});
 
   ngOnInit(): void {
     this.selectedSection.set(this.activeSection());
@@ -55,6 +61,23 @@ export class TaskDetailsModalComponent implements OnInit {
     }
     this.createTeam.emit(name);
     this.newTeamName.set('');
+  }
+
+  getSelectedStudent(teamId: string): string {
+    return this.selectedStudentForTeam()[teamId] ?? '';
+  }
+
+  onStudentSelect(teamId: string, studentId: string): void {
+    this.selectedStudentForTeam.update((map) => ({ ...map, [teamId]: studentId }));
+  }
+
+  onAddStudentToTeam(teamId: string): void {
+    const studentId = this.selectedStudentForTeam()[teamId];
+    if (!studentId || this.studentAdding()) {
+      return;
+    }
+    this.addStudentToTeam.emit({ teamId, studentId });
+    this.selectedStudentForTeam.update((map) => ({ ...map, [teamId]: '' }));
   }
 
   requestAttachmentDownload(work: TeacherTaskSubmission): void {

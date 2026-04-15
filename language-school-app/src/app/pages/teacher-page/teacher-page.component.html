@@ -121,9 +121,12 @@
       [task]="selectedTask"
       [activeSection]="selectedTaskSection"
       [teamCreating]="teamCreating"
+      [studentAdding]="studentAdding"
+      [courseStudents]="courseStudentsSnapshot"
       (submitComment)="onSubmitTaskComment($event)"
       (downloadAttachment)="onDownloadTaskAttachment($event)"
       (createTeam)="onCreateTeam($event)"
+      (addStudentToTeam)="onAddStudentToTeam($event)"
       (close)="closeTaskDetailsModal()"
     />
   }

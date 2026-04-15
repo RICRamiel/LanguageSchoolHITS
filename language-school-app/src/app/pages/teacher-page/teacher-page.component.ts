@@ -125,6 +125,8 @@ export class TeacherPageComponent implements OnInit {
   gradingTaskId: string | null = null;
   gradingTaskTitle = '';
   teamCreating = false;
+  studentAdding = false;
+  courseStudentsSnapshot: { id: string; fullName: string }[] = [];
   selectedTask: TeacherTask | null = null;
   selectedTaskSection: TeacherTaskDetailsSection = 'overview';
   selectedNotification: TeacherNotification | null = null;
@@ -137,6 +139,10 @@ export class TeacherPageComponent implements OnInit {
 
     this.notifications$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((notifications) => {
       this.notificationsSnapshot = notifications;
+    });
+
+    this.gradingStudents$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((students: TeacherStudentGrade[]) => {
+      this.courseStudentsSnapshot = students.map((s: TeacherStudentGrade) => ({ id: s.id, fullName: s.fullName }));
     });
 
     this.loadTeacherDashboard();
@@ -314,6 +320,31 @@ export class TeacherPageComponent implements OnInit {
       next: (team) => {
         if (!team || !this.selectedTask) return;
         const updatedTask = { ...this.selectedTask, teams: [...this.selectedTask.teams, team] };
+        this.selectedTask = updatedTask;
+        this.allTasksSubject.next(
+          this.allTasksSubject.value.map((t) => t.id === updatedTask.id ? updatedTask : t),
+        );
+      },
+    });
+  }
+
+  onAddStudentToTeam(payload: { teamId: string; studentId: string }): void {
+    const taskId = this.selectedTask?.id;
+    if (!taskId || this.studentAdding) {
+      return;
+    }
+    this.studentAdding = true;
+    this.teacherService.addStudentToTeam(taskId, payload.teamId, payload.studentId).pipe(
+      finalize(() => { this.studentAdding = false; }),
+      catchError(() => of(null)),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: (updatedTeam) => {
+        if (!updatedTeam || !this.selectedTask) return;
+        const updatedTask = {
+          ...this.selectedTask,
+          teams: this.selectedTask.teams.map((t) => t.id === updatedTeam.id ? updatedTeam : t),
+        };
         this.selectedTask = updatedTask;
         this.allTasksSubject.next(
           this.allTasksSubject.value.map((t) => t.id === updatedTask.id ? updatedTask : t),

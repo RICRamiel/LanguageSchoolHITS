@@ -132,8 +132,32 @@
           <ul class="modal__team-list">
             @for (team of task().teams; track team.id) {
               <li class="modal__team-item">
-                <span class="modal__team-name">{{ team.name }}</span>
-                <span class="modal__team-meta">{{ team.membersCount ?? 0 }} чел.</span>
+                <div class="modal__team-header">
+                  <span class="modal__team-name">{{ team.name }}</span>
+                  <span class="modal__team-meta">{{ team.membersCount ?? 0 }} чел.</span>
+                </div>
+                @if (courseStudents().length) {
+                  <div class="modal__team-add-student">
+                    <select
+                      class="modal__team-select"
+                      [value]="getSelectedStudent(team.id)"
+                      (change)="onStudentSelect(team.id, $any($event.target).value)"
+                    >
+                      <option value="">Выберите студента</option>
+                      @for (student of courseStudents(); track student.id) {
+                        <option [value]="student.id">{{ student.fullName }}</option>
+                      }
+                    </select>
+                    <button
+                      class="modal__action-btn"
+                      type="button"
+                      [disabled]="!getSelectedStudent(team.id) || studentAdding()"
+                      (click)="onAddStudentToTeam(team.id)"
+                    >
+                      {{ studentAdding() ? 'Добавление...' : 'Добавить' }}
+                    </button>
+                  </div>
+                }
               </li>
             }
           </ul>

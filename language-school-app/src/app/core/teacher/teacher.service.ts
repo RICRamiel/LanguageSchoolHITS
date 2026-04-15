@@ -241,6 +241,15 @@ export class TeacherService {
       .pipe(map((team) => this.mapTeam(team)));
   }
 
+  addStudentToTeam(taskId: string, teamId: string, studentId: string): Observable<TaskTeam> {
+    return this.http
+      .post<TeacherTeamResponse>(
+        withOpenApiBase(OPENAPI_PATHS.tasks.addStudentToTeam(taskId, teamId, studentId)),
+        {},
+      )
+      .pipe(map((team) => this.mapTeam(team)));
+  }
+
   createTask(payload: CreateTaskPayload): Observable<TeacherTask> {
     const isTeamTask = payload.assignmentType === 'TEAM';
 
