@@ -1,6 +1,5 @@
 package com.hits.language_school_back.dto.users;
 
-import com.hits.language_school_back.model.Group;
 import lombok.Data;
 
 import java.util.List;

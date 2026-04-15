@@ -7,17 +7,18 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.InputStream;
 import java.util.UUID;
 
-
 public interface AttachmentService {
-    Attachment uploadAttachment(Long taskId, MultipartFile file, Long userId);
+    Attachment uploadAttachment(UUID taskId, MultipartFile file, UUID userId);
 
-    Attachment uploadAttachmentForNotification(UUID notificationId, MultipartFile file, Long userId);
+    Attachment uploadAttachmentForNotification(UUID notificationId, MultipartFile file, UUID userId);
 
-    void deleteAttachment(Long attachmentId);
+    Attachment uploadAttachmentForParticipation(UUID participationId, MultipartFile file, UUID userId);
 
-    public String getDownloadLink(Long attachmentId);
+    void deleteAttachment(UUID attachmentId);
 
-    InputStream downloadAttachment(Long attachmentId);
+    String getDownloadLink(UUID attachmentId);
 
-    AttachmentDownloadInfo getDownloadInfo(Long attachmentId);
+    InputStream downloadAttachment(UUID attachmentId);
+
+    AttachmentDownloadInfo getDownloadInfo(UUID attachmentId);
 }

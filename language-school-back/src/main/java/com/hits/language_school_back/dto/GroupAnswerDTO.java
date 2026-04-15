@@ -6,11 +6,13 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
+import java.util.UUID;
+
 @Data
 @AllArgsConstructor
 @Builder
 public class GroupAnswerDTO {
-    private Long id;
+    private UUID id;
     @NotBlank
     private String name;
     private String description;

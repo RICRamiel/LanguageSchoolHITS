@@ -4,10 +4,11 @@ import com.hits.language_school_back.dto.CommentDTO;
 import com.hits.language_school_back.model.Comment;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface CommentService {
-    List<CommentDTO> getCommentsByTaskId(Long taskId);
+    List<CommentDTO> getCommentsByTaskId(UUID taskId);
     Comment createComment(CommentDTO commentDTO);
-    Comment editComment(CommentDTO commentDTO, Long commentId);
-    void deleteComment(Long commentId);
+    Comment editComment(CommentDTO commentDTO, UUID commentId);
+    void deleteComment(UUID commentId);
 }

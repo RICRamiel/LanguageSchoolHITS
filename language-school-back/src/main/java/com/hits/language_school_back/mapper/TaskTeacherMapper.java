@@ -2,46 +2,49 @@ package com.hits.language_school_back.mapper;
 
 import com.hits.language_school_back.dto.AttachmentDownloadInfo;
 import com.hits.language_school_back.dto.TaskTeacherDTO;
-import com.hits.language_school_back.infrastructure.AttachmentServiceImpl;
 import com.hits.language_school_back.model.Attachment;
 import com.hits.language_school_back.model.Task;
-import com.hits.language_school_back.repository.TaskRepository;
-import lombok.AllArgsConstructor;
+import com.hits.language_school_back.repository.AttachmentRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-@AllArgsConstructor
 @Component
+@RequiredArgsConstructor
 public class TaskTeacherMapper {
 
     private final CommentMapper commentMapper;
-    private final AttachmentServiceImpl attachmentService;
-    private final TaskRepository taskRepository;
+    private final AttachmentRepository attachmentRepository;
+    private final TaskTeamMapper taskTeamMapper;
 
     public TaskTeacherDTO toDto(Task task) {
-        if (task == null) {
-            return null;
-        }
-        List<Attachment> attachments = taskRepository.getAttachmentsById(task.getId());
+        List<AttachmentDownloadInfo> attachmentsInfo = attachmentRepository.findAllByTaskId(task.getId()).stream()
+                .map(this::mapAttachment)
+                .toList();
 
-        TaskTeacherDTO dto = new TaskTeacherDTO();
-        dto.setId(task.getId());
-        dto.setName(task.getName());
-        dto.setDescription(task.getDescription());
-        dto.setDeadline(task.getDeadline());
-
-        List<AttachmentDownloadInfo> attachmentsInfo = new java.util.ArrayList<>(List.of());
-        attachments.forEach(attachment -> {
-            AttachmentDownloadInfo attachmentInfo = attachmentService.getDownloadInfo(attachment.getId());
-            attachmentsInfo.add(attachmentInfo);
-        });
-
-        dto.setAttachmentDownloadInfos(attachmentsInfo);
-        dto.setCommentList(task.getCommentList().stream().map(commentMapper::toDto).toList());
-
-        return dto;
+        return TaskTeacherDTO.builder()
+                .id(task.getId())
+                .name(task.getName())
+                .description(task.getDescription())
+                .deadline(task.getDeadline())
+                .courseId(task.getCourse() == null ? null : task.getCourse().getId())
+                .courseName(task.getCourse() == null ? null : task.getCourse().getName())
+                .totalPoints(task.getTotalPoints())
+                .maxTeamSize(task.getMaxTeamSize())
+                .minTeamSize(task.getMinTeamSize())
+                .maxTeamsAmount(task.getMaxTeamsAmount())
+                .minTeamsAmount(task.getMinTeamsAmount())
+                .votesThreshold(task.getVotesThreshold())
+                .teamType(task.getTeamType())
+                .resolveType(task.getResolveType())
+                .submissionClosed(task.getSubmissionClosed())
+                .finalizedAt(task.getFinalizedAt())
+                .attachmentDownloadInfos(attachmentsInfo)
+                .commentList(task.getCommentList() == null ? List.of() : task.getCommentList().stream().map(commentMapper::toDto).toList())
+                .teams(task.getTeamList() == null ? List.of() : task.getTeamList().stream().map(taskTeamMapper::toDto).toList())
+                .build();
     }
 
     public List<TaskTeacherDTO> toDtoList(List<Task> tasks) {
@@ -52,5 +55,15 @@ public class TaskTeacherMapper {
         return tasks.stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
+    }
+
+    private AttachmentDownloadInfo mapAttachment(Attachment attachment) {
+        return AttachmentDownloadInfo.builder()
+                .id(attachment.getId())
+                .fileName(attachment.getFileName())
+                .fileType(attachment.getFileType())
+                .fileSize(attachment.getFileSize())
+                .objectKey(attachment.getObjectKey())
+                .build();
     }
 }

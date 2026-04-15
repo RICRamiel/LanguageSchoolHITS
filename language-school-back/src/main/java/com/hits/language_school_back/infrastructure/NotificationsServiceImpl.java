@@ -2,86 +2,87 @@ package com.hits.language_school_back.infrastructure;
 
 import com.hits.language_school_back.dto.NotificationCreationModel;
 import com.hits.language_school_back.dto.UserFullDTO;
-import com.hits.language_school_back.model.Group;
+import com.hits.language_school_back.exception.ResourceNotFoundException;
+import com.hits.language_school_back.model.Course;
 import com.hits.language_school_back.model.Notification;
+import com.hits.language_school_back.model.StudentsInCourse;
 import com.hits.language_school_back.model.User;
+import com.hits.language_school_back.repository.CourseRepository;
 import com.hits.language_school_back.repository.NotificationRepository;
+import com.hits.language_school_back.repository.UserRepository;
 import com.hits.language_school_back.service.AttachmentService;
 import com.hits.language_school_back.service.NotificationsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-
-import com.hits.language_school_back.exception.ResourceNotFoundException;
-import com.hits.language_school_back.repository.GroupRepository;
-import com.hits.language_school_back.repository.UserRepository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class NotificationsServiceImpl implements NotificationsService {
     private final NotificationRepository notificationRepository;
-    private final GroupRepository groupRepository;
+    private final CourseRepository courseRepository;
     private final UserRepository userRepository;
     private final AttachmentService attachmentService;
 
-    public List<Notification> getAllGroupNotifications(Long groupId) {
-        log.info("Fetching all notifications for group with id: {}", groupId);
+    @Override
+    public List<Notification> getAllCourseNotifications(UUID courseId) {
+        log.info("Fetching all notifications for course with id: {}", courseId);
 
-        Group group = groupRepository.findById(groupId)
-                .orElseThrow(() -> new ResourceNotFoundException("Group not found with id: " + groupId));
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found with id: " + courseId));
 
-        List<Notification> notifications = notificationRepository.findByGroup(group);
-        log.info("Found {} notifications for group {}", notifications.size(), groupId);
-
-        return notifications;
+        return notificationRepository.findByCourse(course);
     }
 
-    public List<Notification> getAllStudentsNotifications(Long studentId) {
+    @Override
+    public List<Notification> getAllStudentsNotifications(UUID studentId) {
         log.info("Fetching all notifications for student with id: {}", studentId);
 
         User student = userRepository.findById(studentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found with id: " + studentId));
 
-        List<Group> studentGroups = student.getGroups();
+        List<Course> studentCourses = student.getCourse() == null
+                ? List.of()
+                : student.getCourse().stream()
+                .map(StudentsInCourse::getCourse)
+                .distinct()
+                .toList();
 
-        if (studentGroups.isEmpty()) {
-            log.info("Student {} is not in any groups", studentId);
+        if (studentCourses.isEmpty()) {
             return List.of();
         }
 
-        List<Notification> notifications = notificationRepository.findByGroupIn(studentGroups);
-        log.info("Found {} notifications for student {} across {} groups",
-                notifications.size(), studentId, studentGroups.size());
-
-        return notifications;
+        return notificationRepository.findByCourseIn(studentCourses);
     }
 
+    @Override
     @Transactional
     public Notification createNotification(NotificationCreationModel model, UserFullDTO me) {
-        log.info("Creating new notification in group {} by user {}", model.getGroupId(), me.getId());
+        log.info("Creating new notification in course {} by user {}", model.getCourseId(), me.getId());
 
-        Group group = groupRepository.findById(model.getGroupId())
-                .orElseThrow(() -> new ResourceNotFoundException("Group not found with id: " + model.getGroupId()));
+        Course course = courseRepository.findById(model.getCourseId())
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found with id: " + model.getCourseId()));
 
         User creator = userRepository.findById(me.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + me.getId()));
 
         Notification notification = new Notification();
         notification.setText(model.getText());
-        notification.setGroup(group);
+        notification.setCourse(course);
         notification.setCreatedBy(creator);
         notification.setCreationDate(LocalDate.now());
 
         Notification savedNotification = notificationRepository.save(notification);
-        log.info("Notification created successfully with id: {}", savedNotification.getId());
 
-        model.getFiles().forEach(file -> attachmentService.uploadAttachmentForNotification(savedNotification.getId(), file, me.getId()));
+        if (model.getFiles() != null) {
+            model.getFiles().forEach(file -> attachmentService.uploadAttachmentForNotification(savedNotification.getId(), file, me.getId()));
+        }
 
         return savedNotification;
     }

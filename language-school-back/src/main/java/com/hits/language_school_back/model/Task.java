@@ -3,13 +3,17 @@ package com.hits.language_school_back.model;
 import com.hits.language_school_back.enums.TaskResolveType;
 import com.hits.language_school_back.enums.TeamType;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -34,32 +38,43 @@ public class Task {
 
     @NotBlank
     private String name;
+
     @NotBlank
     private String description;
+
     private LocalDate deadline;
-
-    @NotBlank
+    private Integer totalPoints;
     private Integer maxTeamSize;
-    @NotBlank
     private Integer minTeamSize;
-
-    @NotBlank
     private Integer maxTeamsAmount;
-    @NotBlank
     private Integer minTeamsAmount;
-
     private Integer votesThreshold;
     private Duration teamsCreationTimeout;
     private LocalDateTime createdAt;
+    private LocalDateTime finalizedAt;
 
-    @NotBlank
+    @NotNull
+    @Enumerated(EnumType.STRING)
     private TeamType teamType;
-    @NotBlank
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
     private TaskResolveType resolveType;
+
+    @NotNull
+    private Boolean submissionClosed;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @NotNull
+    private Course course;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @NotNull
+    private User createdBy;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "task")
     private List<Comment> commentList;
 
-    @OneToMany(mappedBy = "task")
-    private List<Task> taskList;
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "task")
+    private List<Team> teamList;
 }
