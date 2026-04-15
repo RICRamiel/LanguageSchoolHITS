@@ -3,11 +3,17 @@ package com.hits.language_school_back.service;
 import com.hits.language_school_back.config.MinioConfig;
 import com.hits.language_school_back.exception.FileStorageException;
 import com.hits.language_school_back.infrastructure.MinioServiceImpl;
-import io.minio.*;
-import io.minio.errors.ErrorResponseException;
+import io.minio.BucketExistsArgs;
+import io.minio.GetObjectArgs;
+import io.minio.GetObjectResponse;
+import io.minio.GetPresignedObjectUrlArgs;
+import io.minio.MakeBucketArgs;
+import io.minio.MinioClient;
+import io.minio.ObjectWriteResponse;
+import io.minio.PutObjectArgs;
+import io.minio.RemoveObjectArgs;
 import io.minio.http.Method;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -19,355 +25,106 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.net.UnknownHostException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class MinioServiceImplTest {
-//
-//    @Mock
-//    private MinioClient minioClient;
-//
-//    @Mock
-//    private MinioConfig minioConfig;
-//
-//    @InjectMocks
-//    private MinioServiceImpl minioService;
-//
-//    @Mock
-//    private MultipartFile file;
-//
-//    @Captor
-//    private ArgumentCaptor<PutObjectArgs> putObjectArgsCaptor;
-//
-//    @Captor
-//    private ArgumentCaptor<GetObjectArgs> getObjectArgsCaptor;
-//
-//    @Captor
-//    private ArgumentCaptor<RemoveObjectArgs> removeObjectArgsCaptor;
-//
-//    @Captor
-//    private ArgumentCaptor<GetPresignedObjectUrlArgs> presignedUrlArgsCaptor;
-//
-//    @Captor
-//    private ArgumentCaptor<BucketExistsArgs> bucketExistsArgsCaptor;
-//
-//    @Captor
-//    private ArgumentCaptor<MakeBucketArgs> makeBucketArgsCaptor;
-//
-//    private static final String BUCKET_NAME = "test-bucket";
-//    private static final String FILE_NAME = "test.txt";
-//    private static final String CONTENT_TYPE = "text/plain";
-//    private static final long FILE_SIZE = 1024L;
-//
-//    @BeforeEach
-//    void setUp() {
-//        lenient().when(minioConfig.getBucket()).thenReturn(BUCKET_NAME);
-//    }
-//
-//    @Nested
-//    class UploadFileTests {
-//
-//        @Test
-//        void shouldUploadFileSuccessfully() throws Exception {
-//            // Arrange
-//            InputStream inputStream = new ByteArrayInputStream("test content".getBytes());
-//            ObjectWriteResponse mockResponse = mock(ObjectWriteResponse.class);
-//
-//            when(file.getOriginalFilename()).thenReturn(FILE_NAME);
-//            when(file.getInputStream()).thenReturn(inputStream);
-//            when(file.getSize()).thenReturn(FILE_SIZE);
-//            when(file.getContentType()).thenReturn(CONTENT_TYPE);
-//
-//            when(minioClient.bucketExists(any(BucketExistsArgs.class))).thenReturn(true);
-//            when(minioClient.putObject(any(PutObjectArgs.class))).thenReturn(mockResponse);
-//
-//            // Act
-//            String result = minioService.uploadFile(file);
-//
-//            // Assert
-//            assertThat(result).isNotNull();
-//            assertThat(result).endsWith("_" + FILE_NAME);
-//
-//            verify(minioClient).bucketExists(bucketExistsArgsCaptor.capture());
-//            assertThat(bucketExistsArgsCaptor.getValue().bucket()).isEqualTo(BUCKET_NAME);
-//
-//            verify(minioClient).putObject(putObjectArgsCaptor.capture());
-//            PutObjectArgs capturedArgs = putObjectArgsCaptor.getValue();
-//
-//            assertThat(capturedArgs.bucket()).isEqualTo(BUCKET_NAME);
-//            assertThat(capturedArgs.object()).endsWith(FILE_NAME);
-//            assertThat(capturedArgs.contentType()).isEqualTo(CONTENT_TYPE);
-//
-//            verify(minioClient, never()).makeBucket(any());
-//        }
-//
-//        @Test
-//        void shouldCreateBucketIfNotExists() throws Exception {
-//            // Arrange
-//            InputStream inputStream = new ByteArrayInputStream("test content".getBytes());
-//            ObjectWriteResponse mockResponse = mock(ObjectWriteResponse.class);
-//
-//            when(file.getOriginalFilename()).thenReturn(FILE_NAME);
-//            when(file.getInputStream()).thenReturn(inputStream);
-//            when(file.getSize()).thenReturn(FILE_SIZE);
-//            when(file.getContentType()).thenReturn(CONTENT_TYPE);
-//
-//            when(minioClient.bucketExists(any(BucketExistsArgs.class))).thenReturn(false);
-//            doNothing().when(minioClient).makeBucket(any(MakeBucketArgs.class));
-//            when(minioClient.putObject(any(PutObjectArgs.class))).thenReturn(mockResponse);
-//
-//            // Act
-//            String result = minioService.uploadFile(file);
-//
-//            // Assert
-//            assertThat(result).isNotNull();
-//
-//            verify(minioClient).bucketExists(any(BucketExistsArgs.class));
-//            verify(minioClient).makeBucket(makeBucketArgsCaptor.capture());
-//            assertThat(makeBucketArgsCaptor.getValue().bucket()).isEqualTo(BUCKET_NAME);
-//            verify(minioClient).putObject(any(PutObjectArgs.class));
-//        }
-//
-//        @Test
-//        void shouldGenerateUUIDAsPartOfObjectKey() throws Exception {
-//            // Arrange
-//            InputStream inputStream = new ByteArrayInputStream("test content".getBytes());
-//            ObjectWriteResponse mockResponse = mock(ObjectWriteResponse.class);
-//
-//            when(file.getOriginalFilename()).thenReturn(FILE_NAME);
-//            when(file.getInputStream()).thenReturn(inputStream);
-//            when(file.getSize()).thenReturn(FILE_SIZE);
-//            when(file.getContentType()).thenReturn(CONTENT_TYPE);
-//
-//            when(minioClient.bucketExists(any(BucketExistsArgs.class))).thenReturn(true);
-//            when(minioClient.putObject(any(PutObjectArgs.class))).thenReturn(mockResponse);
-//
-//            // Act
-//            String result = minioService.uploadFile(file);
-//
-//            // Assert
-//            assertThat(result).matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}_" + FILE_NAME);
-//        }
-//
-//        @Test
-//        void shouldHandleNullOriginalFilename() throws Exception {
-//            // Arrange
-//            InputStream inputStream = new ByteArrayInputStream("test content".getBytes());
-//            ObjectWriteResponse mockResponse = mock(ObjectWriteResponse.class);
-//
-//            when(file.getOriginalFilename()).thenReturn(null);
-//            when(file.getInputStream()).thenReturn(inputStream);
-//            when(file.getSize()).thenReturn(FILE_SIZE);
-//            when(file.getContentType()).thenReturn(CONTENT_TYPE);
-//
-//            when(minioClient.bucketExists(any(BucketExistsArgs.class))).thenReturn(true);
-//            when(minioClient.putObject(any(PutObjectArgs.class))).thenReturn(mockResponse);
-//
-//            // Act
-//            String result = minioService.uploadFile(file);
-//
-//            // Assert
-//            assertThat(result).matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}_null");
-//        }
-//
-//        @Test
-//        void shouldThrowExceptionWhenUploadFails() throws Exception {
-//            // Arrange
-//            InputStream inputStream = new ByteArrayInputStream("test content".getBytes());
-//
-//            when(file.getOriginalFilename()).thenReturn(FILE_NAME);
-//            when(file.getInputStream()).thenReturn(inputStream);
-//            when(file.getSize()).thenReturn(FILE_SIZE);
-//            when(file.getContentType()).thenReturn(CONTENT_TYPE);
-//
-//            when(minioClient.bucketExists(any(BucketExistsArgs.class))).thenReturn(true);
-//            when(minioClient.putObject(any(PutObjectArgs.class)))
-//                    .thenThrow(new RuntimeException("Upload failed"));
-//
-//            // Act & Assert
-//            assertThatThrownBy(() -> minioService.uploadFile(file))
-//                    .isInstanceOf(FileStorageException.class)
-//                    .hasMessageContaining("Failed to upload file");
-//        }
-//    }
-//
-//    @Nested
-//    class DownloadFileTests {
-//
-//        @Test
-//        void shouldDownloadFileSuccessfully() throws Exception {
-//            // Arrange
-//            String objectKey = "test-key";
-//
-//            GetObjectResponse mockResponse = mock(GetObjectResponse.class);
-//            when(minioClient.getObject(any(GetObjectArgs.class))).thenReturn(mockResponse);
-//
-//            // Act
-//            InputStream result = minioService.downloadFile(objectKey);
-//
-//            // Assert
-//            assertThat(result).isNotNull();
-//
-//            verify(minioClient).getObject(getObjectArgsCaptor.capture());
-//            GetObjectArgs capturedArgs = getObjectArgsCaptor.getValue();
-//
-//            assertThat(capturedArgs.bucket()).isEqualTo(BUCKET_NAME);
-//            assertThat(capturedArgs.object()).isEqualTo(objectKey);
-//        }
-//
-//        @Test
-//        void shouldThrowExceptionWhenDownloadFails() throws Exception {
-//            // Arrange
-//            String objectKey = "test-key";
-//
-//            when(minioClient.getObject(any(GetObjectArgs.class)))
-//                    .thenThrow(new RuntimeException("Download failed"));
-//
-//            // Act & Assert
-//            assertThatThrownBy(() -> minioService.downloadFile(objectKey))
-//                    .isInstanceOf(FileStorageException.class)
-//                    .hasMessageContaining("Failed to download file");
-//        }
-//
-//        @Test
-//        void shouldHandleMinioSpecificException() throws Exception {
-//            // Arrange
-//            String objectKey = "test-key";
-//
-//            // ErrorResponseException имеет конструктор с 3 параметрами в новых версиях
-//            ErrorResponseException mockException = mock(ErrorResponseException.class);
-//            when(minioClient.getObject(any(GetObjectArgs.class)))
-//                    .thenThrow(mockException);
-//
-//            // Act & Assert
-//            assertThatThrownBy(() -> minioService.downloadFile(objectKey))
-//                    .isInstanceOf(FileStorageException.class)
-//                    .hasMessageContaining("Failed to download file");
-//        }
-//
-//        @Test
-//        void shouldHandleUnknownHostException() throws Exception {
-//            // Arrange
-//            String objectKey = "test-key";
-//
-//            when(minioClient.getObject(any(GetObjectArgs.class)))
-//                    .thenThrow(new UnknownHostException("Unknown host"));
-//
-//            // Act & Assert
-//            assertThatThrownBy(() -> minioService.downloadFile(objectKey))
-//                    .isInstanceOf(FileStorageException.class)
-//                    .hasMessageContaining("Failed to download file");
-//        }
-//    }
-//
-//    @Nested
-//    class DeleteFileTests {
-//
-//        @Test
-//        void shouldDeleteFileSuccessfully() throws Exception {
-//            // Arrange
-//            String objectKey = "test-key";
-//            doNothing().when(minioClient).removeObject(any(RemoveObjectArgs.class));
-//
-//            // Act
-//            minioService.deleteFile(objectKey);
-//
-//            // Assert
-//            verify(minioClient).removeObject(removeObjectArgsCaptor.capture());
-//            RemoveObjectArgs capturedArgs = removeObjectArgsCaptor.getValue();
-//
-//            assertThat(capturedArgs.bucket()).isEqualTo(BUCKET_NAME);
-//            assertThat(capturedArgs.object()).isEqualTo(objectKey);
-//        }
-//
-//        @Test
-//        void shouldThrowExceptionWhenDeleteFails() throws Exception {
-//            // Arrange
-//            String objectKey = "test-key";
-//            doThrow(new RuntimeException("Delete failed"))
-//                    .when(minioClient).removeObject(any(RemoveObjectArgs.class));
-//
-//            // Act & Assert
-//            assertThatThrownBy(() -> minioService.deleteFile(objectKey))
-//                    .isInstanceOf(FileStorageException.class)
-//                    .hasMessageContaining("Failed to delete file");
-//        }
-//    }
-//
-//    @Nested
-//    class GeneratePresignedUrlTests {
-//
-//        @Test
-//        void shouldGeneratePresignedUrlSuccessfully() throws Exception {
-//            // Arrange
-//            String objectKey = "test-key";
-//            int durationMs = 15 * 60 * 1000;
-//            String expectedUrl = "http://minio/test-bucket/test-key?token=123";
-//
-//            when(minioClient.getPresignedObjectUrl(any(GetPresignedObjectUrlArgs.class)))
-//                    .thenReturn(expectedUrl);
-//
-//            // Act
-//            String result = minioService.generatePresignedUrl(objectKey, durationMs);
-//
-//            // Assert
-//            assertThat(result).isEqualTo(expectedUrl);
-//
-//            verify(minioClient).getPresignedObjectUrl(presignedUrlArgsCaptor.capture());
-//            GetPresignedObjectUrlArgs capturedArgs = presignedUrlArgsCaptor.getValue();
-//
-//            assertThat(capturedArgs.bucket()).isEqualTo(BUCKET_NAME);
-//            assertThat(capturedArgs.object()).isEqualTo(objectKey);
-//            assertThat(capturedArgs.method()).isEqualTo(Method.GET);
-//            assertThat(capturedArgs.expiry()).isEqualTo(durationMs / 1000);
-//        }
-//
-//        @Test
-//        void shouldThrowExceptionWhenUrlGenerationFails() throws Exception {
-//            // Arrange
-//            String objectKey = "test-key";
-//            int durationMs = 15 * 60 * 1000;
-//
-//            when(minioClient.getPresignedObjectUrl(any(GetPresignedObjectUrlArgs.class)))
-//                    .thenThrow(new RuntimeException("URL generation failed"));
-//
-//            // Act & Assert
-//            assertThatThrownBy(() -> minioService.generatePresignedUrl(objectKey, durationMs))
-//                    .isInstanceOf(FileStorageException.class)
-//                    .hasMessageContaining("Failed to generate presigned URL");
-//        }
-//    }
-//
-//    @Nested
-//    class PrivateMethodBehaviorTests {
-//
-//        @Test
-//        void shouldGenerateUniqueObjectKeysForSameFile() throws Exception {
-//            // Arrange
-//            InputStream inputStream = new ByteArrayInputStream("test content".getBytes());
-//            ObjectWriteResponse mockResponse = mock(ObjectWriteResponse.class);
-//
-//            when(file.getOriginalFilename()).thenReturn(FILE_NAME);
-//            when(file.getInputStream()).thenReturn(inputStream);
-//            when(file.getSize()).thenReturn(FILE_SIZE);
-//            when(file.getContentType()).thenReturn(CONTENT_TYPE);
-//
-//            when(minioClient.bucketExists(any(BucketExistsArgs.class))).thenReturn(true);
-//            when(minioClient.putObject(any(PutObjectArgs.class))).thenReturn(mockResponse);
-//
-//            // Act
-//            String result1 = minioService.uploadFile(file);
-//            String result2 = minioService.uploadFile(file);
-//
-//            // Assert
-//            assertThat(result1).isNotEqualTo(result2);
-//            assertThat(result1).endsWith(FILE_NAME);
-//            assertThat(result2).endsWith(FILE_NAME);
-//        }
-//    }
+
+    @Mock
+    private MinioClient minioClient;
+    @Mock
+    private MinioConfig minioConfig;
+    @Mock
+    private MultipartFile file;
+
+    @InjectMocks
+    private MinioServiceImpl minioService;
+
+    @Captor
+    private ArgumentCaptor<PutObjectArgs> putCaptor;
+    @Captor
+    private ArgumentCaptor<GetObjectArgs> getCaptor;
+    @Captor
+    private ArgumentCaptor<GetPresignedObjectUrlArgs> presignedCaptor;
+    @Captor
+    private ArgumentCaptor<MakeBucketArgs> makeBucketCaptor;
+
+    @BeforeEach
+    void setUp() {
+        when(minioConfig.getBucket()).thenReturn("bucket");
+    }
+
+    @Test
+    void uploadFile_putsObjectAndReturnsGeneratedKey() throws Exception {
+        InputStream stream = new ByteArrayInputStream("hello".getBytes());
+        when(file.getOriginalFilename()).thenReturn("test.txt");
+        when(file.getInputStream()).thenReturn(stream);
+        when(file.getSize()).thenReturn(5L);
+        when(file.getContentType()).thenReturn("text/plain");
+        when(minioClient.bucketExists(any(BucketExistsArgs.class))).thenReturn(true);
+        when(minioClient.putObject(any(PutObjectArgs.class))).thenReturn(org.mockito.Mockito.mock(ObjectWriteResponse.class));
+
+        String result = minioService.uploadFile(file);
+
+        assertThat(result).endsWith("_test.txt");
+        verify(minioClient).putObject(putCaptor.capture());
+        assertThat(putCaptor.getValue().bucket()).isEqualTo("bucket");
+        assertThat(putCaptor.getValue().contentType()).isEqualTo("text/plain");
+    }
+
+    @Test
+    void uploadFile_whenBucketMissing_createsBucket() throws Exception {
+        when(file.getOriginalFilename()).thenReturn("test.txt");
+        when(file.getInputStream()).thenReturn(new ByteArrayInputStream("hello".getBytes()));
+        when(file.getSize()).thenReturn(5L);
+        when(file.getContentType()).thenReturn("text/plain");
+        when(minioClient.bucketExists(any(BucketExistsArgs.class))).thenReturn(false);
+        when(minioClient.putObject(any(PutObjectArgs.class))).thenReturn(org.mockito.Mockito.mock(ObjectWriteResponse.class));
+
+        minioService.uploadFile(file);
+
+        verify(minioClient).makeBucket(makeBucketCaptor.capture());
+        assertThat(makeBucketCaptor.getValue().bucket()).isEqualTo("bucket");
+    }
+
+    @Test
+    void downloadFile_readsObjectFromConfiguredBucket() throws Exception {
+        GetObjectResponse response = org.mockito.Mockito.mock(GetObjectResponse.class);
+        when(minioClient.getObject(any(GetObjectArgs.class))).thenReturn(response);
+
+        InputStream result = minioService.downloadFile("object-key");
+
+        assertThat(result).isSameAs(response);
+        verify(minioClient).getObject(getCaptor.capture());
+        assertThat(getCaptor.getValue().bucket()).isEqualTo("bucket");
+        assertThat(getCaptor.getValue().object()).isEqualTo("object-key");
+    }
+
+    @Test
+    void deleteFile_whenClientFails_wrapsException() throws Exception {
+        doThrow(new RuntimeException("boom")).when(minioClient).removeObject(any(RemoveObjectArgs.class));
+
+        assertThatThrownBy(() -> minioService.deleteFile("object-key"))
+                .isInstanceOf(FileStorageException.class)
+                .hasMessageContaining("Failed to delete file");
+    }
+
+    @Test
+    void generatePresignedUrl_usesGetMethodAndConfiguredBucket() throws Exception {
+        when(minioClient.getPresignedObjectUrl(any(GetPresignedObjectUrlArgs.class))).thenReturn("http://signed");
+
+        String result = minioService.generatePresignedUrl("object-key", 15 * 60 * 1000);
+
+        assertThat(result).isEqualTo("http://signed");
+        verify(minioClient).getPresignedObjectUrl(presignedCaptor.capture());
+        assertThat(presignedCaptor.getValue().bucket()).isEqualTo("bucket");
+        assertThat(presignedCaptor.getValue().object()).isEqualTo("object-key");
+        assertThat(presignedCaptor.getValue().method()).isEqualTo(Method.GET);
+    }
 }

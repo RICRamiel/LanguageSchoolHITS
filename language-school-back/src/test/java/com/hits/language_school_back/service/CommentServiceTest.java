@@ -17,220 +17,133 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class CommentServiceTest {
-//    @Mock
-//    private CommentRepository commentRepository;
-//
-//    @Mock
-//    private UserRepository userRepository;
-//
-//    @Mock
-//    private TaskRepository taskRepository;
-//
-//    @InjectMocks
-//    private CommentServiceImpl commentService;
-//
-//    private User testUser;
-//    private Task testTask;
-//    private Comment testComment;
-//    private CommentDTO testCommentDTO;
-//
-//    @BeforeEach
-//    void setUp() {
-//        testUser = new User();
-//        testUser.setId(1L);
-//
-//        testTask = new Task();
-//        testTask.setId(1L);
-//
-//        testComment = new Comment();
-//        testComment.setId(1L);
-//        testComment.setText("Test comment");
-//        testComment.setUser(testUser);
-//        testComment.setTask(testTask);
-//        testComment.setPrivateStatus(false);
-//
-//        testCommentDTO = new CommentDTO();
-//        testCommentDTO.setText("Test comment");
-//        testCommentDTO.setUserId(1L);
-//        testCommentDTO.setTaskId(1L);
-//        testCommentDTO.setPrivateStatus(false);
-//    }
-//
-//    @Test
-//    void getCommentsByTaskId_ShouldReturnListOfCommentDTOs_WhenTaskExists() {
-//        Long taskId = 1L;
-//        when(commentRepository.findByTaskId(taskId)).thenReturn(List.of(testComment));
-//
-//        List<CommentDTO> result = commentService.getCommentsByTaskId(taskId);
-//
-//        assertThat(result).isNotEmpty().hasSize(1);
-//        assertThat(result.getFirst().getText()).isEqualTo(testComment.getText());
-//        assertThat(result.getFirst().getUserId()).isEqualTo(testComment.getUser().getId());
-//        assertThat(result.getFirst().getTaskId()).isEqualTo(testComment.getTask().getId());
-//
-//        verify(commentRepository).findByTaskId(taskId);
-//    }
-//
-//    @Test
-//    void getCommentsByTaskId_ShouldReturnEmptyList_WhenNoCommentsExist() {
-//        Long taskId = 1L;
-//        when(commentRepository.findByTaskId(taskId)).thenReturn(List.of());
-//
-//        List<CommentDTO> result = commentService.getCommentsByTaskId(taskId);
-//
-//        assertThat(result).isEmpty();
-//        verify(commentRepository).findByTaskId(taskId);
-//    }
-//
-//    @Test
-//    void createComment_ShouldReturnSavedComment_WhenValidDataProvided() {
-//        when(userRepository.findById(testCommentDTO.getUserId())).thenReturn(Optional.of(testUser));
-//        when(taskRepository.findById(testCommentDTO.getTaskId())).thenReturn(Optional.of(testTask));
-//        when(commentRepository.save(any(Comment.class))).thenReturn(testComment);
-//
-//        Comment result = commentService.createComment(testCommentDTO);
-//
-//        assertThat(result).isNotNull();
-//        assertThat(result.getId()).isEqualTo(testComment.getId());
-//        assertThat(result.getText()).isEqualTo(testComment.getText());
-//        assertThat(result.getUser()).isEqualTo(testUser);
-//        assertThat(result.getTask()).isEqualTo(testTask);
-//
-//        verify(userRepository).findById(testCommentDTO.getUserId());
-//        verify(taskRepository).findById(testCommentDTO.getTaskId());
-//        verify(commentRepository).save(any(Comment.class));
-//    }
-//
-//    @Test
-//    void createComment_ShouldThrowException_WhenUserNotFound() {
-//        when(userRepository.findById(testCommentDTO.getUserId())).thenReturn(Optional.empty());
-//
-//        assertThatThrownBy(() -> commentService.createComment(testCommentDTO))
-//                .isInstanceOf(RuntimeException.class)
-//                .hasMessageContaining("User not found");
-//
-//        verify(userRepository).findById(testCommentDTO.getUserId());
-//        verify(taskRepository, never()).findById(any());
-//        verify(commentRepository, never()).save(any());
-//    }
-//
-//    @Test
-//    void createComment_ShouldThrowException_WhenTaskNotFound() {
-//        when(userRepository.findById(testCommentDTO.getUserId())).thenReturn(Optional.of(testUser));
-//        when(taskRepository.findById(testCommentDTO.getTaskId())).thenReturn(Optional.empty());
-//
-//        assertThatThrownBy(() -> commentService.createComment(testCommentDTO))
-//                .isInstanceOf(RuntimeException.class)
-//                .hasMessageContaining("Task not found");
-//
-//        verify(userRepository).findById(testCommentDTO.getUserId());
-//        verify(taskRepository).findById(testCommentDTO.getTaskId());
-//        verify(commentRepository, never()).save(any());
-//    }
-//
-//    @Test
-//    void editComment_ShouldReturnUpdatedComment_WhenCommentExistsAndValidData() {
-//        Long commentId = 1L;
-//        CommentDTO updateDTO = new CommentDTO();
-//        updateDTO.setText("Updated text");
-//        updateDTO.setPrivateStatus(true);
-//
-//        when(commentRepository.findById(commentId)).thenReturn(Optional.of(testComment));
-//        when(commentRepository.save(any(Comment.class))).thenReturn(testComment);
-//
-//        Comment result = commentService.editComment(updateDTO, commentId);
-//
-//        assertThat(result).isNotNull();
-//        assertThat(result.getText()).isEqualTo(updateDTO.getText());
-//        assertThat(result.isPrivateStatus()).isEqualTo(updateDTO.isPrivateStatus());
-//
-//        verify(commentRepository).findById(commentId);
-//        verify(commentRepository).save(testComment);
-//    }
-//
-//    @Test
-//    void editComment_ShouldThrowException_WhenCommentNotFound() {
-//        Long commentId = 999L;
-//        when(commentRepository.findById(commentId)).thenReturn(Optional.empty());
-//
-//        assertThatThrownBy(() -> commentService.editComment(testCommentDTO, commentId))
-//                .isInstanceOf(RuntimeException.class)
-//                .hasMessageContaining("Comment not found");
-//
-//        verify(commentRepository).findById(commentId);
-//        verify(commentRepository, never()).save(any());
-//    }
-//
-//    @Test
-//    void editComment_ShouldOnlyUpdateProvidedFields_WhenSomeFieldsAreNull() {
-//        Long commentId = 1L;
-//        CommentDTO updateDTO = new CommentDTO();
-//        updateDTO.setText("Only text updated");
-//        // userId, taskId, privateStatus are null
-//
-//        when(commentRepository.findById(commentId)).thenReturn(Optional.of(testComment));
-//        when(commentRepository.save(any(Comment.class))).thenReturn(testComment);
-//
-//        Comment result = commentService.editComment(updateDTO, commentId);
-//
-//        assertThat(result.getText()).isEqualTo("Only text updated");
-//        assertThat(result.isPrivateStatus()).isEqualTo(testComment.isPrivateStatus());
-//        assertThat(result.getUser()).isEqualTo(testComment.getUser());
-//        assertThat(result.getTask()).isEqualTo(testComment.getTask());
-//
-//        verify(commentRepository).findById(commentId);
-//        verify(commentRepository).save(testComment);
-//    }
-//
-//    @Test
-//    void deleteComment_ShouldDeleteComment_WhenCommentExists() {
-//        Long commentId = 1L;
-//        when(commentRepository.existsById(commentId)).thenReturn(true);
-//        doNothing().when(commentRepository).deleteById(commentId);
-//
-//        commentService.deleteComment(commentId);
-//
-//        verify(commentRepository).existsById(commentId);
-//        verify(commentRepository).deleteById(commentId);
-//    }
-//
-//    @Test
-//    void deleteComment_ShouldThrowException_WhenCommentNotFound() {
-//        Long commentId = 999L;
-//        when(commentRepository.existsById(commentId)).thenReturn(false);
-//
-//        assertThatThrownBy(() -> commentService.deleteComment(commentId))
-//                .isInstanceOf(RuntimeException.class)
-//                .hasMessageContaining("Comment not found");
-//
-//        verify(commentRepository).existsById(commentId);
-//        verify(commentRepository, never()).deleteById(any());
-//    }
-//
-//    @Test
-//    void createComment_ShouldHandlePrivateStatusCorrectly() {
-//        testCommentDTO.setPrivateStatus(true);
-//        when(userRepository.findById(testCommentDTO.getUserId())).thenReturn(Optional.of(testUser));
-//        when(taskRepository.findById(testCommentDTO.getTaskId())).thenReturn(Optional.of(testTask));
-//        when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
-//            Comment savedComment = invocation.getArgument(0);
-//            savedComment.setId(1L);
-//            return savedComment;
-//        });
-//
-//        Comment result = commentService.createComment(testCommentDTO);
-//
-//        assertThat(result.isPrivateStatus()).isTrue();
-//        verify(commentRepository).save(argThat(Comment::isPrivateStatus));
-//    }
+
+    @Mock
+    private CommentRepository commentRepository;
+    @Mock
+    private UserRepository userRepository;
+    @Mock
+    private TaskRepository taskRepository;
+
+    @InjectMocks
+    private CommentServiceImpl commentService;
+
+    private UUID userId;
+    private UUID taskId;
+    private UUID commentId;
+    private User user;
+    private Task task;
+    private Comment comment;
+
+    @BeforeEach
+    void setUp() {
+        userId = UUID.randomUUID();
+        taskId = UUID.randomUUID();
+        commentId = UUID.randomUUID();
+
+        user = User.builder().id(userId).build();
+        task = Task.builder().id(taskId).build();
+
+        comment = new Comment();
+        comment.setId(commentId);
+        comment.setText("text");
+        comment.setUser(user);
+        comment.setTask(task);
+        comment.setPrivateStatus(true);
+    }
+
+    @Test
+    void getCommentsByTaskId_mapsEntityToDto() {
+        when(commentRepository.findByTaskId(taskId)).thenReturn(List.of(comment));
+
+        List<CommentDTO> result = commentService.getCommentsByTaskId(taskId);
+
+        assertThat(result).singleElement().satisfies(dto -> {
+            assertThat(dto.getId()).isEqualTo(commentId);
+            assertThat(dto.getUserId()).isEqualTo(userId);
+            assertThat(dto.getTaskId()).isEqualTo(taskId);
+            assertThat(dto.isPrivateStatus()).isTrue();
+        });
+    }
+
+    @Test
+    void createComment_savesCommentWithResolvedRelations() {
+        CommentDTO dto = CommentDTO.builder()
+                .text("new comment")
+                .userId(userId)
+                .taskId(taskId)
+                .privateStatus(false)
+                .build();
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Comment result = commentService.createComment(dto);
+
+        assertThat(result.getText()).isEqualTo("new comment");
+        assertThat(result.getUser()).isEqualTo(user);
+        assertThat(result.getTask()).isEqualTo(task);
+    }
+
+    @Test
+    void createComment_whenUserMissing_throws() {
+        CommentDTO dto = CommentDTO.builder().userId(userId).taskId(taskId).build();
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> commentService.createComment(dto))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("User not found");
+
+        verify(taskRepository, never()).findById(taskId);
+    }
+
+    @Test
+    void editComment_updatesTextAndPrivateStatus() {
+        CommentDTO dto = CommentDTO.builder().text("updated").privateStatus(false).build();
+        when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+        when(commentRepository.save(comment)).thenReturn(comment);
+
+        Comment result = commentService.editComment(dto, commentId);
+
+        assertThat(result.getText()).isEqualTo("updated");
+        assertThat(result.isPrivateStatus()).isFalse();
+    }
+
+    @Test
+    void deleteComment_whenExists_deletesById() {
+        when(commentRepository.existsById(commentId)).thenReturn(true);
+
+        commentService.deleteComment(commentId);
+
+        verify(commentRepository).deleteById(commentId);
+    }
+
+    @Test
+    void createComment_persistsPrivateFlag() {
+        CommentDTO dto = CommentDTO.builder()
+                .text("secret")
+                .userId(userId)
+                .taskId(taskId)
+                .privateStatus(true)
+                .build();
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        commentService.createComment(dto);
+
+        verify(commentRepository).save(argThat(Comment::isPrivateStatus));
+    }
 }

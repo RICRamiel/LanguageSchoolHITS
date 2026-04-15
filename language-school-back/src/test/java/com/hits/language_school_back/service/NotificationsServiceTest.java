@@ -4,19 +4,21 @@ import com.hits.language_school_back.dto.NotificationCreationModel;
 import com.hits.language_school_back.dto.UserFullDTO;
 import com.hits.language_school_back.exception.ResourceNotFoundException;
 import com.hits.language_school_back.infrastructure.NotificationsServiceImpl;
+import com.hits.language_school_back.model.Course;
 import com.hits.language_school_back.model.Notification;
+import com.hits.language_school_back.model.StudentsInCourse;
 import com.hits.language_school_back.model.User;
+import com.hits.language_school_back.repository.CourseRepository;
 import com.hits.language_school_back.repository.NotificationRepository;
 import com.hits.language_school_back.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -26,317 +28,111 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class NotificationsServiceTest {
-//
-//    @Mock
-//    private NotificationRepository notificationRepository;
-//
-//    @Mock
-//    private GroupRepository groupRepository;
-//
-//    @Mock
-//    private UserRepository userRepository;
-//
-//    @InjectMocks
-//    private NotificationsServiceImpl notificationsService;
-//
-//    @Captor
-//    private ArgumentCaptor<Notification> notificationCaptor;
-//
-//    private Group group;
-//    private User student;
-//    private User teacher;
-//    private Notification notification;
-//    private UserFullDTO userFullDTO;
-//
-//    @BeforeEach
-//    void setUp() {
-//        group = new Group();
-//        group.setId(1L);
-//        group.setName("Test Group");
-//
-//        student = new User();
-//        student.setId(1L);
-//        student.setFirstName("John");
-//        student.setLastName("Doe");
-//
-//        teacher = new User();
-//        teacher.setId(2L);
-//        teacher.setFirstName("Jane");
-//        teacher.setLastName("Smith");
-//
-//        notification = new Notification();
-//        notification.setId(UUID.randomUUID());
-//        notification.setText("Test notification");
-//        notification.setGroup(group);
-//        notification.setCreatedBy(teacher);
-//        notification.setCreationDate(LocalDate.now());
-//
-//        userFullDTO = new UserFullDTO();
-//        userFullDTO.setId(2L);
-//        userFullDTO.setFirstName("Jane");
-//        userFullDTO.setLastName("Smith");
-//    }
-//
-//    @Nested
-//    class GetAllGroupNotificationsTests {
-//
-//        @Test
-//        void shouldReturnAllNotificationsForGroup() {
-//            // Arrange
-//            Long groupId = 1L;
-//            List<Notification> expectedNotifications = List.of(notification);
-//
-//            when(groupRepository.findById(groupId)).thenReturn(Optional.of(group));
-//            when(notificationRepository.findByGroup(group)).thenReturn(expectedNotifications);
-//
-//            // Act
-//            List<Notification> result = notificationsService.getAllGroupNotifications(groupId);
-//
-//            // Assert
-//            assertThat(result).isNotNull();
-//            assertThat(result).hasSize(1);
-//            assertThat(result.get(0).getText()).isEqualTo("Test notification");
-//            assertThat(result.get(0).getGroup()).isEqualTo(group);
-//
-//            verify(groupRepository).findById(groupId);
-//            verify(notificationRepository).findByGroup(group);
-//        }
-//
-//        @Test
-//        void shouldReturnEmptyListWhenNoNotificationsForGroup() {
-//            // Arrange
-//            Long groupId = 1L;
-//
-//            when(groupRepository.findById(groupId)).thenReturn(Optional.of(group));
-//            when(notificationRepository.findByGroup(group)).thenReturn(List.of());
-//
-//            // Act
-//            List<Notification> result = notificationsService.getAllGroupNotifications(groupId);
-//
-//            // Assert
-//            assertThat(result).isNotNull();
-//            assertThat(result).isEmpty();
-//
-//            verify(groupRepository).findById(groupId);
-//            verify(notificationRepository).findByGroup(group);
-//        }
-//
-//        @Test
-//        void shouldThrowExceptionWhenGroupNotFound() {
-//            // Arrange
-//            Long groupId = 999L;
-//
-//            when(groupRepository.findById(groupId)).thenReturn(Optional.empty());
-//
-//            // Act & Assert
-//            assertThatThrownBy(() -> notificationsService.getAllGroupNotifications(groupId))
-//                    .isInstanceOf(ResourceNotFoundException.class)
-//                    .hasMessageContaining("Group not found with id: " + groupId);
-//
-//            verify(groupRepository).findById(groupId);
-//            verify(notificationRepository, never()).findByGroup(any());
-//        }
-//    }
-//
-//    @Nested
-//    class GetAllStudentsNotificationsTests {
-//
-//        @Test
-//        void shouldReturnAllNotificationsForStudentFromAllHisGroups() {
-//            // Arrange
-//            Long studentId = 1L;
-//
-//            Group group2 = new Group();
-//            group2.setId(2L);
-//            group2.setName("Test Group 2");
-//
-//            List<Group> studentGroups = List.of(group, group2);
-//            student.setGroups(studentGroups);
-//
-//            Notification notification2 = new Notification();
-//            notification2.setId(UUID.randomUUID());
-//            notification2.setText("Test notification 2");
-//            notification2.setGroup(group2);
-//
-//            List<Notification> expectedNotifications = List.of(notification, notification2);
-//
-//            when(userRepository.findById(studentId)).thenReturn(Optional.of(student));
-//            when(notificationRepository.findByGroupIn(studentGroups)).thenReturn(expectedNotifications);
-//
-//            // Act
-//            List<Notification> result = notificationsService.getAllStudentsNotifications(studentId);
-//
-//            // Assert
-//            assertThat(result).isNotNull();
-//            assertThat(result).hasSize(2);
-//            assertThat(result).containsExactlyInAnyOrder(notification, notification2);
-//
-//            verify(userRepository).findById(studentId);
-//            verify(notificationRepository).findByGroupIn(studentGroups);
-//        }
-//
-//        @Test
-//        void shouldReturnEmptyListWhenStudentHasNoGroups() {
-//            // Arrange
-//            Long studentId = 1L;
-//            student.setGroups(List.of());
-//
-//            when(userRepository.findById(studentId)).thenReturn(Optional.of(student));
-//
-//            // Act
-//            List<Notification> result = notificationsService.getAllStudentsNotifications(studentId);
-//
-//            // Assert
-//            assertThat(result).isNotNull();
-//            assertThat(result).isEmpty();
-//
-//            verify(userRepository).findById(studentId);
-//            verify(notificationRepository, never()).findByGroupIn(any());
-//        }
-//
-//        @Test
-//        void shouldReturnEmptyListWhenNoNotificationsInStudentsGroups() {
-//            // Arrange
-//            Long studentId = 1L;
-//            List<Group> studentGroups = List.of(group);
-//            student.setGroups(studentGroups);
-//
-//            when(userRepository.findById(studentId)).thenReturn(Optional.of(student));
-//            when(notificationRepository.findByGroupIn(studentGroups)).thenReturn(List.of());
-//
-//            // Act
-//            List<Notification> result = notificationsService.getAllStudentsNotifications(studentId);
-//
-//            // Assert
-//            assertThat(result).isNotNull();
-//            assertThat(result).isEmpty();
-//
-//            verify(userRepository).findById(studentId);
-//            verify(notificationRepository).findByGroupIn(studentGroups);
-//        }
-//
-//        @Test
-//        void shouldThrowExceptionWhenStudentNotFound() {
-//            // Arrange
-//            Long studentId = 999L;
-//
-//            when(userRepository.findById(studentId)).thenReturn(Optional.empty());
-//
-//            // Act & Assert
-//            assertThatThrownBy(() -> notificationsService.getAllStudentsNotifications(studentId))
-//                    .isInstanceOf(ResourceNotFoundException.class)
-//                    .hasMessageContaining("Student not found with id: " + studentId);
-//
-//            verify(userRepository).findById(studentId);
-//            verify(notificationRepository, never()).findByGroupIn(any());
-//        }
-//    }
-//
-//    @Nested
-//    class CreateNotificationTests {
-//
-//        @Test
-//        void shouldCreateNotificationSuccessfully() {
-//            // Arrange
-//            NotificationCreationModel model = new NotificationCreationModel();
-//            model.setGroupId(1L);
-//            model.setText("New test notification");
-//            model.setFiles(List.of());
-//
-//            when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
-//            when(userRepository.findById(2L)).thenReturn(Optional.of(teacher));
-//            when(notificationRepository.save(any(Notification.class))).thenAnswer(invocation -> {
-//                Notification savedNotification = invocation.getArgument(0);
-//                savedNotification.setId(UUID.randomUUID());
-//                return savedNotification;
-//            });
-//
-//            // Act
-//            Notification result = notificationsService.createNotification(model, userFullDTO);
-//
-//            // Assert
-//            assertThat(result).isNotNull();
-//            assertThat(result.getId()).isNotNull();
-//            assertThat(result.getText()).isEqualTo("New test notification");
-//            assertThat(result.getGroup()).isEqualTo(group);
-//            assertThat(result.getCreatedBy()).isEqualTo(teacher);
-//            assertThat(result.getCreationDate()).isEqualTo(LocalDate.now());
-//
-//            verify(groupRepository).findById(1L);
-//            verify(userRepository).findById(2L);
-//            verify(notificationRepository).save(notificationCaptor.capture());
-//
-//            Notification capturedNotification = notificationCaptor.getValue();
-//            assertThat(capturedNotification.getText()).isEqualTo("New test notification");
-//            assertThat(capturedNotification.getGroup()).isEqualTo(group);
-//            assertThat(capturedNotification.getCreatedBy()).isEqualTo(teacher);
-//            assertThat(capturedNotification.getCreationDate()).isEqualTo(LocalDate.now());
-//        }
-//
-//        @Test
-//        void shouldThrowExceptionWhenGroupNotFound() {
-//            // Arrange
-//            NotificationCreationModel model = new NotificationCreationModel();
-//            model.setGroupId(999L);
-//            model.setText("New test notification");
-//
-//            when(groupRepository.findById(999L)).thenReturn(Optional.empty());
-//
-//            // Act & Assert
-//            assertThatThrownBy(() -> notificationsService.createNotification(model, userFullDTO))
-//                    .isInstanceOf(ResourceNotFoundException.class)
-//                    .hasMessageContaining("Group not found with id: 999");
-//
-//            verify(groupRepository).findById(999L);
-//            verify(userRepository, never()).findById(any());
-//            verify(notificationRepository, never()).save(any());
-//        }
-//
-//        @Test
-//        void shouldThrowExceptionWhenCreatorUserNotFound() {
-//            // Arrange
-//            NotificationCreationModel model = new NotificationCreationModel();
-//            model.setGroupId(1L);
-//            model.setText("New test notification");
-//
-//            when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
-//            when(userRepository.findById(2L)).thenReturn(Optional.empty());
-//
-//            // Act & Assert
-//            assertThatThrownBy(() -> notificationsService.createNotification(model, userFullDTO))
-//                    .isInstanceOf(ResourceNotFoundException.class)
-//                    .hasMessageContaining("User not found with id: 2");
-//
-//            verify(groupRepository).findById(1L);
-//            verify(userRepository).findById(2L);
-//            verify(notificationRepository, never()).save(any());
-//        }
-//
-//        @Test
-//        void shouldSetCreationDateToCurrentDate() {
-//            // Arrange
-//            NotificationCreationModel model = new NotificationCreationModel();
-//            model.setGroupId(1L);
-//            model.setText("Test");
-//            model.setFiles(List.of());
-//            LocalDate testDate = LocalDate.now();
-//
-//            when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
-//            when(userRepository.findById(2L)).thenReturn(Optional.of(teacher));
-//            when(notificationRepository.save(any(Notification.class))).thenReturn(notification);
-//
-//            // Act
-//            Notification result = notificationsService.createNotification(model, userFullDTO);
-//
-//            // Assert
-//            verify(notificationRepository).save(argThat(n ->
-//                n.getCreationDate() != null &&
-//                n.getCreationDate().equals(testDate)
-//            ));
-//        }
-//    }
+
+    @Mock
+    private NotificationRepository notificationRepository;
+    @Mock
+    private CourseRepository courseRepository;
+    @Mock
+    private UserRepository userRepository;
+    @Mock
+    private AttachmentService attachmentService;
+
+    @InjectMocks
+    private NotificationsServiceImpl notificationsService;
+
+    private UUID courseId;
+    private UUID teacherId;
+    private UUID studentId;
+    private Course course;
+    private User teacher;
+    private User student;
+
+    @BeforeEach
+    void setUp() {
+        courseId = UUID.randomUUID();
+        teacherId = UUID.randomUUID();
+        studentId = UUID.randomUUID();
+
+        course = Course.builder().id(courseId).name("Course").build();
+        teacher = User.builder().id(teacherId).build();
+        student = User.builder().id(studentId).build();
+    }
+
+    @Test
+    void getAllCourseNotifications_returnsRepositoryResult() {
+        Notification notification = new Notification();
+        when(courseRepository.findById(courseId)).thenReturn(Optional.of(course));
+        when(notificationRepository.findByCourse(course)).thenReturn(List.of(notification));
+
+        assertThat(notificationsService.getAllCourseNotifications(courseId)).containsExactly(notification);
+    }
+
+    @Test
+    void getAllStudentsNotifications_collectsCoursesFromEnrollments() {
+        StudentsInCourse enrollment = StudentsInCourse.builder().course(course).student(student).build();
+        student.setCourse(List.of(enrollment));
+        Notification notification = new Notification();
+        when(userRepository.findById(studentId)).thenReturn(Optional.of(student));
+        when(notificationRepository.findByCourseIn(List.of(course))).thenReturn(List.of(notification));
+
+        assertThat(notificationsService.getAllStudentsNotifications(studentId)).containsExactly(notification);
+    }
+
+    @Test
+    void getAllStudentsNotifications_withoutCourses_returnsEmptyList() {
+        student.setCourse(List.of());
+        when(userRepository.findById(studentId)).thenReturn(Optional.of(student));
+
+        assertThat(notificationsService.getAllStudentsNotifications(studentId)).isEmpty();
+        verify(notificationRepository, never()).findByCourseIn(any());
+    }
+
+    @Test
+    void createNotification_savesNotificationAndUploadsFiles() {
+        MockMultipartFile file = new MockMultipartFile("file", "test.txt", "text/plain", "data".getBytes());
+        NotificationCreationModel model = NotificationCreationModel.builder()
+                .text("New notification")
+                .courseId(courseId)
+                .files(List.of(file))
+                .build();
+        UserFullDTO me = UserFullDTO.builder().id(teacherId).build();
+
+        when(courseRepository.findById(courseId)).thenReturn(Optional.of(course));
+        when(userRepository.findById(teacherId)).thenReturn(Optional.of(teacher));
+        when(notificationRepository.save(any(Notification.class))).thenAnswer(invocation -> {
+            Notification saved = invocation.getArgument(0);
+            saved.setId(UUID.randomUUID());
+            return saved;
+        });
+
+        Notification result = notificationsService.createNotification(model, me);
+
+        assertThat(result.getText()).isEqualTo("New notification");
+        assertThat(result.getCourse()).isEqualTo(course);
+        assertThat(result.getCreatedBy()).isEqualTo(teacher);
+        assertThat(result.getCreationDate()).isEqualTo(LocalDate.now());
+
+        ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
+        verify(notificationRepository).save(captor.capture());
+        verify(attachmentService).uploadAttachmentForNotification(result.getId(), file, teacherId);
+        assertThat(captor.getValue().getCreationDate()).isEqualTo(LocalDate.now());
+    }
+
+    @Test
+    void createNotification_whenCourseMissing_throws() {
+        NotificationCreationModel model = NotificationCreationModel.builder().courseId(courseId).text("x").build();
+        UserFullDTO me = UserFullDTO.builder().id(teacherId).build();
+        when(courseRepository.findById(courseId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> notificationsService.createNotification(model, me))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Course not found");
+    }
 }

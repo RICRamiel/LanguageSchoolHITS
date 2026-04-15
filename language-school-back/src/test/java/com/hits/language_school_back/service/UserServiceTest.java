@@ -4,262 +4,199 @@ import com.hits.language_school_back.config.JwtUtil;
 import com.hits.language_school_back.dto.UserDTO;
 import com.hits.language_school_back.dto.UserFullDTO;
 import com.hits.language_school_back.dto.users.StudentCreateDTO;
-import com.hits.language_school_back.dto.users.StudentUpdateDTO;
 import com.hits.language_school_back.dto.users.TeacherCreateDTO;
 import com.hits.language_school_back.dto.users.TeacherUpdateDTO;
 import com.hits.language_school_back.enums.Role;
 import com.hits.language_school_back.infrastructure.UserServiceImpl;
-import com.hits.language_school_back.mapper.UserMapper;
+import com.hits.language_school_back.model.Course;
+import com.hits.language_school_back.model.Language;
+import com.hits.language_school_back.model.StudentsInCourse;
 import com.hits.language_school_back.model.User;
 import com.hits.language_school_back.repository.UserRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.BadCredentialsException;
-
-import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.*;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
+import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
-//
-//    @Mock private UserRepository userRepository;
-//    @Mock private UserMapper userMapper;
-//    @Mock private JwtUtil jwtUtil;
-//    @Mock
-//    private PasswordEncoder passwordEncoder;  // Add this mock
-//    @InjectMocks private UserServiceImpl userService;
-//
-//    @Mock private HttpServletRequest request;
-//
-//    private Group groupA;
-//    private Group groupB;
-//
-//    @BeforeEach
-//    void setUp() {
-//        groupA = new Group(); // если Group — enum, замени на Group.A
-//        groupB = new Group();
-//    }
-//
-//    private User user(Long id, String email, Role role) {
-//        User u = new User();
-//        u.setId(id);
-//        u.setEmail(email);
-//        u.setRole(role);
-//        u.setFirstName("Name " + id);
-//        u.setLastName("Last Name " + id);
-//        return u;
-//    }
-//
-//    private UserFullDTO userFullDto(Long id) {
-//        UserFullDTO dto = new UserFullDTO();
-//        return dto;
-//    }
-//
-//    @Test
-//    void loadUserByUsername_notFound_throws() {
-//        when(userRepository.findByEmail("x@x.com")).thenReturn(Optional.empty());
-//        assertThrows(NoSuchElementException.class, () -> userService.loadUserByUsername("x@x.com"));
-//    }
-//
-//    @Test
-//    void loadUserByUsername_found_returnsUser() {
-//        User u = user(1L, "x@x.com", Role.STUDENT);
-//        when(userRepository.findByEmail("x@x.com")).thenReturn(Optional.of(u));
-//
-//        UserDetails result = userService.loadUserByUsername("x@x.com");
-//
-//        assertSame(u, result);
-//    }
-//
-//    // -------------------------
-//    // getMe
-//    // -------------------------
-//
-//    @Test
-//    void getMe_wrongPrefix_throwsBadCredentials() {
-//        when(request.getHeader("Authorization")).thenReturn("Token abc");
-//        assertThrows(BadCredentialsException.class, () -> userService.getMe(request));
-//    }
-//
-//    // =========================
-//    // CRUD STUDENT
-//    // =========================
-//    @Test
-//    void createStudent_emailExists_throws() {
-//        StudentCreateDTO dto = new StudentCreateDTO();
-//        dto.setEmail("s@mail.com");
-//        dto.setFirstName("Student");
-//        dto.setPassword("pass");
-//
-//        when(userRepository.findByEmail(dto.getEmail())).thenReturn(Optional.of(new User()));
-//
-//        assertThrows(IllegalArgumentException.class, () -> userService.createStudent(dto));
-//        verify(userRepository, never()).save(any());
-//    }
-//
-//    @Test
-//    void getStudentById_notFound_throws() {
-//        assertThrows(NoSuchElementException.class, () -> userService.getStudentById(1L));
-//    }
-//
-//    @Test
-//    void updateStudent_notFound_throws() {
-//        assertThrows(NoSuchElementException.class, () -> userService.updateStudent(5L, new StudentUpdateDTO()));
-//    }
-//
-//    @Test
-//    void updateStudent_success_updatesFields_savesAndMaps() {
-//        User s = user(5L, "s@mail.com", Role.STUDENT);
-//        s.setGroups(List.of(groupA));
-//
-//        when(userRepository.findById(5L)).thenReturn(Optional.of(s));
-//        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
-////        when(userMapper.userToUserDto(any(User.class))).thenReturn(new UserDTO());
-//
-//        StudentUpdateDTO dto = new StudentUpdateDTO();
-//        dto.setFirstName("New Name");
-//
-//        userService.updateStudent(5L, dto);
-//
-//        assertEquals("New Name", s.getFirstName());
-//        verify(userRepository).save(s);
-//    }
-//
-//    @Test
-//    void deleteStudent_notFound_throws() {
-//        assertThrows(NoSuchElementException.class, () -> userService.deleteStudent(9L));
-//        verify(userRepository, never()).delete(any());
-//    }
-//
-//    @Test
-//    void deleteStudent_success_deletes() {
-//        User s = user(9L, "s@mail.com", Role.STUDENT);
-//
-//        when(userRepository.findById(9L)).thenReturn(Optional.of(s));
-//
-//        userService.deleteStudent(9L);
-//
-//        verify(userRepository).findById(9L);
-//        verify(userRepository).delete(s);
-//    }
-//
-//    // =========================
-//    // CRUD TEACHER
-//    // =========================
-//    @Test
-//    void createTeacher_emailExists_throws() {
-//        TeacherCreateDTO dto = new TeacherCreateDTO();
-//        dto.setEmail("t@mail.com");
-//        dto.setFirstName("Teacher");
-//        dto.setPassword("pass");
-//
-//        when(userRepository.findByEmail(dto.getEmail())).thenReturn(Optional.of(new User()));
-//        assertThrows(IllegalArgumentException.class, () -> userService.createTeacher(dto));
-//        verify(userRepository, never()).save(any());
-//    }
-//
-//    @Test
-//    void createTeacher_success_setsRole_savesAndMaps() {
-//        // Given - Test data
-//        TeacherCreateDTO dto = new TeacherCreateDTO();
-//        dto.setEmail("t@mail.com");
-//        dto.setFirstName("Teacher");
-//        dto.setLastName("Smith");  // Added if you have last name
-//        dto.setPassword("pass");
-//
-//        // Stub password encoding
-//        when(passwordEncoder.encode("pass")).thenReturn("encodedPassword123");
-//
-//        // Stub save with ID assignment
-//        when(userRepository.save(any(User.class))).thenAnswer(inv -> {
-//            User user = inv.getArgument(0);
-//            user.setId(200L);  // Simulate database ID generation
-//            return user;
-//        });
-//
-//        // Stub mapper if createTeacher returns DTO
-//        UserDTO expectedDto = new UserDTO();
-//        expectedDto.setId(200L);
-//        expectedDto.setEmail("t@mail.com");
-//        expectedDto.setFirstName("Teacher");
-//        expectedDto.setRole(Role.TEACHER);
-//
-//        // When - Execute the service method
-//        UserDTO result = userService.createTeacher(dto);
-//
-//        // Then - Verify all interactions
-//
-//        // 1. Verify email check was performed
-//        verify(userRepository).findByEmail("t@mail.com");
-//
-//        // 2. Verify password was encoded
-//        verify(passwordEncoder).encode("pass");
-//
-//        // 3. Capture and verify the saved user
-//        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-//        verify(userRepository).save(userCaptor.capture());
-//
-//        User savedUser = userCaptor.getValue();
-//        assertEquals("t@mail.com", savedUser.getEmail());
-//        assertEquals("Teacher", savedUser.getFirstName());
-//        assertEquals("Smith", savedUser.getLastName());
-//        assertEquals(Role.TEACHER, savedUser.getRole());
-//        assertEquals("encodedPassword123", savedUser.getPassword()); // Should be encoded
-//        assertEquals(expectedDto.getId(), result.getId());
-//        assertEquals(expectedDto.getEmail(), result.getEmail());
-//    }
-//
-//
-//    @Test
-//    void getTeacherById_notFound_throws() {
-//        when(userRepository.findByIdAndRole(1L, Role.TEACHER)).thenReturn(Optional.empty());
-//        assertThrows(NoSuchElementException.class, () -> userService.getTeacherById(1L));
-//    }
-//
-//    @Test
-//    void updateTeacher_notFound_throws() {
-//        assertThrows(NoSuchElementException.class, () -> userService.updateTeacher(5L, new TeacherUpdateDTO()));
-//    }
-//
-//    @Test
-//    void updateTeacher_success_updatesFields_savesAndMaps() {
-//        User t = user(5L, "t@mail.com", Role.TEACHER);
-//
-//        when(userRepository.findById(5L)).thenReturn(Optional.of(t));
-//        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
-////        when(userMapper.userToUserDto(any(User.class))).thenReturn(new UserDTO());
-//
-//        TeacherUpdateDTO dto = new TeacherUpdateDTO();
-//        dto.setFirstName("New Teacher Name");
-//
-//        userService.updateTeacher(5L, dto);
-//
-//        assertEquals("New Teacher Name", t.getFirstName());
-//        verify(userRepository).save(t);
-//    }
-//
-//    @Test
-//    void deleteTeacher_notFound_throws() {
-//        assertThrows(NoSuchElementException.class, () -> userService.deleteTeacher(9L));
-//        verify(userRepository, never()).delete(any());
-//    }
-//
-//    @Test
-//    void deleteTeacher_success_deletes() {
-//        User t = user(9L, "t@mail.com", Role.TEACHER);
-//        when(userRepository.findById(9L)).thenReturn(Optional.of(t));
-//
-//        userService.deleteTeacher(9L);
-//
-//        verify(userRepository).delete(t);
-//    }
+
+    @Mock
+    private UserRepository userRepository;
+    @Mock
+    private PasswordEncoder passwordEncoder;
+    @Mock
+    private JwtUtil jwtUtil;
+
+    @InjectMocks
+    private UserServiceImpl userService;
+
+    private UUID studentId;
+    private UUID teacherId;
+    private UUID courseId;
+    private Course course;
+
+    @BeforeEach
+    void setUp() {
+        studentId = UUID.randomUUID();
+        teacherId = UUID.randomUUID();
+        courseId = UUID.randomUUID();
+
+        Language language = new Language();
+        language.setId(UUID.randomUUID());
+        language.setName("English");
+
+        course = Course.builder()
+                .id(courseId)
+                .name("Course")
+                .description("Description")
+                .language(language)
+                .build();
+    }
+
+    @Test
+    void loadUserByUsername_whenMissing_throws() {
+        when(userRepository.findByEmail("x@x.com")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.loadUserByUsername("x@x.com"))
+                .isInstanceOf(NoSuchElementException.class)
+                .hasMessageContaining("User not found");
+    }
+
+    @Test
+    void createStudent_encodesPasswordAndMapsDto() {
+        StudentCreateDTO dto = new StudentCreateDTO();
+        dto.setEmail("student@example.com");
+        dto.setFirstName("John");
+        dto.setLastName("Doe");
+        dto.setPassword("secret");
+        dto.setGrade("A2");
+
+        when(userRepository.findByEmail(dto.getEmail())).thenReturn(Optional.empty());
+        when(passwordEncoder.encode("secret")).thenReturn("encoded");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        UserDTO result = userService.createStudent(dto);
+
+        assertThat(result.getEmail()).isEqualTo("student@example.com");
+        assertThat(result.getRole()).isEqualTo(Role.STUDENT);
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        assertThat(captor.getValue().getPassword()).isEqualTo("encoded");
+        assertThat(captor.getValue().getGrade()).isEqualTo("A2");
+    }
+
+    @Test
+    void getAllStudents_filtersByGroup() {
+        StudentsInCourse enrollment = StudentsInCourse.builder().course(course).build();
+        User student = User.builder()
+                .id(studentId)
+                .email("student@example.com")
+                .firstName("John")
+                .lastName("Doe")
+                .role(Role.STUDENT)
+                .course(List.of(enrollment))
+                .build();
+        User teacher = User.builder().role(Role.TEACHER).build();
+        when(userRepository.findAll()).thenReturn(List.of(student, teacher));
+
+        List<UserDTO> result = userService.getAllStudents(courseId);
+
+        assertThat(result).singleElement().satisfies(dto -> {
+            assertThat(dto.getId()).isEqualTo(studentId);
+            assertThat(dto.getGroups()).singleElement().satisfies(group -> assertThat(group.getId()).isEqualTo(courseId));
+        });
+    }
+
+    @Test
+    void updateTeacher_updatesNames() {
+        TeacherUpdateDTO dto = new TeacherUpdateDTO();
+        dto.setFirstName("Jane");
+        dto.setLastName("Smith");
+        User teacher = User.builder().id(teacherId).email("teacher@example.com").role(Role.TEACHER).build();
+        when(userRepository.findById(teacherId)).thenReturn(Optional.of(teacher));
+        when(userRepository.save(teacher)).thenReturn(teacher);
+
+        UserDTO result = userService.updateTeacher(teacherId, dto);
+
+        assertThat(result.getFirstName()).isEqualTo("Jane");
+        assertThat(result.getLastName()).isEqualTo("Smith");
+    }
+
+    @Test
+    void createTeacher_whenEmailExists_throws() {
+        TeacherCreateDTO dto = new TeacherCreateDTO();
+        dto.setEmail("teacher@example.com");
+        when(userRepository.findByEmail(dto.getEmail())).thenReturn(Optional.of(new User()));
+
+        assertThatThrownBy(() -> userService.createTeacher(dto))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("User already exists");
+
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void getMe_extractsUserFromBearerToken() {
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        User user = User.builder()
+                .id(studentId)
+                .email("student@example.com")
+                .firstName("John")
+                .lastName("Doe")
+                .role(Role.STUDENT)
+                .course(List.of(StudentsInCourse.builder().course(course).build()))
+                .build();
+        when(request.getHeader("Authorization")).thenReturn("Bearer token");
+        when(jwtUtil.extractUsername("token")).thenReturn("student@example.com");
+        when(userRepository.findByEmail("student@example.com")).thenReturn(Optional.of(user));
+
+        UserFullDTO result = userService.getMe(request);
+
+        assertThat(result.getId()).isEqualTo(studentId);
+        assertThat(result.getGroups()).singleElement().satisfies(group -> assertThat(group.getName()).isEqualTo("Course"));
+    }
+
+    @Test
+    void getMe_whenHeaderInvalid_throws() {
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        when(request.getHeader("Authorization")).thenReturn("Token abc");
+
+        assertThatThrownBy(() -> userService.getMe(request))
+                .isInstanceOf(BadCredentialsException.class)
+                .hasMessage("Invalid token");
+    }
+
+    @Test
+    void getMe_whenUserMissing_throws() {
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        when(request.getHeader("Authorization")).thenReturn("Bearer token");
+        when(jwtUtil.extractUsername("token")).thenReturn("missing@example.com");
+        when(userRepository.findByEmail("missing@example.com")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.getMe(request))
+                .isInstanceOf(UsernameNotFoundException.class)
+                .hasMessage("User not found");
+    }
 }
