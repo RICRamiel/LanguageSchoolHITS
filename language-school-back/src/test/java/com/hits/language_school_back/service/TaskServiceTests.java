@@ -9,7 +9,7 @@ import com.hits.language_school_back.mapper.TaskStudentMapper;
 import com.hits.language_school_back.mapper.TaskTeacherMapper;
 import com.hits.language_school_back.model.*;
 import com.hits.language_school_back.repository.TaskRepository;
-import com.hits.language_school_back.repository.TaskStudentRepository;
+import com.hits.language_school_back.repository.ParticipationRepository;
 import com.hits.language_school_back.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
