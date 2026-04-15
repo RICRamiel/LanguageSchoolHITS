@@ -1,4 +1,4 @@
-﻿import { Component, effect, inject, input, output, ChangeDetectionStrategy } from '@angular/core';
+import { Component, effect, inject, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ButtonComponent } from '../../../shared/ui/button/button.component';
 import { InputComponent } from '../../../shared/ui/input/input.component';
@@ -8,6 +8,12 @@ import { CardHeaderComponent } from '../../../shared/ui/card/card-header/card-he
 import { CardTitleComponent } from '../../../shared/ui/card/card-title/card-title.component';
 import { CardContentComponent } from '../../../shared/ui/card/card-content/card-content.component';
 import type { Group } from '../admin-page.models';
+
+export interface GroupFormValue {
+  name: string;
+  teacherId: string;
+  languageId: string;
+}
 
 @Component({
   selector: 'app-group-form',
@@ -30,28 +36,40 @@ export class GroupFormComponent {
   private readonly fb = inject(FormBuilder);
 
   readonly initialValue = input<Group | null>(null);
-  readonly languages = input<{ name?: string }[]>([]);
-  readonly save = output<{ name: string; language: string }>();
+  readonly languages = input<{ id?: string; name?: string }[]>([]);
+  readonly teachers = input<{ id?: string; fullName?: string }[]>([]);
+  readonly save = output<GroupFormValue>();
   readonly cancel = output<void>();
 
   form = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.minLength(1)]],
-    language: ['', Validators.required],
+    teacherId: [''],
+    languageId: [''],
   });
 
   constructor() {
     effect(() => {
       const v = this.initialValue();
       if (v) {
-        this.form.setValue({ name: v.name, language: v.language });
+        this.form.patchValue({ name: v.name, teacherId: '', languageId: '' });
+        this.form.get('teacherId')?.clearValidators();
+        this.form.get('languageId')?.clearValidators();
       } else {
-        this.form.reset({ name: '', language: '' });
+        this.form.reset({ name: '', teacherId: '', languageId: '' });
+        this.form.get('teacherId')?.setValidators(Validators.required);
+        this.form.get('languageId')?.setValidators(Validators.required);
       }
+      this.form.get('teacherId')?.updateValueAndValidity();
+      this.form.get('languageId')?.updateValueAndValidity();
     });
   }
 
   get title(): string {
     return this.initialValue() ? 'Редактировать курс' : 'Новый курс';
+  }
+
+  get isEdit(): boolean {
+    return !!this.initialValue();
   }
 
   onSubmit(): void {

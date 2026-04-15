@@ -15,7 +15,7 @@ export interface StudentFormValue {
   lastName: string;
   email: string;
   password?: string;
-  groupId: number | null;
+  groupId: string | null;
 }
 
 @Component({
@@ -49,7 +49,7 @@ export class StudentFormComponent {
     lastName: ['', [Validators.required, Validators.minLength(1)]],
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.minLength(8), Validators.maxLength(64)]],
-    groupId: [null as number | null],
+    groupId: [null as string | null],
   });
 
   constructor() {

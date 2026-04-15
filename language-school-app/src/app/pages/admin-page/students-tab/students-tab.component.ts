@@ -1,4 +1,4 @@
-﻿import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { ButtonComponent } from '../../../shared/ui/button/button.component';
 import { StudentFormComponent, type StudentFormValue } from '../student-form/student-form.component';
 import { AssignGroupModalComponent } from '../assign-group-modal/assign-group-modal.component';
@@ -9,7 +9,7 @@ import { catchError, EMPTY, finalize, forkJoin, map, of, switchMap } from 'rxjs'
 function toStudent(
   dto: AdminUserDTO,
   groupNameFromMap?: string,
-  groupIdsFromMap?: number[],
+  groupIdsFromMap?: string[],
 ): Student {
   const first = dto.firstName ?? '';
   const last = dto.lastName ?? '';
@@ -19,7 +19,7 @@ function toStudent(
     (Array.isArray(dto.groups) ? dto.groups.map((gr) => gr.name).filter(Boolean).join(', ') : undefined) ??
     '—';
   return {
-    id: dto.id ?? 0,
+    id: dto.id ?? '',
     fullName,
     email: dto.email ?? '',
     groupName,
@@ -29,7 +29,7 @@ function toStudent(
 
 function toGroup(dto: AdminGroupDTO): Group {
   return {
-    id: dto.id ?? 0,
+    id: dto.id ?? '',
     name: dto.name ?? '',
     language: dto.language?.name ?? '',
     teacherName: '—',
@@ -55,16 +55,16 @@ export class StudentsTabComponent implements OnInit {
   saving = false;
   error: string | null = null;
   showForm = false;
-  editingId: number | null = null;
+  editingId: string | null = null;
   showAssignModal = false;
-  assignUserId: number | null = null;
+  assignUserId: string | null = null;
 
   get editingStudent(): Student | null {
     if (this.editingId === null) return null;
     return this.students.find((s) => s.id === this.editingId!) ?? null;
   }
 
-  get assignCurrentGroupIds(): number[] {
+  get assignCurrentGroupIds(): string[] {
     if (this.assignUserId == null) return [];
     const s = this.students.find((x) => x.id === this.assignUserId!);
     return s?.groupIds ?? [];
@@ -87,19 +87,19 @@ export class StudentsTabComponent implements OnInit {
             groupDtos.length > 0
               ? forkJoin(
                   groupDtos.map((g) =>
-                    this.adminService.getStudentsByGroupId(g.id ?? 0).pipe(
+                    this.adminService.getStudentsByGroupId(g.id ?? '').pipe(
                       map((students) => {
                         const fromResponse = students[0]?.groups?.[0]?.name;
                         const groupName = (fromResponse ?? g.name ?? '—').trim() || '—';
-                        return { groupId: g.id ?? 0, groupName, students };
+                        return { groupId: g.id ?? '', groupName, students };
                       }),
                       catchError(() =>
-                        of({ groupId: g.id ?? 0, groupName: g.name ?? '—', students: [] as AdminUserDTO[] }),
+                        of({ groupId: g.id ?? '', groupName: g.name ?? '—', students: [] as AdminUserDTO[] }),
                       ),
                     ),
                   ),
                 )
-              : of([] as { groupId: number; groupName: string; students: AdminUserDTO[] }[]);
+              : of([] as { groupId: string; groupName: string; students: AdminUserDTO[] }[]);
           return forkJoin({
             groupDtos: of(groupDtos),
             studentsByGroup: studentsByGroup$,
@@ -107,11 +107,11 @@ export class StudentsTabComponent implements OnInit {
           });
         }),
         map(({ groupDtos, studentsByGroup, students }) => {
-          const studentToGroupNames = new Map<number, string[]>();
-          const studentToGroupIds = new Map<number, number[]>();
+          const studentToGroupNames = new Map<string, string[]>();
+          const studentToGroupIds = new Map<string, string[]>();
           for (const { groupId, groupName, students: groupStudents } of studentsByGroup) {
             for (const s of groupStudents) {
-              const id = s.id ?? 0;
+              const id = s.id ?? '';
               if (!studentToGroupNames.has(id)) {
                 studentToGroupNames.set(id, []);
                 studentToGroupIds.set(id, []);
@@ -122,7 +122,7 @@ export class StudentsTabComponent implements OnInit {
           }
           return {
             students: students.map((s) => {
-              const id = s.id ?? 0;
+              const id = s.id ?? '';
               const names = studentToGroupNames.get(id);
               const ids = studentToGroupIds.get(id);
               const groupNameStr = names?.length ? names.join(', ') : undefined;
@@ -224,7 +224,7 @@ export class StudentsTabComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  deleteStudent(id: number): void {
+  deleteStudent(id: string): void {
     this.saving = true;
     this.error = null;
     this.cdr.detectChanges();
@@ -256,7 +256,7 @@ export class StudentsTabComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  onAssignSave(groupId: number): void {
+  onAssignSave(groupId: string): void {
     const userId = this.assignUserId;
     if (userId == null) return;
 

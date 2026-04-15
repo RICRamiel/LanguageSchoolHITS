@@ -1,21 +1,17 @@
-﻿import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { ButtonComponent } from '../../../shared/ui/button/button.component';
-import { GroupFormComponent } from '../group-form/group-form.component';
+import { GroupFormComponent, type GroupFormValue } from '../group-form/group-form.component';
 import type { Group } from '../admin-page.models';
-import { AdminService, type AdminGroupDTO, type AdminLanguageDTO, type AdminUserDTO } from '../../../core/admin/admin.service';
-import { catchError, EMPTY, finalize, forkJoin, map, of, switchMap } from 'rxjs';
+import { AdminService, type AdminGroupDTO, type AdminUserDTO } from '../../../core/admin/admin.service';
+import { catchError, EMPTY, finalize, forkJoin, map, of } from 'rxjs';
 
-function toGroup(
-  dto: AdminGroupDTO,
-  studentsCount: number,
-  teacherName: string,
-): Group {
+function toGroup(dto: AdminGroupDTO): Group {
   return {
-    id: dto.id ?? 0,
+    id: dto.id ?? '',
     name: dto.name ?? '',
     language: dto.language?.name ?? '',
-    teacherName: teacherName || '—',
-    studentsCount,
+    teacherName: '—',
+    studentsCount: 0,
   };
 }
 
@@ -32,12 +28,13 @@ export class GroupsTabComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
 
   groups: Group[] = [];
-  languages: AdminLanguageDTO[] = [];
+  languages: { id?: string; name?: string }[] = [];
+  teachers: { id?: string; fullName?: string }[] = [];
   loading = false;
   saving = false;
   error: string | null = null;
   showForm = false;
-  editingId: number | null = null;
+  editingId: string | null = null;
 
   get editingGroup(): Group | null {
     if (this.editingId === null) return null;
@@ -53,61 +50,20 @@ export class GroupsTabComponent implements OnInit {
     this.error = null;
     this.cdr.detectChanges();
 
-    this.adminService
-      .getGroups()
+    forkJoin({
+      groups: this.adminService.getGroups().pipe(catchError(() => of([] as AdminGroupDTO[]))),
+      languages: this.adminService.getLanguages().pipe(catchError(() => of([]))),
+      teachers: this.adminService.getTeachers().pipe(catchError(() => of([] as AdminUserDTO[]))),
+    })
       .pipe(
-        switchMap((groupDtos) => {
-          const studentCounts$ = groupDtos.map((g) =>
-            this.adminService.getStudentsByGroupId(g.id ?? 0).pipe(
-              map((students) => students.length),
-              catchError(() => of(0)),
-            ),
-          );
-          return this.adminService.getTeachers().pipe(
-            catchError(() => of([] as AdminUserDTO[])),
-            switchMap((teachers) => {
-              const groupsByTeacher$ =
-                teachers.length > 0
-                  ? forkJoin(
-                      teachers.map((t) =>
-                        this.adminService.getGroupsByTeacher(t.id ?? 0).pipe(
-                          map((groups) => ({ teacher: t, groups })),
-                          catchError(() => of({ teacher: t, groups: [] as AdminGroupDTO[] })),
-                        ),
-                      ),
-                    )
-                  : of([] as { teacher: AdminUserDTO; groups: AdminGroupDTO[] }[]);
-              return forkJoin({
-                groups: of(groupDtos),
-                languages: this.adminService.getLanguages(),
-                studentCounts: forkJoin(studentCounts$),
-                teachersWithGroups: groupsByTeacher$,
-              });
-            }),
-          );
-        }),
-        map(({ groups, languages, studentCounts, teachersWithGroups }) => {
-          const groupToTeachers = new Map<number, AdminUserDTO[]>();
-          for (const { teacher, groups: grps } of teachersWithGroups) {
-            for (const g of grps) {
-              const gid = g.id ?? 0;
-              if (!groupToTeachers.has(gid)) groupToTeachers.set(gid, []);
-              groupToTeachers.get(gid)!.push(teacher);
-            }
-          }
-          return {
-            groups: groups.map((dto, i) => {
-              const gid = dto.id ?? 0;
-              const teachersInGroup = groupToTeachers.get(gid) ?? [];
-              const teacherNames = teachersInGroup
-                .map((t) => [t.lastName, t.firstName].filter(Boolean).join(' ').trim())
-                .filter(Boolean)
-                .join(', ');
-              return toGroup(dto, studentCounts[i] ?? 0, teacherNames);
-            }),
-            languages,
-          };
-        }),
+        map(({ groups, languages, teachers }) => ({
+          groups: groups.map(toGroup),
+          languages,
+          teachers: teachers.map((t) => ({
+            id: t.id,
+            fullName: [t.firstName, t.lastName].filter(Boolean).join(' ') || '—',
+          })),
+        })),
         finalize(() => {
           this.loading = false;
           this.cdr.detectChanges();
@@ -115,13 +71,14 @@ export class GroupsTabComponent implements OnInit {
         catchError((err) => {
           this.error = err?.message ?? 'Ошибка загрузки данных';
           this.cdr.detectChanges();
-          return of({ groups: [] as Group[], languages: [] as AdminLanguageDTO[] });
+          return of({ groups: [] as Group[], languages: [], teachers: [] });
         }),
       )
       .subscribe({
-        next: ({ groups, languages }) => {
+        next: ({ groups, languages, teachers }) => {
           this.groups = groups;
           this.languages = languages;
+          this.teachers = teachers;
           this.cdr.detectChanges();
         },
       });
@@ -139,7 +96,7 @@ export class GroupsTabComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  onSave(value: { name: string; language: string }): void {
+  onSave(value: GroupFormValue): void {
     const id = this.editingId;
     this.saving = true;
     this.error = null;
@@ -154,8 +111,8 @@ export class GroupsTabComponent implements OnInit {
 
     const req =
       id !== null
-        ? this.adminService.editGroup(id, value.name, value.language)
-        : this.adminService.createGroup(value.name, value.language);
+        ? this.adminService.editGroup(id, value.name)
+        : this.adminService.createGroup(value.name, value.teacherId, value.languageId);
 
     req
       .pipe(
@@ -178,7 +135,7 @@ export class GroupsTabComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  deleteGroup(id: number): void {
+  deleteGroup(id: string): void {
     this.saving = true;
     this.error = null;
     this.cdr.detectChanges();

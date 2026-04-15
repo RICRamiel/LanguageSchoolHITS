@@ -1,10 +1,10 @@
-﻿import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { ButtonComponent } from '../../../shared/ui/button/button.component';
 import { TeacherFormComponent } from '../teacher-form/teacher-form.component';
 import { AssignGroupModalComponent } from '../assign-group-modal/assign-group-modal.component';
 import type { Teacher, Group } from '../admin-page.models';
 import { AdminService, type AdminGroupDTO, type AdminUserDTO } from '../../../core/admin/admin.service';
-import { catchError, concatMap, EMPTY, finalize, forkJoin, map, of, switchMap } from 'rxjs';
+import { catchError, concatMap, EMPTY, finalize, forkJoin, map, of } from 'rxjs';
 
 function toTeacher(dto: AdminUserDTO, groups: AdminGroupDTO[]): Teacher {
   const first = dto.firstName ?? '';
@@ -15,7 +15,7 @@ function toTeacher(dto: AdminUserDTO, groups: AdminGroupDTO[]): Teacher {
     ...new Set(groups.map((g) => g.language?.name).filter((n): n is string => !!n)),
   ].join(', ');
   return {
-    id: dto.id ?? 0,
+    id: dto.id ?? '',
     fullName,
     email: dto.email ?? '',
     languages: languages || '—',
@@ -42,16 +42,16 @@ export class TeachersTabComponent implements OnInit {
   saving = false;
   error: string | null = null;
   showForm = false;
-  editingId: number | null = null;
+  editingId: string | null = null;
   showAssignModal = false;
-  assignUserId: number | null = null;
+  assignUserId: string | null = null;
 
   get editingTeacher(): Teacher | null {
     if (this.editingId === null) return null;
     return this.teachers.find((t) => t.id === this.editingId!) ?? null;
   }
 
-  get assignCurrentGroupId(): number | null {
+  get assignCurrentGroupId(): string | null {
     if (this.assignUserId == null) return null;
     const t = this.teachers.find((x) => x.id === this.assignUserId!);
     return t?.groupId ?? null;
@@ -66,31 +66,15 @@ export class TeachersTabComponent implements OnInit {
     this.error = null;
     this.cdr.detectChanges();
 
-    this.adminService
-      .getTeachers()
+    forkJoin({
+      teachers: this.adminService.getTeachers().pipe(catchError(() => of([] as AdminUserDTO[]))),
+      groups: this.adminService.getGroups().pipe(catchError(() => of([] as AdminGroupDTO[]))),
+    })
       .pipe(
-        catchError(() => of([] as AdminUserDTO[])),
-        switchMap((teachers) => {
-          const teachersWithGroups$ =
-            teachers.length > 0
-              ? forkJoin(
-                  teachers.map((t) =>
-                    this.adminService.getGroupsByTeacher(t.id ?? 0).pipe(
-                      map((groups) => ({ teacher: t, groups })),
-                      catchError(() => of({ teacher: t, groups: [] as AdminGroupDTO[] })),
-                    ),
-                  ),
-                )
-              : of([] as { teacher: AdminUserDTO; groups: AdminGroupDTO[] }[]);
-          return forkJoin({
-            teachersWithGroups: teachersWithGroups$,
-            groups: this.adminService.getGroups().pipe(catchError(() => of([]))),
-          });
-        }),
-        map(({ teachersWithGroups, groups }) => ({
-          teachers: teachersWithGroups.map(({ teacher, groups: grps }) => toTeacher(teacher, grps)),
+        map(({ teachers, groups }) => ({
+          teachers: teachers.map((t) => toTeacher(t, [])),
           groups: groups.map((d) => ({
-            id: d.id ?? 0,
+            id: d.id ?? '',
             name: d.name ?? '',
             language: d.language?.name ?? '',
             teacherName: '—',
@@ -133,7 +117,7 @@ export class TeachersTabComponent implements OnInit {
     lastName: string;
     email: string;
     password?: string;
-    groupId?: number | null;
+    groupId?: string | null;
   }): void {
     const id = this.editingId;
     this.saving = true;
@@ -163,7 +147,7 @@ export class TeachersTabComponent implements OnInit {
         )
         .subscribe({ next: () => done() });
     } else {
-      const groupId = value.groupId;
+      const groupId = value.groupId ?? null;
       this.adminService
         .createTeacher({
           firstName: value.firstName,
@@ -198,7 +182,7 @@ export class TeachersTabComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  deleteTeacher(id: number): void {
+  deleteTeacher(id: string): void {
     this.saving = true;
     this.error = null;
     this.cdr.detectChanges();
@@ -230,23 +214,17 @@ export class TeachersTabComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  onAssignSave(groupId: number): void {
+  onAssignSave(groupId: string): void {
     const userId = this.assignUserId;
     if (userId == null) return;
-    const t = this.teachers.find((x) => x.id === userId);
-    const oldGroupId = t?.groupId ?? null;
 
     this.saving = true;
     this.error = null;
     this.cdr.detectChanges();
 
-    const remove$ =
-      oldGroupId != null
-        ? this.adminService.removeStudentFromGroup(oldGroupId, userId)
-        : of(undefined as unknown);
-    remove$
+    this.adminService
+      .addStudentToGroup(groupId, userId)
       .pipe(
-        concatMap(() => this.adminService.addStudentToGroup(groupId, userId)),
         finalize(() => {
           this.saving = false;
           this.closeAssignModal();

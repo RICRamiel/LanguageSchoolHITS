@@ -37,7 +37,7 @@ export class TeacherFormComponent {
     lastName: string;
     email: string;
     password?: string;
-    groupId?: number | null;
+    groupId?: string | null;
   }>();
   readonly cancel = output<void>();
 
@@ -46,7 +46,7 @@ export class TeacherFormComponent {
     lastName: ['', [Validators.required, Validators.minLength(1)]],
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.minLength(8), Validators.maxLength(64)]],
-    groupId: [null as number | null],
+    groupId: [null as string | null],
   });
 
   constructor() {
@@ -63,7 +63,7 @@ export class TeacherFormComponent {
           email: v.email,
           password: '',
           groupId: v.groupId ?? null,
-        });
+        } as { firstName: string; lastName: string; email: string; password: string; groupId: string | null });
         this.form.get('email')?.disable();
         this.form.get('groupId')?.disable();
         pwdCtrl?.clearValidators();

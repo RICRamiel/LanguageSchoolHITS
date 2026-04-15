@@ -1,4 +1,4 @@
-﻿<app-card class="admin-form-card">
+<app-card class="admin-form-card">
   <app-card-header>
     <app-card-title>{{ title }}</app-card-title>
   </app-card-header>
@@ -11,18 +11,32 @@
           <span class="form-error">{{ getErrorMessage('name') }}</span>
         }
       </div>
-      <div class="form-row">
-        <app-label for="group-language">Язык</app-label>
-        <select id="group-language" class="form-select" formControlName="language">
-          <option value="">Выберите язык</option>
-          @for (lang of languages(); track $index) {
-            <option [value]="lang.name">{{ lang.name }}</option>
+      @if (!isEdit) {
+        <div class="form-row">
+          <app-label for="group-teacher">Преподаватель</app-label>
+          <select id="group-teacher" class="form-select" formControlName="teacherId">
+            <option value="">Выберите преподавателя</option>
+            @for (teacher of teachers(); track teacher.id) {
+              <option [value]="teacher.id">{{ teacher.fullName }}</option>
+            }
+          </select>
+          @if (form.get('teacherId')?.invalid && form.get('teacherId')?.touched) {
+            <span class="form-error">{{ getErrorMessage('teacherId') }}</span>
           }
-        </select>
-        @if (form.get('language')?.invalid && form.get('language')?.touched) {
-          <span class="form-error">{{ getErrorMessage('language') }}</span>
-        }
-      </div>
+        </div>
+        <div class="form-row">
+          <app-label for="group-language">Язык</app-label>
+          <select id="group-language" class="form-select" formControlName="languageId">
+            <option value="">Выберите язык</option>
+            @for (lang of languages(); track lang.id) {
+              <option [value]="lang.id">{{ lang.name }}</option>
+            }
+          </select>
+          @if (form.get('languageId')?.invalid && form.get('languageId')?.touched) {
+            <span class="form-error">{{ getErrorMessage('languageId') }}</span>
+          }
+        </div>
+      }
       <div class="form-actions">
         <app-button type="submit" class="small">Сохранить</app-button>
         <app-button type="button" class="outline small" (click)="onCancel()">Отмена</app-button>

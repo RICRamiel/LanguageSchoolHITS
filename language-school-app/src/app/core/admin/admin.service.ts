@@ -3,18 +3,19 @@ import { inject, Injectable } from '@angular/core';
 import { catchError, map, Observable, of } from 'rxjs';
 import { OPENAPI_PATHS, withOpenApiBase } from '../api/openapi.config';
 
-export type AdminLanguageDTO = { name?: string; id?: number };
+export type AdminLanguageDTO = { name?: string; id?: string };
 export type AdminGroupDTO = {
-  id?: number;
+  id?: string;
   name?: string;
+  description?: string;
   language?: { name?: string };
 };
 export type AdminUserDTO = {
-  id?: number;
+  id?: string;
   firstName?: string;
   lastName?: string;
   email?: string;
-  groups?: Array<{ id?: number; name?: string }>;
+  groups?: Array<{ id?: string; name?: string }>;
 };
 
 @Injectable({ providedIn: 'root' })
@@ -48,14 +49,14 @@ export class AdminService {
     );
   }
 
-  editLanguage(id: number, name: string): Observable<AdminLanguageDTO> {
+  editLanguage(id: string, name: string): Observable<AdminLanguageDTO> {
     return this.http.put<AdminLanguageDTO>(
       withOpenApiBase(OPENAPI_PATHS.admin.languages.edit(id)),
       { name },
     );
   }
 
-  deleteLanguage(id: number): Observable<void> {
+  deleteLanguage(id: string): Observable<void> {
     return this.http
       .delete(withOpenApiBase(OPENAPI_PATHS.admin.languages.delete(id)))
       .pipe(map(() => undefined));
@@ -70,39 +71,38 @@ export class AdminService {
       );
   }
 
-  createGroup(name: string, languageName: string): Observable<AdminGroupDTO> {
+  createGroup(name: string, teacherId: string, languageId: string): Observable<AdminGroupDTO> {
     return this.http.post<AdminGroupDTO>(
       withOpenApiBase(OPENAPI_PATHS.admin.groups.create),
-      { name, language: { name: languageName } },
+      { name, teacherId, languageId },
     );
   }
 
-  editGroup(id: number, name: string, languageName: string): Observable<AdminGroupDTO> {
+  editGroup(id: string, name: string): Observable<AdminGroupDTO> {
     return this.http.put<AdminGroupDTO>(
       withOpenApiBase(OPENAPI_PATHS.admin.groups.edit(id)),
-      { name, language: { name: languageName } },
+      { name },
     );
   }
 
-  deleteGroup(id: number): Observable<void> {
+  deleteGroup(id: string): Observable<void> {
     return this.http
-      .delete(
-        withOpenApiBase(OPENAPI_PATHS.admin.groups.delete(id)) + `?groupId=${id}`,
+      .delete(withOpenApiBase(OPENAPI_PATHS.admin.groups.delete) + `?courseId=${encodeURIComponent(id)}`)
+      .pipe(map(() => undefined));
+  }
+
+  addStudentToGroup(courseId: string, studentId: string): Observable<void> {
+    return this.http
+      .post<unknown>(
+        withOpenApiBase(OPENAPI_PATHS.admin.groups.addStudents),
+        { courseId, studentIds: [studentId] },
       )
       .pipe(map(() => undefined));
   }
 
-  addStudentToGroup(groupId: number, userId: number): Observable<AdminGroupDTO> {
-    return this.http.post<AdminGroupDTO>(
-      withOpenApiBase(OPENAPI_PATHS.admin.groups.addStudent(groupId, userId)),
-      {},
-    );
-  }
-
-  removeStudentFromGroup(groupId: number, userId: number): Observable<AdminGroupDTO> {
-    return this.http.delete<AdminGroupDTO>(
-      withOpenApiBase(OPENAPI_PATHS.admin.groups.removeStudent(groupId, userId)),
-    );
+  removeStudentFromGroup(_courseId: string, _studentId: string): Observable<void> {
+    // Backend has no remove-student-from-course endpoint
+    return of(undefined);
   }
 
   getStudents(): Observable<AdminUserDTO[]> {
@@ -114,7 +114,7 @@ export class AdminService {
       );
   }
 
-  getStudentsByGroupId(groupId: number): Observable<AdminUserDTO[]> {
+  getStudentsByGroupId(groupId: string): Observable<AdminUserDTO[]> {
     return this.http
       .get<unknown>(withOpenApiBase(OPENAPI_PATHS.admin.students.listByGroup(groupId)))
       .pipe(
@@ -128,7 +128,7 @@ export class AdminService {
     lastName: string;
     email: string;
     password: string;
-    groupIds: number[];
+    groupIds: string[];
   }): Observable<AdminUserDTO> {
     return this.http.post<AdminUserDTO>(
       withOpenApiBase(OPENAPI_PATHS.admin.students.list),
@@ -137,7 +137,7 @@ export class AdminService {
   }
 
   updateStudent(
-    id: number,
+    id: string,
     payload: { firstName: string; lastName: string },
   ): Observable<AdminUserDTO> {
     return this.http.put<AdminUserDTO>(
@@ -146,7 +146,7 @@ export class AdminService {
     );
   }
 
-  deleteStudent(id: number): Observable<void> {
+  deleteStudent(id: string): Observable<void> {
     return this.http
       .delete(withOpenApiBase(OPENAPI_PATHS.admin.students.delete(id)))
       .pipe(map(() => undefined));
@@ -161,13 +161,9 @@ export class AdminService {
       );
   }
 
-  getGroupsByTeacher(teacherId: number): Observable<AdminGroupDTO[]> {
-    return this.http
-      .get<unknown>(withOpenApiBase(OPENAPI_PATHS.teacher.groupsByTeacher(teacherId)))
-      .pipe(
-        map((res) => this.normalizeArray<AdminGroupDTO>(res)),
-        catchError(() => of([])),
-      );
+  getGroupsByTeacher(_teacherId: string): Observable<AdminGroupDTO[]> {
+    // Backend has no "groups by teacher" endpoint — return all courses
+    return this.getGroups();
   }
 
   createTeacher(payload: {
@@ -183,7 +179,7 @@ export class AdminService {
   }
 
   updateTeacher(
-    id: number,
+    id: string,
     payload: { firstName: string; lastName: string },
   ): Observable<AdminUserDTO> {
     return this.http.put<AdminUserDTO>(
@@ -192,7 +188,7 @@ export class AdminService {
     );
   }
 
-  deleteTeacher(id: number): Observable<void> {
+  deleteTeacher(id: string): Observable<void> {
     return this.http
       .delete(withOpenApiBase(OPENAPI_PATHS.admin.teachers.delete(id)))
       .pipe(map(() => undefined));

@@ -22,7 +22,7 @@ export class LanguagesTabComponent implements OnInit {
   saving = false;
   error: string | null = null;
   showForm = false;
-  editingId: number | null = null;
+  editingId: string | null = null;
 
   get editingLanguage(): Language | null {
     if (this.editingId === null) return null;
@@ -43,7 +43,7 @@ export class LanguagesTabComponent implements OnInit {
       .pipe(
         map((items) =>
           items.map((dto, index) => ({
-            id: (dto.id ?? index + 1),
+            id: String(dto.id ?? index + 1),
             name: dto.name ?? '',
           })),
         ),
@@ -116,7 +116,7 @@ export class LanguagesTabComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  deleteLanguage(id: number): void {
+  deleteLanguage(id: string): void {
     this.saving = true;
     this.error = null;
     this.cdr.detectChanges();

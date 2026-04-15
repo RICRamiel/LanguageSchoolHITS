@@ -1,5 +1,5 @@
 export interface Group {
-  id: number;
+  id: string;
   name: string;
   language: string;
   teacherName: string;
@@ -7,24 +7,24 @@ export interface Group {
 }
 
 export interface Student {
-  id: number;
+  id: string;
   fullName: string;
   email: string;
   groupName: string;
   /** IDs курсов, в которых состоит студент (для модалки «Привязать к курсу») */
-  groupIds?: number[];
+  groupIds?: string[];
 }
 
 export interface Teacher {
-  id: number;
+  id: string;
   fullName: string;
   email: string;
   languages: string;
-  groupId?: number | null;
+  groupId?: string | null;
   groupName?: string;
 }
 
 export interface Language {
-  id: number;
+  id: string;
   name: string;
 }
