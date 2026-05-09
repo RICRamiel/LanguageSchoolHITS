@@ -37,6 +37,7 @@ public class Participation {
     private Integer mark;
     private Double averageMark;
     private LocalDateTime submittedAt;
+    private Boolean reviewPublished;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @NotNull
@@ -56,4 +57,7 @@ public class Participation {
 
     @OneToMany(mappedBy = "participation", fetch = FetchType.LAZY)
     private List<Vote> vote;
+
+    @OneToMany(mappedBy = "participation", fetch = FetchType.LAZY)
+    private List<ParticipationCriterionScore> criterionScores;
 }

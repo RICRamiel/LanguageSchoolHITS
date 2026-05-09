@@ -1,6 +1,8 @@
 package com.hits.language_school_back.controller;
 
 import com.hits.language_school_back.dto.TaskDTO;
+import com.hits.language_school_back.dto.TaskCriterionDTO;
+import com.hits.language_school_back.dto.ParticipationCriteriaGradeDTO;
 import com.hits.language_school_back.dto.TaskParticipationGradeDTO;
 import com.hits.language_school_back.dto.TaskSolutionSubmitDTO;
 import com.hits.language_school_back.dto.TaskStudentDTO;
@@ -108,6 +110,16 @@ public class TaskController {
     @PostMapping("/{taskId}/participations/{participationId}/grade")
     public ResponseEntity<TaskTeamDTO> gradeParticipation(@PathVariable UUID taskId, @PathVariable UUID participationId, @RequestBody TaskParticipationGradeDTO dto, HttpServletRequest request) {
         return ResponseEntity.ok(taskService.gradeParticipation(taskId, participationId, dto, userService.getMe(request).getId()));
+    }
+
+    @PutMapping("/{taskId}/criteria")
+    public ResponseEntity<List<TaskCriterionDTO>> configureCriteria(@PathVariable UUID taskId, @RequestBody List<TaskCriterionDTO> criteria, HttpServletRequest request) {
+        return ResponseEntity.ok(taskService.configureCriteria(taskId, criteria, userService.getMe(request).getId()));
+    }
+
+    @PostMapping("/{taskId}/participations/{participationId}/criteria-grade")
+    public ResponseEntity<TaskTeamDTO> gradeParticipationByCriteria(@PathVariable UUID taskId, @PathVariable UUID participationId, @RequestBody ParticipationCriteriaGradeDTO dto, HttpServletRequest request) {
+        return ResponseEntity.ok(taskService.gradeParticipationByCriteria(taskId, participationId, dto, userService.getMe(request).getId()));
     }
 
     @PostMapping("/{taskId}/teams/{teamId}/grade")

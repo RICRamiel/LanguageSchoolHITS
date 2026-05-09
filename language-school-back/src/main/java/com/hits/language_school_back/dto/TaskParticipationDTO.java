@@ -25,5 +25,6 @@ public class TaskParticipationDTO {
     private SolutionStatus solutionStatus;
     private LocalDateTime submittedAt;
     private Boolean selectedSolution;
+    private Boolean reviewPublished;
     private List<AttachmentDownloadInfo> attachments;
 }

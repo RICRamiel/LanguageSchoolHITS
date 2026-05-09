@@ -2,6 +2,9 @@ package com.hits.language_school_back.infrastructure;
 
 import com.google.common.base.Strings;
 import com.hits.language_school_back.dto.TaskDTO;
+import com.hits.language_school_back.dto.TaskCriterionDTO;
+import com.hits.language_school_back.dto.CriterionScoreDTO;
+import com.hits.language_school_back.dto.ParticipationCriteriaGradeDTO;
 import com.hits.language_school_back.dto.TaskParticipationGradeDTO;
 import com.hits.language_school_back.dto.TaskSolutionSubmitDTO;
 import com.hits.language_school_back.dto.TaskStudentDTO;
@@ -19,15 +22,19 @@ import com.hits.language_school_back.mapper.TaskTeacherMapper;
 import com.hits.language_school_back.mapper.TaskTeamMapper;
 import com.hits.language_school_back.model.Course;
 import com.hits.language_school_back.model.Participation;
+import com.hits.language_school_back.model.ParticipationCriterionScore;
 import com.hits.language_school_back.model.StudentsInCourse;
 import com.hits.language_school_back.model.Task;
+import com.hits.language_school_back.model.TaskGradingCriterion;
 import com.hits.language_school_back.model.Team;
 import com.hits.language_school_back.model.User;
 import com.hits.language_school_back.model.Vote;
 import com.hits.language_school_back.repository.CourseRepository;
 import com.hits.language_school_back.repository.ParticipationRepository;
+import com.hits.language_school_back.repository.ParticipationCriterionScoreRepository;
 import com.hits.language_school_back.repository.StudentsInCourseRepository;
 import com.hits.language_school_back.repository.TaskRepository;
+import com.hits.language_school_back.repository.TaskGradingCriterionRepository;
 import com.hits.language_school_back.repository.TeamRepository;
 import com.hits.language_school_back.repository.UserRepository;
 import com.hits.language_school_back.repository.VoteRepository;
@@ -54,6 +61,8 @@ public class TaskServiceImpl implements TaskService {
     private final UserRepository userRepository;
     private final TeamRepository teamRepository;
     private final ParticipationRepository participationRepository;
+    private final ParticipationCriterionScoreRepository participationCriterionScoreRepository;
+    private final TaskGradingCriterionRepository taskGradingCriterionRepository;
     private final VoteRepository voteRepository;
     private final StudentsInCourseRepository studentsInCourseRepository;
     private final TaskTeacherMapper taskTeacherMapper;
@@ -250,6 +259,112 @@ public class TaskServiceImpl implements TaskService {
         voteRepository.save(vote);
 
         return taskTeamMapper.toDto(reloadTeam(target.getTeam().getId()));
+    }
+
+    @Override
+    @Transactional
+    public List<TaskCriterionDTO> configureCriteria(UUID taskId, List<TaskCriterionDTO> criteria, UUID teacherId) {
+        Task task = getTask(taskId);
+        ensureTeacherCanManageCourse(teacherId, task.getCourse());
+        if (criteria == null || criteria.isEmpty()) {
+            throw new IllegalArgumentException("At least one grading criterion is required");
+        }
+
+        int maxSum = 0;
+        for (TaskCriterionDTO criterion : criteria) {
+            if (Strings.isNullOrEmpty(criterion.getName())) {
+                throw new IllegalArgumentException("Criterion name is required");
+            }
+            if (criterion.getMaxPoints() == null || criterion.getMaxPoints() <= 0) {
+                throw new IllegalArgumentException("Criterion maxPoints must be positive");
+            }
+            maxSum += criterion.getMaxPoints();
+        }
+        if (task.getTotalPoints() != null && maxSum > task.getTotalPoints()) {
+            throw new IllegalArgumentException("Sum of criterion max points cannot exceed task total points");
+        }
+
+        List<TaskGradingCriterion> existing = taskGradingCriterionRepository.findAllByTaskIdOrderByPositionAsc(taskId);
+        if (!existing.isEmpty() && participationCriterionScoreRepository.countByCriterionTaskId(taskId) > 0) {
+            throw new IllegalArgumentException("Cannot change criteria after grading has started");
+        }
+        taskGradingCriterionRepository.deleteAll(existing);
+
+        List<TaskGradingCriterion> saved = taskGradingCriterionRepository.saveAll(criteria.stream()
+                .map(dto -> {
+                    TaskGradingCriterion criterion = new TaskGradingCriterion();
+                    criterion.setTask(task);
+                    criterion.setName(dto.getName());
+                    criterion.setMaxPoints(dto.getMaxPoints());
+                    criterion.setRequired(Boolean.TRUE.equals(dto.getRequired()));
+                    criterion.setPosition(criteria.indexOf(dto));
+                    return criterion;
+                })
+                .toList());
+
+        return saved.stream().map(this::toCriterionDto).toList();
+    }
+
+    @Override
+    @Transactional
+    public TaskTeamDTO gradeParticipationByCriteria(UUID taskId, UUID participationId, ParticipationCriteriaGradeDTO dto, UUID teacherId) {
+        Task task = getTask(taskId);
+        ensureTeacherCanManageCourse(teacherId, task.getCourse());
+        Participation participation = getParticipation(participationId);
+        ensureParticipationInTask(participation, taskId);
+
+        List<TaskGradingCriterion> criteria = taskGradingCriterionRepository.findAllByTaskIdOrderByPositionAsc(taskId);
+        if (criteria.isEmpty()) {
+            throw new IllegalArgumentException("Task has no grading criteria configured");
+        }
+        if (dto == null || dto.getCriteria() == null || dto.getCriteria().isEmpty()) {
+            throw new IllegalArgumentException("Criteria grades are required");
+        }
+
+        for (CriterionScoreDTO score : dto.getCriteria()) {
+            TaskGradingCriterion criterion = criteria.stream()
+                    .filter(c -> c.getId().equals(score.getCriterionId()))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Criterion does not belong to this task"));
+            if (score.getPoints() == null || score.getPoints() < 0) {
+                throw new IllegalArgumentException("Criterion score cannot be negative");
+            }
+            if (score.getPoints() > criterion.getMaxPoints()) {
+                throw new IllegalArgumentException("Criterion score cannot exceed criterion max points");
+            }
+
+            ParticipationCriterionScore persisted = participationCriterionScoreRepository
+                    .findByParticipationIdAndCriterionId(participationId, criterion.getId())
+                    .orElseGet(() -> {
+                        ParticipationCriterionScore newScore = new ParticipationCriterionScore();
+                        newScore.setParticipation(participation);
+                        newScore.setCriterion(criterion);
+                        return newScore;
+                    });
+            persisted.setPoints(score.getPoints());
+            participationCriterionScoreRepository.save(persisted);
+        }
+
+        List<ParticipationCriterionScore> allScores = participationCriterionScoreRepository.findAllByParticipationId(participationId);
+        if (Boolean.TRUE.equals(dto.getPublish())) {
+            for (TaskGradingCriterion criterion : criteria) {
+                if (Boolean.TRUE.equals(criterion.getRequired())) {
+                    boolean present = allScores.stream().anyMatch(s -> s.getCriterion().getId().equals(criterion.getId()));
+                    if (!present) {
+                        throw new IllegalArgumentException("Cannot publish review: required criteria are missing");
+                    }
+                }
+            }
+            participation.setReviewPublished(Boolean.TRUE);
+        }
+
+        int totalMark = allScores.stream().mapToInt(ParticipationCriterionScore::getPoints).sum();
+        participation.setMark(totalMark);
+        participationRepository.save(participation);
+
+        recalculateTeamStats(participation.getTeam());
+        recalculateCourseGrades(task.getCourse().getId());
+        return taskTeamMapper.toDto(reloadTeam(participation.getTeam().getId()));
     }
 
     @Override
@@ -514,6 +629,7 @@ public class TaskServiceImpl implements TaskService {
         participation.setIsCaptain(isCaptain);
         participation.setMark(null);
         participation.setAverageMark(0D);
+        participation.setReviewPublished(Boolean.FALSE);
         participation.setSolutionStatus(SolutionStatus.DRAFT);
         return participationRepository.save(participation);
     }
@@ -695,5 +811,14 @@ public class TaskServiceImpl implements TaskService {
 
     private double round(double value) {
         return Math.round(value * 100.0) / 100.0;
+    }
+
+    private TaskCriterionDTO toCriterionDto(TaskGradingCriterion criterion) {
+        return TaskCriterionDTO.builder()
+                .id(criterion.getId())
+                .name(criterion.getName())
+                .maxPoints(criterion.getMaxPoints())
+                .required(criterion.getRequired())
+                .build();
     }
 }

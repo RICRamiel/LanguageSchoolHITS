@@ -35,6 +35,7 @@ public class TaskParticipationMapper {
                 .votesCount((int) voteRepository.countByParticipationId(participation.getId()))
                 .solutionStatus(participation.getSolutionStatus())
                 .submittedAt(participation.getSubmittedAt())
+                .reviewPublished(Boolean.TRUE.equals(participation.getReviewPublished()))
                 .selectedSolution(team != null
                         && team.getSolutionParticipation() != null
                         && team.getSolutionParticipation().getId().equals(participation.getId()))

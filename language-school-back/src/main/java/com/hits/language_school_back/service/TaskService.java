@@ -1,6 +1,8 @@
 package com.hits.language_school_back.service;
 
 import com.hits.language_school_back.dto.TaskDTO;
+import com.hits.language_school_back.dto.TaskCriterionDTO;
+import com.hits.language_school_back.dto.ParticipationCriteriaGradeDTO;
 import com.hits.language_school_back.dto.TaskParticipationGradeDTO;
 import com.hits.language_school_back.dto.TaskSolutionSubmitDTO;
 import com.hits.language_school_back.dto.TaskStudentDTO;
@@ -38,6 +40,10 @@ public interface TaskService {
     TaskTeamDTO submitSolution(UUID taskId, TaskSolutionSubmitDTO dto, UUID userId);
 
     TaskTeamDTO voteForSolution(UUID taskId, UUID participationId, UUID userId);
+
+    List<TaskCriterionDTO> configureCriteria(UUID taskId, List<TaskCriterionDTO> criteria, UUID teacherId);
+
+    TaskTeamDTO gradeParticipationByCriteria(UUID taskId, UUID participationId, ParticipationCriteriaGradeDTO dto, UUID teacherId);
 
     TaskTeamDTO gradeParticipation(UUID taskId, UUID participationId, TaskParticipationGradeDTO dto, UUID teacherId);
 
