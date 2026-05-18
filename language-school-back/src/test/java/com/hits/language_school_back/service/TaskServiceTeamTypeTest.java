@@ -24,6 +24,7 @@ import com.hits.language_school_back.repository.CourseRepository;
 import com.hits.language_school_back.repository.ParticipationRepository;
 import com.hits.language_school_back.repository.StudentsInCourseRepository;
 import com.hits.language_school_back.repository.TaskRepository;
+import com.hits.language_school_back.repository.TaskCriterionRepository;
 import com.hits.language_school_back.repository.TeamRepository;
 import com.hits.language_school_back.repository.UserRepository;
 import com.hits.language_school_back.repository.VoteRepository;
@@ -64,6 +65,8 @@ class TaskServiceTeamTypeTest {
     private VoteRepository voteRepository;
     @Mock
     private StudentsInCourseRepository studentsInCourseRepository;
+    @Mock
+    private TaskCriterionRepository taskCriterionRepository;
     @Mock
     private TaskTeacherMapper taskTeacherMapper;
     @Mock

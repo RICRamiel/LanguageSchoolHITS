@@ -28,6 +28,7 @@ import com.hits.language_school_back.repository.CourseRepository;
 import com.hits.language_school_back.repository.ParticipationRepository;
 import com.hits.language_school_back.repository.StudentsInCourseRepository;
 import com.hits.language_school_back.repository.TaskRepository;
+import com.hits.language_school_back.repository.TaskCriterionRepository;
 import com.hits.language_school_back.repository.TeamRepository;
 import com.hits.language_school_back.repository.UserRepository;
 import com.hits.language_school_back.repository.VoteRepository;
@@ -59,6 +60,7 @@ public class TaskServiceImpl implements TaskService {
     private final ParticipationRepository participationRepository;
     private final VoteRepository voteRepository;
     private final StudentsInCourseRepository studentsInCourseRepository;
+    private final TaskCriterionRepository taskCriterionRepository;
     private final TaskTeacherMapper taskTeacherMapper;
     private final TaskStudentMapper taskStudentMapper;
     private final TaskTeamMapper taskTeamMapper;
@@ -275,6 +277,7 @@ public class TaskServiceImpl implements TaskService {
     public TaskTeamDTO gradeParticipation(UUID taskId, UUID participationId, TaskParticipationGradeDTO dto, UUID teacherId) {
         Task task = getTask(taskId);
         ensureTeacherCanManageCourse(teacherId, task.getCourse());
+        ensureLegacyGradingAllowed(task);
         Participation participation = getParticipation(participationId);
         ensureParticipationInTask(participation, taskId);
 
@@ -292,6 +295,7 @@ public class TaskServiceImpl implements TaskService {
     public TaskTeamDTO gradeTeam(UUID taskId, UUID teamId, TaskTeamGradeDTO dto, UUID teacherId) {
         Task task = getTask(taskId);
         ensureTeacherCanManageCourse(teacherId, task.getCourse());
+        ensureLegacyGradingAllowed(task);
         Team team = getTeam(taskId, teamId);
         team.setCommandMark(normalizeMark(dto.getMark(), task.getTotalPoints()));
         teamRepository.save(team);
@@ -563,6 +567,12 @@ public class TaskServiceImpl implements TaskService {
         int membersCount = participationRepository.findAllByTeamId(team.getId()).size();
         if (membersCount < task.getMinTeamSize()) {
             throw new IllegalArgumentException("Team does not have enough members to submit a solution");
+        }
+    }
+
+    private void ensureLegacyGradingAllowed(Task task) {
+        if (taskCriterionRepository.existsByTaskIdAndActiveTrue(task.getId())) {
+            throw new IllegalArgumentException("Task has grading criteria; use criteria-based assessment");
         }
     }
 

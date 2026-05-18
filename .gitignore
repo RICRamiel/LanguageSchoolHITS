@@ -112,3 +112,4 @@ kzid-backend-workgroup-cabinet/src/main/resources/docker-compose.yml
 
 /pgdata
 /node
+/postman
