@@ -39,6 +39,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -96,7 +98,11 @@ public class TaskServiceImpl implements TaskService {
         task.setCreatedAt(LocalDateTime.now());
         task.setSubmissionClosed(Boolean.FALSE);
 
-        return taskRepository.save(task);
+        Task savedTask = taskRepository.save(task);
+        if (savedTask.getTeamType() == TeamType.RANDOM) {
+            createRandomTeams(savedTask);
+        }
+        return savedTask;
     }
 
     @Override
@@ -214,6 +220,7 @@ public class TaskServiceImpl implements TaskService {
         Team team = resolveSubmissionTeam(task, dto, userId);
         Participation participation = participationRepository.findByTeamIdAndStudentId(team.getId(), userId)
                 .orElseThrow(() -> new IllegalArgumentException("User is not a member of this team"));
+        ensureTeamReadyForSubmission(task, team);
 
         participation.setSubmittedAt(LocalDateTime.now());
         participation.setSolutionStatus(SolutionStatus.SUBMITTED);
@@ -363,6 +370,12 @@ public class TaskServiceImpl implements TaskService {
         if (minTeamSize != null && maxTeamSize != null && minTeamSize > maxTeamSize) {
             throw new IllegalArgumentException("minTeamSize must be less than or equal to maxTeamSize");
         }
+        if ((minTeamSize != null && minTeamSize < 1)
+                || (maxTeamSize != null && maxTeamSize < 1)
+                || (minTeamsAmount != null && minTeamsAmount < 1)
+                || (maxTeamsAmount != null && maxTeamsAmount < 1)) {
+            throw new IllegalArgumentException("Team sizes and team amounts must be positive");
+        }
         if (minTeamsAmount != null && maxTeamsAmount != null && minTeamsAmount > maxTeamsAmount) {
             throw new IllegalArgumentException("minTeamsAmount must be less than or equal to maxTeamsAmount");
         }
@@ -383,6 +396,56 @@ public class TaskServiceImpl implements TaskService {
         task.setMaxTeamsAmount(maxTeamsAmount);
         if (teamType != TeamType.DRAFT) {
             task.setTeamsCreationTimeout(null);
+        }
+    }
+
+    private void createRandomTeams(Task task) {
+        List<User> students = studentsInCourseRepository.findAllByCourseId(task.getCourse().getId()).stream()
+                .map(StudentsInCourse::getStudent)
+                .filter(Objects::nonNull)
+                .toList();
+
+        if (students.isEmpty()) {
+            return;
+        }
+
+        int minTeamSize = task.getMinTeamSize() == null ? 1 : task.getMinTeamSize();
+        int maxTeamSize = task.getMaxTeamSize() == null ? students.size() : task.getMaxTeamSize();
+        int minTeamsAmount = task.getMinTeamsAmount() == null ? 1 : task.getMinTeamsAmount();
+        int maxTeamsAmount = task.getMaxTeamsAmount() == null ? students.size() : task.getMaxTeamsAmount();
+        int teamsAmount = Math.max(minTeamsAmount, (int) Math.ceil((double) students.size() / maxTeamSize));
+
+        if (teamsAmount > maxTeamsAmount) {
+            throw new IllegalArgumentException("Students cannot be distributed within maxTeamsAmount and maxTeamSize limits");
+        }
+        if (students.size() < teamsAmount * minTeamSize) {
+            throw new IllegalArgumentException("Students cannot be distributed within minTeamSize and minTeamsAmount limits");
+        }
+
+        List<User> shuffledStudents = new ArrayList<>(students);
+        Collections.shuffle(shuffledStudents);
+
+        List<List<User>> buckets = new ArrayList<>();
+        for (int i = 0; i < teamsAmount; i++) {
+            buckets.add(new ArrayList<>());
+        }
+        for (int i = 0; i < shuffledStudents.size(); i++) {
+            buckets.get(i % teamsAmount).add(shuffledStudents.get(i));
+        }
+
+        for (int i = 0; i < buckets.size(); i++) {
+            Team team = new Team();
+            team.setName("Team " + (i + 1));
+            team.setTask(task);
+            team.setCommandMark(0);
+            team.setAverageMark(0D);
+            Team savedTeam = teamRepository.save(team);
+
+            List<User> members = buckets.get(i);
+            for (int j = 0; j < members.size(); j++) {
+                createParticipation(savedTeam, members.get(j), j == 0);
+            }
+            recalculateTeamStats(savedTeam);
         }
     }
 
@@ -433,6 +496,10 @@ public class TaskServiceImpl implements TaskService {
     }
 
     private void ensureCanCreateTeam(Task task, User actor) {
+        if (task.getTeamType() == TeamType.RANDOM) {
+            throw new IllegalArgumentException("Random teams are generated automatically");
+        }
+
         boolean teacher = actor.getRole() == Role.TEACHER && task.getCourse().getTeacher().getId().equals(actor.getId());
         boolean student = actor.getRole() == Role.STUDENT;
 
@@ -467,6 +534,17 @@ public class TaskServiceImpl implements TaskService {
         List<Participation> participations = participationRepository.findAllByTeamId(team.getId());
         if (task.getMaxTeamSize() != null && participations.size() >= task.getMaxTeamSize()) {
             throw new IllegalArgumentException("Team is already full");
+        }
+    }
+
+    private void ensureTeamReadyForSubmission(Task task, Team team) {
+        if (task.getMinTeamSize() == null) {
+            return;
+        }
+
+        int membersCount = participationRepository.findAllByTeamId(team.getId()).size();
+        if (membersCount < task.getMinTeamSize()) {
+            throw new IllegalArgumentException("Team does not have enough members to submit a solution");
         }
     }
 
