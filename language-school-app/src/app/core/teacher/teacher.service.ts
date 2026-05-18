@@ -4,9 +4,15 @@ import { HttpParams } from '@angular/common/http';
 import { catchError, forkJoin, map, Observable, of, switchMap } from 'rxjs';
 import { OPENAPI_PATHS, withOpenApiBase } from '../api/openapi.config';
 import {
+  AssessmentDetails,
+  AssessmentSubmitItem,
   CreateNotificationPayload,
   CreateTaskPayload,
   NotificationAttachment,
+  ParticipationAssessment,
+  ParticipationAssessmentItem,
+  TaskCriterion,
+  TaskCriterionPayload,
   TaskAssignmentType,
   TaskTeam,
   TeacherGroup,
@@ -28,6 +34,12 @@ type TeacherTeamResponse = {
   name?: string;
   membersCount?: number | null;
   captainId?: string | null;
+  participations?: Array<{
+    id?: string;
+    studentId?: string;
+    studentName?: string;
+    mark?: number | null;
+  }> | null;
 };
 
 type TeacherTaskResponse = {
@@ -98,6 +110,52 @@ type TeacherAttachmentResponse = {
   objectKey?: string;
 };
 
+type TaskCriterionResponse = {
+  id?: string;
+  taskId?: string;
+  title?: string;
+  description?: string;
+  maxPoints?: number;
+  sectionName?: string;
+  orderIndex?: number;
+  active?: boolean;
+};
+
+type AssessmentDetailsResponse = {
+  id?: string;
+  type?: 'SELF' | 'TEACHER';
+  totalPoints?: number;
+  totalMaxPoints?: number;
+  items?: ParticipationAssessmentItemResponse[] | null;
+};
+
+type ParticipationAssessmentItemResponse = {
+  criterionId?: string;
+  title?: string;
+  description?: string;
+  maxPoints?: number;
+  sectionName?: string;
+  orderIndex?: number;
+  active?: boolean;
+  points?: number | null;
+  comment?: string | null;
+  teacherPoints?: number | null;
+  selfPoints?: number | null;
+  teacherComment?: string | null;
+  selfComment?: string | null;
+};
+
+type ParticipationAssessmentResponse = {
+  taskId?: string;
+  participationId?: string;
+  totalMaxPoints?: number;
+  teacherTotal?: number | null;
+  selfTotal?: number | null;
+  criteria?: ParticipationAssessmentItemResponse[] | null;
+  teacherAssessment?: AssessmentDetailsResponse | null;
+  selfAssessment?: AssessmentDetailsResponse | null;
+};
+
 @Injectable({ providedIn: 'root' })
 export class TeacherService {
   private readonly http = inject(HttpClient);
@@ -136,6 +194,75 @@ export class TeacherService {
             .filter((student): student is TeacherStudentGrade => student !== null),
         ),
       );
+  }
+
+  getTaskCriteria(taskId: string): Observable<TaskCriterion[]> {
+    const normalizedTaskId = taskId.trim();
+    if (!normalizedTaskId) {
+      return of([]);
+    }
+
+    return this.http
+      .get<TaskCriterionResponse[]>(withOpenApiBase(OPENAPI_PATHS.tasks.criteria(normalizedTaskId)))
+      .pipe(
+        map((criteria) => (criteria ?? []).map((item) => this.mapTaskCriterion(item, normalizedTaskId))),
+        map((criteria) => criteria.sort((a, b) => a.orderIndex - b.orderIndex)),
+      );
+  }
+
+  createTaskCriterion(taskId: string, payload: TaskCriterionPayload): Observable<TaskCriterion> {
+    return this.http
+      .post<TaskCriterionResponse>(withOpenApiBase(OPENAPI_PATHS.tasks.criteria(taskId.trim())), payload)
+      .pipe(map((criterion) => this.mapTaskCriterion(criterion, taskId.trim())));
+  }
+
+  updateTaskCriterion(taskId: string, criterionId: string, payload: TaskCriterionPayload): Observable<TaskCriterion> {
+    return this.http
+      .put<TaskCriterionResponse>(
+        withOpenApiBase(OPENAPI_PATHS.tasks.criterionById(taskId.trim(), criterionId.trim())),
+        payload,
+      )
+      .pipe(map((criterion) => this.mapTaskCriterion(criterion, taskId.trim())));
+  }
+
+  deactivateTaskCriterion(taskId: string, criterionId: string): Observable<void> {
+    return this.http
+      .delete<void>(withOpenApiBase(OPENAPI_PATHS.tasks.criterionById(taskId.trim(), criterionId.trim())))
+      .pipe(map(() => void 0));
+  }
+
+  getParticipationAssessment(taskId: string, participationId: string): Observable<ParticipationAssessment> {
+    return this.http
+      .get<ParticipationAssessmentResponse>(
+        withOpenApiBase(OPENAPI_PATHS.tasks.assessment(taskId.trim(), participationId.trim())),
+      )
+      .pipe(map((assessment) => this.mapParticipationAssessment(assessment, taskId.trim(), participationId.trim())));
+  }
+
+  submitTeacherAssessment(
+    taskId: string,
+    participationId: string,
+    items: AssessmentSubmitItem[],
+  ): Observable<AssessmentDetails> {
+    return this.http
+      .put<AssessmentDetailsResponse>(
+        withOpenApiBase(OPENAPI_PATHS.tasks.teacherAssessment(taskId.trim(), participationId.trim())),
+        { items },
+      )
+      .pipe(map((assessment) => this.mapAssessmentDetails(assessment)));
+  }
+
+  submitSelfAssessment(
+    taskId: string,
+    participationId: string,
+    items: AssessmentSubmitItem[],
+  ): Observable<AssessmentDetails> {
+    return this.http
+      .put<AssessmentDetailsResponse>(
+        withOpenApiBase(OPENAPI_PATHS.tasks.selfAssessment(taskId.trim(), participationId.trim())),
+        { items },
+      )
+      .pipe(map((assessment) => this.mapAssessmentDetails(assessment)));
   }
 
   updateStudentGrade(student: TeacherStudentGrade): Observable<void> {
@@ -457,6 +584,81 @@ export class TeacherService {
     return null;
   }
 
+  private mapTaskCriterion(item: TaskCriterionResponse | null | undefined, taskId: string): TaskCriterion {
+    const maxPoints =
+      typeof item?.maxPoints === 'number' && Number.isFinite(item.maxPoints) ? item.maxPoints : 0;
+    const orderIndex =
+      typeof item?.orderIndex === 'number' && Number.isFinite(item.orderIndex) ? item.orderIndex : 0;
+    return {
+      id: (item?.id ?? '').trim(),
+      taskId: (item?.taskId ?? taskId).trim(),
+      title: (item?.title ?? '').trim(),
+      description: (item?.description ?? '').trim(),
+      maxPoints,
+      sectionName: (item?.sectionName ?? '').trim(),
+      orderIndex,
+      active: item?.active ?? true,
+    };
+  }
+
+  private mapParticipationAssessment(
+    response: ParticipationAssessmentResponse | null | undefined,
+    taskId: string,
+    participationId: string,
+  ): ParticipationAssessment {
+    return {
+      taskId: (response?.taskId ?? taskId).trim(),
+      participationId: (response?.participationId ?? participationId).trim(),
+      totalMaxPoints:
+        typeof response?.totalMaxPoints === 'number' && Number.isFinite(response.totalMaxPoints)
+          ? response.totalMaxPoints
+          : 0,
+      teacherTotal:
+        typeof response?.teacherTotal === 'number' && Number.isFinite(response.teacherTotal)
+          ? response.teacherTotal
+          : null,
+      selfTotal:
+        typeof response?.selfTotal === 'number' && Number.isFinite(response.selfTotal)
+          ? response.selfTotal
+          : null,
+      criteria: (response?.criteria ?? []).map((item) => this.mapParticipationAssessmentItem(item)),
+      teacherAssessment: response?.teacherAssessment ? this.mapAssessmentDetails(response.teacherAssessment) : null,
+      selfAssessment: response?.selfAssessment ? this.mapAssessmentDetails(response.selfAssessment) : null,
+    };
+  }
+
+  private mapAssessmentDetails(item: AssessmentDetailsResponse | null | undefined): AssessmentDetails {
+    return {
+      id: (item?.id ?? '').trim(),
+      type: item?.type === 'SELF' ? 'SELF' : 'TEACHER',
+      totalPoints: typeof item?.totalPoints === 'number' && Number.isFinite(item.totalPoints) ? item.totalPoints : 0,
+      totalMaxPoints:
+        typeof item?.totalMaxPoints === 'number' && Number.isFinite(item.totalMaxPoints) ? item.totalMaxPoints : 0,
+      items: (item?.items ?? []).map((entry) => this.mapParticipationAssessmentItem(entry)),
+    };
+  }
+
+  private mapParticipationAssessmentItem(
+    item: ParticipationAssessmentItemResponse | null | undefined,
+  ): ParticipationAssessmentItem {
+    return {
+      criterionId: (item?.criterionId ?? '').trim(),
+      title: (item?.title ?? '').trim(),
+      description: (item?.description ?? '').trim(),
+      maxPoints: typeof item?.maxPoints === 'number' && Number.isFinite(item.maxPoints) ? item.maxPoints : 0,
+      sectionName: (item?.sectionName ?? '').trim(),
+      orderIndex: typeof item?.orderIndex === 'number' && Number.isFinite(item.orderIndex) ? item.orderIndex : 0,
+      active: item?.active ?? true,
+      points: typeof item?.points === 'number' && Number.isFinite(item.points) ? item.points : null,
+      comment: typeof item?.comment === 'string' ? item.comment : null,
+      teacherPoints:
+        typeof item?.teacherPoints === 'number' && Number.isFinite(item.teacherPoints) ? item.teacherPoints : null,
+      selfPoints: typeof item?.selfPoints === 'number' && Number.isFinite(item.selfPoints) ? item.selfPoints : null,
+      teacherComment: typeof item?.teacherComment === 'string' ? item.teacherComment : null,
+      selfComment: typeof item?.selfComment === 'string' ? item.selfComment : null,
+    };
+  }
+
   private normalizeGroups(groups: TeacherGroupResponse[] | null | undefined): TeacherGroup[] {
     return (groups ?? [])
       .map((group) => ({
@@ -594,7 +796,15 @@ export class TeacherService {
       id: (team?.id ?? '').trim(),
       name: (team?.name ?? '').trim() || 'Команда',
       membersCount: typeof team?.membersCount === 'number' ? team.membersCount : null,
-      captainId: (team?.captainId ?? null) ? String(team!.captainId) : null,
+      captainId: (team?.captainId ?? null) ? String(team?.captainId) : null,
+      participations: (team?.participations ?? [])
+        .map((item) => ({
+          id: (item?.id ?? '').trim(),
+          studentId: (item?.studentId ?? '').trim(),
+          studentName: (item?.studentName ?? '').trim(),
+          mark: typeof item?.mark === 'number' && Number.isFinite(item.mark) ? item.mark : null,
+        }))
+        .filter((item) => Boolean(item.id) && Boolean(item.studentId)),
     };
   }
 

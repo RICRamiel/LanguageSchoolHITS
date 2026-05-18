@@ -35,6 +35,15 @@ export const OPENAPI_PATHS = {
       `/task/${encodeURIComponent(taskId)}/teams/${encodeURIComponent(teamId)}/join`,
     addStudentToTeam: (taskId: string, teamId: string, studentId: string) =>
       `/task/${encodeURIComponent(taskId)}/teams/${encodeURIComponent(teamId)}/students/${encodeURIComponent(studentId)}`,
+    criteria: (taskId: string) => `/task/${encodeURIComponent(taskId)}/criteria`,
+    criterionById: (taskId: string, criterionId: string) =>
+      `/task/${encodeURIComponent(taskId)}/criteria/${encodeURIComponent(criterionId)}`,
+    assessment: (taskId: string, participationId: string) =>
+      `/task/${encodeURIComponent(taskId)}/participations/${encodeURIComponent(participationId)}/assessment`,
+    teacherAssessment: (taskId: string, participationId: string) =>
+      `/task/${encodeURIComponent(taskId)}/participations/${encodeURIComponent(participationId)}/teacher-assessment`,
+    selfAssessment: (taskId: string, participationId: string) =>
+      `/task/${encodeURIComponent(taskId)}/participations/${encodeURIComponent(participationId)}/self-assessment`,
   },
   teacher: {
     tasksByTeacher: (teacherId: string | number) => `/task/${encodeURIComponent(String(teacherId))}/get_by_teacher`,

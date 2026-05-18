@@ -1,5 +1,11 @@
 ﻿import { Component, OnInit, input, output, signal, ChangeDetectionStrategy } from '@angular/core';
-import { TeacherTask, TaskTeam, TeacherTaskDetailsSection, TeacherTaskSubmission } from '../../teacher-page.types';
+import {
+  TaskCriterion,
+  TaskCriterionPayload,
+  TeacherTask,
+  TeacherTaskDetailsSection,
+  TeacherTaskSubmission,
+} from '../../teacher-page.types';
 
 export type CourseStudent = { id: string; fullName: string };
 
@@ -22,10 +28,23 @@ export class TaskDetailsModalComponent implements OnInit {
   readonly downloadAttachment = output<TeacherTaskSubmission>();
   readonly createTeam = output<string>();
   readonly addStudentToTeam = output<{ teamId: string; studentId: string }>();
+  readonly criteria = input<TaskCriterion[]>([]);
+  readonly criteriaLoading = input<boolean>(false);
+  readonly criteriaSaving = input<boolean>(false);
+  readonly criteriaError = input<string | null>(null);
+  readonly createCriterion = output<TaskCriterionPayload>();
+  readonly updateCriterion = output<{ criterionId: string; payload: TaskCriterionPayload }>();
+  readonly deactivateCriterion = output<string>();
   readonly selectedSection = signal<TeacherTaskDetailsSection>('overview');
   readonly commentText = signal('');
   readonly newTeamName = signal('');
   readonly selectedStudentForTeam = signal<Record<string, string>>({});
+  readonly criterionTitle = signal('');
+  readonly criterionDescription = signal('');
+  readonly criterionSection = signal('');
+  readonly criterionMaxPoints = signal('0');
+  readonly criterionOrderIndex = signal('0');
+  readonly editingCriterionId = signal<string | null>(null);
 
   ngOnInit(): void {
     this.selectedSection.set(this.activeSection());
@@ -119,5 +138,98 @@ export class TaskDetailsModalComponent implements OnInit {
       default:
         return 'Последнее решение';
     }
+  }
+
+  onCriterionTitleInput(event: Event): void {
+    this.criterionTitle.set((event.target as HTMLInputElement | null)?.value ?? '');
+  }
+
+  onCriterionDescriptionInput(event: Event): void {
+    this.criterionDescription.set((event.target as HTMLTextAreaElement | null)?.value ?? '');
+  }
+
+  onCriterionSectionInput(event: Event): void {
+    this.criterionSection.set((event.target as HTMLInputElement | null)?.value ?? '');
+  }
+
+  onCriterionMaxPointsInput(event: Event): void {
+    this.criterionMaxPoints.set((event.target as HTMLInputElement | null)?.value ?? '0');
+  }
+
+  onCriterionOrderIndexInput(event: Event): void {
+    this.criterionOrderIndex.set((event.target as HTMLInputElement | null)?.value ?? '0');
+  }
+
+  startEditCriterion(criterion: TaskCriterion): void {
+    this.editingCriterionId.set(criterion.id);
+    this.criterionTitle.set(criterion.title);
+    this.criterionDescription.set(criterion.description);
+    this.criterionSection.set(criterion.sectionName);
+    this.criterionMaxPoints.set(String(criterion.maxPoints));
+    this.criterionOrderIndex.set(String(criterion.orderIndex));
+  }
+
+  cancelEditCriterion(): void {
+    this.editingCriterionId.set(null);
+    this.resetCriterionForm();
+  }
+
+  onSaveCriterion(): void {
+    if (this.criteriaSaving()) {
+      return;
+    }
+
+    const payload = this.buildCriterionPayload();
+    if (!payload) {
+      return;
+    }
+
+    const editingId = this.editingCriterionId();
+    if (editingId) {
+      this.updateCriterion.emit({ criterionId: editingId, payload });
+    } else {
+      this.createCriterion.emit(payload);
+    }
+
+    this.cancelEditCriterion();
+  }
+
+  onDeactivateCriterion(criterionId: string): void {
+    if (!criterionId || this.criteriaSaving()) {
+      return;
+    }
+    this.deactivateCriterion.emit(criterionId);
+  }
+
+  isCriterionFormValid(): boolean {
+    return this.buildCriterionPayload() !== null;
+  }
+
+  private buildCriterionPayload(): TaskCriterionPayload | null {
+    const title = this.criterionTitle().trim();
+    const description = this.criterionDescription().trim();
+    const sectionName = this.criterionSection().trim();
+    const maxPoints = Number(this.criterionMaxPoints());
+    const orderIndex = Number(this.criterionOrderIndex());
+
+    if (!title || !Number.isFinite(maxPoints) || maxPoints < 0 || !Number.isFinite(orderIndex) || orderIndex < 0) {
+      return null;
+    }
+
+    return {
+      title,
+      description,
+      sectionName,
+      maxPoints,
+      orderIndex,
+    };
+  }
+
+  private resetCriterionForm(): void {
+    this.criterionTitle.set('');
+    this.criterionDescription.set('');
+    this.criterionSection.set('');
+    this.criterionMaxPoints.set('0');
+    this.criterionOrderIndex.set('0');
   }
 }

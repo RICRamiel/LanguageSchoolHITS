@@ -1,4 +1,4 @@
-export type TeacherTaskDetailsSection = 'overview' | 'submissions' | 'comments' | 'teams';
+export type TeacherTaskDetailsSection = 'overview' | 'submissions' | 'comments' | 'teams' | 'criteria';
 export type TaskAssignmentType = 'INDIVIDUAL' | 'TEAM';
 export type TaskTeamType = 'RANDOM' | 'FREEROAM' | 'DRAFT' | 'CUSTOM';
 export type TaskResolveType =
@@ -32,6 +32,14 @@ export type TaskTeam = {
   name: string;
   membersCount: number | null;
   captainId: string | null;
+  participations: TaskTeamParticipation[];
+};
+
+export type TaskTeamParticipation = {
+  id: string;
+  studentId: string;
+  studentName: string;
+  mark: number | null;
 };
 
 export type TeacherTask = {
@@ -55,6 +63,68 @@ export type TeacherTask = {
   maxTeamsAmount: number | null;
   votesThreshold: number | null;
   teams: TaskTeam[];
+};
+
+export type TaskCriterion = {
+  id: string;
+  taskId: string;
+  title: string;
+  description: string;
+  maxPoints: number;
+  sectionName: string;
+  orderIndex: number;
+  active: boolean;
+};
+
+export type TaskCriterionPayload = {
+  title: string;
+  description: string;
+  maxPoints: number;
+  sectionName: string;
+  orderIndex: number;
+};
+
+export type AssessmentType = 'SELF' | 'TEACHER';
+
+export type AssessmentSubmitItem = {
+  criterionId: string;
+  points: number;
+  comment: string;
+};
+
+export type ParticipationAssessmentItem = {
+  criterionId: string;
+  title: string;
+  description: string;
+  maxPoints: number;
+  sectionName: string;
+  orderIndex: number;
+  active: boolean;
+  points: number | null;
+  comment: string | null;
+  teacherPoints: number | null;
+  selfPoints: number | null;
+  teacherComment: string | null;
+  selfComment: string | null;
+};
+
+export type AssessmentDetails = {
+  id: string;
+  type: AssessmentType;
+  totalPoints: number;
+  totalMaxPoints: number;
+  items: ParticipationAssessmentItem[];
+};
+
+export type ParticipationAssessment = {
+  taskId: string;
+  participationId: string;
+  totalMaxPoints: number;
+  teacherTotal: number | null;
+  selfTotal: number | null;
+  criteria: ParticipationAssessmentItem[];
+  teacherAssessment: AssessmentDetails | null;
+  selfAssessment: AssessmentDetails | null;
 };
 
 export type TeacherNotification = {

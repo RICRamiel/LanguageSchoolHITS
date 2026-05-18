@@ -1,4 +1,5 @@
 import { NotificationAttachment } from '../../core/teacher/teacher.models';
+import { ParticipationAssessment, ParticipationAssessmentItem } from '../../core/teacher/teacher.models';
 
 export type StudentTeam = {
   id: string;
@@ -9,6 +10,7 @@ export type StudentTeam = {
 
 export type StudentTask = {
   id: string;
+  participationId: string | null;
   title: string;
   pillText: string | null;
   pillVariant: 'success' | 'neutral';
@@ -37,3 +39,6 @@ export type StudentNotification = {
   attachments: NotificationAttachment[];
   groupId: string;
 };
+
+export type StudentParticipationAssessment = ParticipationAssessment;
+export type StudentParticipationAssessmentItem = ParticipationAssessmentItem;

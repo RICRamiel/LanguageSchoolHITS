@@ -1,7 +1,12 @@
 export type {
   CreateNotificationPayload,
   NotificationAttachment,
+  ParticipationAssessment,
+  ParticipationAssessmentItem,
   CreateTaskPayload,
+  TaskCriterion,
+  TaskCriterionPayload,
+  AssessmentSubmitItem,
   TaskDetailsOpenPayload,
   TaskTeam,
   TeacherGroup,
@@ -11,4 +16,5 @@ export type {
   TeacherTaskComment,
   TeacherTaskDetailsSection,
   TeacherTaskSubmission,
+  AssessmentDetails,
 } from '../../core/teacher/teacher.models';
