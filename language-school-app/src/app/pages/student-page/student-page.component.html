@@ -65,11 +65,16 @@
       [teamActionInProgress]="teamActionInProgress"
       [teamError]="teamError"
       [comments]="taskComments"
+      [assessmentLoading]="taskAssessmentLoading"
+      [assessmentSaving]="taskAssessmentSaving"
+      [assessmentError]="taskAssessmentError"
+      [assessment]="taskAssessment"
       (uploadFile)="onUploadTaskFile($event)"
       (completeTask)="onCompleteTask()"
       (submitComment)="onSubmitComment($event)"
       (createTeam)="onCreateTeam($event)"
       (joinTeam)="onJoinTeam($event)"
+      (saveSelfAssessment)="onSaveSelfAssessment($event)"
       (close)="closeTaskDetailsModal()"
     />
   }

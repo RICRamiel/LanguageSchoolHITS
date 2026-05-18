@@ -79,6 +79,14 @@
                         >
                           {{ student.saving ? 'Сохранение...' : 'Сохранить' }}
                         </button>
+                        <button
+                          class="teacher-grading__save"
+                          type="button"
+                          [disabled]="!gradingTaskId"
+                          (click)="onOpenTeacherAssessment(student.id)"
+                        >
+                          Оценить по критериям
+                        </button>
                       </div>
                       @if (student.error) {
                         <p class="teacher-grading__error">{{ student.error }}</p>
@@ -123,10 +131,17 @@
       [teamCreating]="teamCreating"
       [studentAdding]="studentAdding"
       [courseStudents]="courseStudentsSnapshot"
+      [criteria]="taskCriteria"
+      [criteriaLoading]="taskCriteriaLoading"
+      [criteriaSaving]="taskCriteriaSaving"
+      [criteriaError]="taskCriteriaError"
       (submitComment)="onSubmitTaskComment($event)"
       (downloadAttachment)="onDownloadTaskAttachment($event)"
       (createTeam)="onCreateTeam($event)"
       (addStudentToTeam)="onAddStudentToTeam($event)"
+      (createCriterion)="onCreateCriterion($event)"
+      (updateCriterion)="onUpdateCriterion($event)"
+      (deactivateCriterion)="onDeactivateCriterion($event)"
       (close)="closeTaskDetailsModal()"
     />
   }
@@ -139,6 +154,54 @@
       (uploadAttachment)="onAttachNotificationFile($event)"
       (close)="closeNotificationDetailsModal()"
     />
+  }
+
+  @if (selectedAssessmentStudent && selectedAssessmentParticipationId) {
+    <div class="modal-overlay" (click)="closeTeacherAssessmentModal()">
+      <section class="modal" (click)="$event.stopPropagation()">
+        <button class="modal__close" type="button" (click)="closeTeacherAssessmentModal()">&times;</button>
+        <h3 class="modal__title">Оценка: {{ selectedAssessmentStudent.fullName }}</h3>
+        @if (teacherAssessmentLoading) {
+          <p class="modal__empty">Загрузка...</p>
+        } @else if (!teacherAssessment) {
+          <p class="modal__empty">{{ teacherAssessmentError || 'Assessment недоступен' }}</p>
+        } @else {
+          <p class="modal__subtitle">
+            Teacher: {{ teacherAssessment.teacherTotal ?? 0 }} / {{ teacherAssessment.totalMaxPoints }},
+            Self: {{ teacherAssessment.selfTotal ?? 0 }} / {{ teacherAssessment.totalMaxPoints }}
+          </p>
+          <div class="modal__list">
+            @for (criterion of teacherAssessment.criteria; track criterion.criterionId) {
+              <article class="modal__item">
+                <p class="modal__item-title">{{ criterion.title }} (max {{ criterion.maxPoints }})</p>
+                <p class="modal__item-text">{{ criterion.description }}</p>
+                <p class="modal__item-meta">Self: {{ criterion.selfPoints ?? '-' }}</p>
+                <input
+                  class="modal__team-input"
+                  type="number"
+                  min="0"
+                  [max]="criterion.maxPoints"
+                  [value]="getTeacherAssessmentPoints(criterion.criterionId, criterion.teacherPoints)"
+                  (input)="onTeacherAssessmentPointsChange(criterion.criterionId, $any($event.target).value)"
+                />
+                <textarea
+                  class="modal__comment-input"
+                  rows="2"
+                  [value]="getTeacherAssessmentComment(criterion.criterionId, criterion.teacherComment)"
+                  (input)="onTeacherAssessmentCommentChange(criterion.criterionId, $any($event.target).value)"
+                ></textarea>
+              </article>
+            }
+          </div>
+          @if (teacherAssessmentError) {
+            <p class="modal__empty">{{ teacherAssessmentError }}</p>
+          }
+          <button class="modal__comment-submit" type="button" [disabled]="teacherAssessmentSaving" (click)="onSubmitTeacherAssessment()">
+            {{ teacherAssessmentSaving ? 'Сохранение...' : 'Сохранить teacher-assessment' }}
+          </button>
+        }
+      </section>
+    </div>
   }
 </div>
 

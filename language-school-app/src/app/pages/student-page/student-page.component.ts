@@ -5,13 +5,20 @@ import { Router } from '@angular/router';
 import { catchError, finalize, forkJoin, map, Observable, of, switchMap, timeout } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { UserService } from '../../core/user/user.service';
+import { TeacherService } from '../../core/teacher/teacher.service';
 import { HeaderComponent } from '../../shared/ui/header/header.component';
 import { NotificationListComponent } from '../../shared/ui/notification-list/notification-list.component';
 import { TabsComponent } from '../../shared/ui/tabs/tabs.component';
 import { TaskCardComponent } from '../../shared/ui/task-card/task-card.component';
 import { StudentTaskDetailsModalComponent } from './components/student-task-details-modal/student-task-details-modal.component';
 import { StudentNotificationModalComponent } from './components/student-notification-modal/student-notification-modal.component';
-import { StudentNotification, StudentTask, StudentTaskComment, StudentTeam } from './student-page.types';
+import {
+  StudentNotification,
+  StudentParticipationAssessment,
+  StudentTask,
+  StudentTaskComment,
+  StudentTeam,
+} from './student-page.types';
 import { OPENAPI_PATHS, withOpenApiBase } from '../../core/api/openapi.config';
 import { CommentDTO } from '../../api/model/commentDTO';
 import { NotificationAttachment } from '../../core/teacher/teacher.models';
@@ -50,6 +57,7 @@ type StudentTeamResponse = {
 
 type StudentTaskResponse = {
   id?: number | string;
+  participationId?: string | null;
   name?: string;
   description?: string;
   deadline?: string;
@@ -108,6 +116,7 @@ export class StudentPageComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly userService = inject(UserService);
+  private readonly teacherService = inject(TeacherService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -142,6 +151,10 @@ export class StudentPageComponent implements OnInit {
   teamActionInProgress = false;
   teamError: string | null = null;
   taskComments: StudentTaskComment[] = [];
+  taskAssessment: StudentParticipationAssessment | null = null;
+  taskAssessmentLoading = false;
+  taskAssessmentSaving = false;
+  taskAssessmentError: string | null = null;
 
   ngOnInit(): void {
     this.destroyRef.onDestroy(() => this.clearUploadedFileLink());
@@ -168,6 +181,7 @@ export class StudentPageComponent implements OnInit {
     this.isTaskDetailsModalOpen = true;
     this.clearUploadedFileLink();
     this.loadTaskComments(taskId);
+    this.loadTaskAssessment(task);
   }
 
   closeTaskDetailsModal() {
@@ -181,6 +195,41 @@ export class StudentPageComponent implements OnInit {
     this.teamActionInProgress = false;
     this.teamError = null;
     this.taskComments = [];
+    this.taskAssessment = null;
+    this.taskAssessmentLoading = false;
+    this.taskAssessmentSaving = false;
+    this.taskAssessmentError = null;
+  }
+
+  onSaveSelfAssessment(items: Array<{ criterionId: string; points: number; comment: string }>): void {
+    const task = this.selectedTask;
+    if (!task?.participationId || this.taskAssessmentSaving) {
+      return;
+    }
+
+    this.taskAssessmentSaving = true;
+    this.taskAssessmentError = null;
+    this.cdr.detectChanges();
+
+    this.teacherService.submitSelfAssessment(task.id, task.participationId, items).pipe(
+      switchMap(() => this.teacherService.getParticipationAssessment(task.id, task.participationId!)),
+      catchError(() => {
+        this.taskAssessmentError = 'Не удалось сохранить самооценку';
+        return of(null);
+      }),
+      finalize(() => {
+        this.taskAssessmentSaving = false;
+        this.cdr.detectChanges();
+      }),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: (assessment) => {
+        if (!assessment) {
+          return;
+        }
+        this.taskAssessment = assessment;
+      },
+    });
   }
 
   openNotificationDetails(notificationId: string): void {
@@ -573,6 +622,7 @@ export class StudentPageComponent implements OnInit {
 
     return {
       id: String(task?.id ?? Date.now()),
+      participationId: task?.participationId ? String(task.participationId).trim() : null,
       title,
       pillText: this.mapTaskStatusLabel(status),
       pillVariant: status === 'COMPLETE' ? 'success' : 'neutral',
@@ -951,6 +1001,36 @@ export class StudentPageComponent implements OnInit {
       { id: 'tasks', label: RU.tasks },
       { id: 'notifications', label: RU.notifications, badge: this.notifications.length },
     ];
+  }
+
+  private loadTaskAssessment(task: StudentTask): void {
+    if (!task.participationId) {
+      this.taskAssessment = null;
+      this.taskAssessmentLoading = false;
+      this.taskAssessmentError = null;
+      return;
+    }
+
+    this.taskAssessmentLoading = true;
+    this.taskAssessmentError = null;
+    this.taskAssessment = null;
+    this.cdr.detectChanges();
+
+    this.teacherService.getParticipationAssessment(task.id, task.participationId).pipe(
+      catchError(() => {
+        this.taskAssessmentError = 'Не удалось загрузить оценку по критериям';
+        return of(null);
+      }),
+      finalize(() => {
+        this.taskAssessmentLoading = false;
+        this.cdr.detectChanges();
+      }),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: (assessment) => {
+        this.taskAssessment = assessment;
+      },
+    });
   }
 }
 

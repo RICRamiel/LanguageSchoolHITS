@@ -10,6 +10,10 @@ import {
   CreateNotificationPayload,
   CreateTaskPayload,
   NotificationAttachment,
+  ParticipationAssessment,
+  AssessmentSubmitItem,
+  TaskCriterion,
+  TaskCriterionPayload,
   TaskDetailsOpenPayload,
   TeacherGroup,
   TeacherNotification,
@@ -130,6 +134,17 @@ export class TeacherPageComponent implements OnInit {
   selectedTask: TeacherTask | null = null;
   selectedTaskSection: TeacherTaskDetailsSection = 'overview';
   selectedNotification: TeacherNotification | null = null;
+  taskCriteria: TaskCriterion[] = [];
+  taskCriteriaLoading = false;
+  taskCriteriaSaving = false;
+  taskCriteriaError: string | null = null;
+  selectedAssessmentStudent: TeacherStudentGrade | null = null;
+  selectedAssessmentParticipationId: string | null = null;
+  teacherAssessment: ParticipationAssessment | null = null;
+  teacherAssessmentLoading = false;
+  teacherAssessmentSaving = false;
+  teacherAssessmentError: string | null = null;
+  teacherAssessmentDraft: Record<string, { points: string; comment: string }> = {};
   readonly gradingStudents$ = this.gradeStudentsSubject.asObservable();
 
   ngOnInit(): void {
@@ -199,6 +214,7 @@ export class TeacherPageComponent implements OnInit {
     this.selectedTask = task;
     this.selectedTaskSection = payload.section;
     this.isTaskDetailsModalOpen = true;
+    this.loadTaskCriteria(task.id);
 
     if (task.id) {
       this.teacherService.getTaskComments(task.id).pipe(
@@ -304,6 +320,95 @@ export class TeacherPageComponent implements OnInit {
     this.selectedTaskSection = 'overview';
     this.isTaskDetailsModalOpen = false;
     this.teamCreating = false;
+    this.taskCriteria = [];
+    this.taskCriteriaLoading = false;
+    this.taskCriteriaSaving = false;
+    this.taskCriteriaError = null;
+  }
+
+  onCreateCriterion(payload: TaskCriterionPayload): void {
+    const taskId = this.selectedTask?.id;
+    if (!taskId || this.taskCriteriaSaving) {
+      return;
+    }
+
+    this.taskCriteriaSaving = true;
+    this.taskCriteriaError = null;
+
+    this.teacherService.createTaskCriterion(taskId, payload).pipe(
+      finalize(() => {
+        this.taskCriteriaSaving = false;
+      }),
+      catchError(() => {
+        this.taskCriteriaError = 'Не удалось создать критерий';
+        return of(null);
+      }),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: (criterion) => {
+        if (!criterion) {
+          return;
+        }
+        this.taskCriteria = [...this.taskCriteria, criterion].sort((a, b) => a.orderIndex - b.orderIndex);
+      },
+    });
+  }
+
+  onUpdateCriterion(payload: { criterionId: string; payload: TaskCriterionPayload }): void {
+    const taskId = this.selectedTask?.id;
+    if (!taskId || this.taskCriteriaSaving) {
+      return;
+    }
+
+    this.taskCriteriaSaving = true;
+    this.taskCriteriaError = null;
+
+    this.teacherService.updateTaskCriterion(taskId, payload.criterionId, payload.payload).pipe(
+      finalize(() => {
+        this.taskCriteriaSaving = false;
+      }),
+      catchError(() => {
+        this.taskCriteriaError = 'Не удалось обновить критерий';
+        return of(null);
+      }),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: (criterion) => {
+        if (!criterion) {
+          return;
+        }
+        this.taskCriteria = this.taskCriteria
+          .map((item) => (item.id === criterion.id ? criterion : item))
+          .sort((a, b) => a.orderIndex - b.orderIndex);
+      },
+    });
+  }
+
+  onDeactivateCriterion(criterionId: string): void {
+    const taskId = this.selectedTask?.id;
+    if (!taskId || this.taskCriteriaSaving) {
+      return;
+    }
+
+    this.taskCriteriaSaving = true;
+    this.taskCriteriaError = null;
+
+    this.teacherService.deactivateTaskCriterion(taskId, criterionId).pipe(
+      finalize(() => {
+        this.taskCriteriaSaving = false;
+      }),
+      catchError(() => {
+        this.taskCriteriaError = 'Не удалось деактивировать критерий';
+        return of(null);
+      }),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: () => {
+        this.taskCriteria = this.taskCriteria.map((item) =>
+          item.id === criterionId ? { ...item, active: false } : item,
+        );
+      },
+    });
   }
 
   onCreateTeam(name: string): void {
@@ -599,6 +704,165 @@ export class TeacherPageComponent implements OnInit {
           this.gradeStudentsSubject.next(students);
         },
       });
+  }
+
+  onOpenTeacherAssessment(studentId: string): void {
+    const student = this.gradeStudentsSubject.value.find((item) => item.id === studentId) ?? null;
+    const participationId = this.resolveParticipationId(studentId);
+    if (!student || !this.gradingTaskId || !participationId) {
+      return;
+    }
+
+    this.selectedAssessmentStudent = student;
+    this.selectedAssessmentParticipationId = participationId;
+    this.teacherAssessmentDraft = {};
+    this.loadTeacherAssessment();
+  }
+
+  onTeacherAssessmentPointsChange(criterionId: string, value: string): void {
+    const existing = this.teacherAssessmentDraft[criterionId] ?? { points: '', comment: '' };
+    this.teacherAssessmentDraft = {
+      ...this.teacherAssessmentDraft,
+      [criterionId]: { ...existing, points: value },
+    };
+  }
+
+  onTeacherAssessmentCommentChange(criterionId: string, value: string): void {
+    const existing = this.teacherAssessmentDraft[criterionId] ?? { points: '', comment: '' };
+    this.teacherAssessmentDraft = {
+      ...this.teacherAssessmentDraft,
+      [criterionId]: { ...existing, comment: value },
+    };
+  }
+
+  getTeacherAssessmentPoints(criterionId: string, fallback: number | null): string {
+    const value = this.teacherAssessmentDraft[criterionId]?.points;
+    if (value !== undefined) {
+      return value;
+    }
+    return fallback === null ? '' : String(fallback);
+  }
+
+  getTeacherAssessmentComment(criterionId: string, fallback: string | null): string {
+    const value = this.teacherAssessmentDraft[criterionId]?.comment;
+    if (value !== undefined) {
+      return value;
+    }
+    return fallback ?? '';
+  }
+
+  closeTeacherAssessmentModal(): void {
+    this.selectedAssessmentStudent = null;
+    this.selectedAssessmentParticipationId = null;
+    this.teacherAssessment = null;
+    this.teacherAssessmentLoading = false;
+    this.teacherAssessmentSaving = false;
+    this.teacherAssessmentError = null;
+    this.teacherAssessmentDraft = {};
+  }
+
+  onSubmitTeacherAssessment(): void {
+    if (!this.gradingTaskId || !this.selectedAssessmentParticipationId || !this.teacherAssessment) {
+      return;
+    }
+
+    const items: AssessmentSubmitItem[] = this.teacherAssessment.criteria
+      .filter((criterion) => criterion.active)
+      .map((criterion) => {
+        const pointsValue = this.getTeacherAssessmentPoints(criterion.criterionId, criterion.teacherPoints);
+        const parsedPoints = Number(pointsValue);
+        return {
+          criterionId: criterion.criterionId,
+          points: Number.isFinite(parsedPoints) ? parsedPoints : 0,
+          comment: this.getTeacherAssessmentComment(criterion.criterionId, criterion.teacherComment).trim(),
+        };
+      });
+
+    this.teacherAssessmentSaving = true;
+    this.teacherAssessmentError = null;
+
+    this.teacherService.submitTeacherAssessment(this.gradingTaskId, this.selectedAssessmentParticipationId, items).pipe(
+      switchMap(() => this.teacherService.getParticipationAssessment(this.gradingTaskId!, this.selectedAssessmentParticipationId!)),
+      catchError(() => {
+        this.teacherAssessmentError = 'Не удалось сохранить оценку преподавателя';
+        return of(null);
+      }),
+      finalize(() => {
+        this.teacherAssessmentSaving = false;
+      }),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: (assessment) => {
+        if (!assessment) {
+          return;
+        }
+        this.teacherAssessment = assessment;
+      },
+    });
+  }
+
+  private loadTaskCriteria(taskId: string): void {
+    this.taskCriteriaLoading = true;
+    this.taskCriteriaError = null;
+    this.taskCriteria = [];
+
+    this.teacherService.getTaskCriteria(taskId).pipe(
+      finalize(() => {
+        this.taskCriteriaLoading = false;
+      }),
+      catchError(() => {
+        this.taskCriteriaError = 'Не удалось загрузить критерии';
+        return of([] as TaskCriterion[]);
+      }),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: (criteria) => {
+        this.taskCriteria = criteria;
+      },
+    });
+  }
+
+  private resolveParticipationId(studentId: string): string | null {
+    if (!this.gradingTaskId) {
+      return null;
+    }
+    const task = this.tasksSnapshot.find((item) => item.id === this.gradingTaskId);
+    if (!task) {
+      return null;
+    }
+
+    for (const team of task.teams) {
+      const participation = team.participations.find((item) => item.studentId === studentId);
+      if (participation?.id) {
+        return participation.id;
+      }
+    }
+    return null;
+  }
+
+  private loadTeacherAssessment(): void {
+    if (!this.gradingTaskId || !this.selectedAssessmentParticipationId) {
+      return;
+    }
+
+    this.teacherAssessmentLoading = true;
+    this.teacherAssessmentError = null;
+    this.teacherAssessment = null;
+
+    this.teacherService.getParticipationAssessment(this.gradingTaskId, this.selectedAssessmentParticipationId).pipe(
+      catchError(() => {
+        this.teacherAssessmentError = 'Не удалось загрузить assessment';
+        return of(null);
+      }),
+      finalize(() => {
+        this.teacherAssessmentLoading = false;
+      }),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: (assessment) => {
+        this.teacherAssessment = assessment;
+      },
+    });
   }
 
   private extractSelectedGroupId(): string | null {

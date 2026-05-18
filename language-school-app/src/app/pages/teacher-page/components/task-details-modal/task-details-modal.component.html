@@ -24,6 +24,14 @@
       <button
         class="modal__tab"
         type="button"
+        [class.modal__tab--active]="selectedSection() === 'criteria'"
+        (click)="setSection('criteria')"
+      >
+        Критерии
+      </button>
+      <button
+        class="modal__tab"
+        type="button"
         [class.modal__tab--active]="selectedSection() === 'comments'"
         (click)="setSection('comments')"
       >
@@ -107,6 +115,94 @@
           }
         } @else {
           <p class="modal__empty">Прикрепленных работ пока нет.</p>
+        }
+      </div>
+    } @else if (selectedSection() === 'criteria') {
+      <div class="modal__criteria-form">
+        <input
+          class="modal__team-input"
+          type="text"
+          placeholder="Название критерия"
+          [value]="criterionTitle()"
+          (input)="onCriterionTitleInput($event)"
+        />
+        <textarea
+          class="modal__comment-input"
+          placeholder="Описание"
+          [value]="criterionDescription()"
+          (input)="onCriterionDescriptionInput($event)"
+        ></textarea>
+        <div class="modal__criteria-row">
+          <input
+            class="modal__team-input"
+            type="text"
+            placeholder="Секция"
+            [value]="criterionSection()"
+            (input)="onCriterionSectionInput($event)"
+          />
+          <input
+            class="modal__team-input"
+            type="number"
+            min="0"
+            placeholder="maxPoints"
+            [value]="criterionMaxPoints()"
+            (input)="onCriterionMaxPointsInput($event)"
+          />
+          <input
+            class="modal__team-input"
+            type="number"
+            min="0"
+            placeholder="orderIndex"
+            [value]="criterionOrderIndex()"
+            (input)="onCriterionOrderIndexInput($event)"
+          />
+        </div>
+        <div class="modal__criteria-actions">
+          <button
+            class="modal__action-btn"
+            type="button"
+            [disabled]="!isCriterionFormValid() || criteriaSaving()"
+            (click)="onSaveCriterion()"
+          >
+            {{ criteriaSaving() ? 'Сохранение...' : (editingCriterionId() ? 'Сохранить критерий' : 'Добавить критерий') }}
+          </button>
+          @if (editingCriterionId()) {
+            <button class="modal__download" type="button" (click)="cancelEditCriterion()">Отмена</button>
+          }
+        </div>
+      </div>
+
+      @if (criteriaError()) {
+        <p class="modal__empty">{{ criteriaError() }}</p>
+      }
+
+      <div class="modal__list">
+        @if (criteriaLoading()) {
+          <p class="modal__empty">Загрузка критериев...</p>
+        } @else if (!criteria().length) {
+          <p class="modal__empty">Критерии пока не добавлены.</p>
+        } @else {
+          @for (criterion of criteria(); track criterion.id) {
+            <article class="modal__item">
+              <p class="modal__item-title">{{ criterion.title }} ({{ criterion.maxPoints }} б.)</p>
+              <p class="modal__item-meta">{{ criterion.sectionName || 'Без секции' }} • #{{ criterion.orderIndex }}</p>
+              <p class="modal__item-text">{{ criterion.description }}</p>
+              <p class="modal__item-meta">Статус: {{ criterion.active ? 'active' : 'inactive' }}</p>
+              <div class="modal__criteria-actions">
+                <button class="modal__download modal__download--small" type="button" (click)="startEditCriterion(criterion)">
+                  Редактировать
+                </button>
+                <button
+                  class="modal__download modal__download--small"
+                  type="button"
+                  [disabled]="!criterion.active || criteriaSaving()"
+                  (click)="onDeactivateCriterion(criterion.id)"
+                >
+                  Деактивировать
+                </button>
+              </div>
+            </article>
+          }
         }
       </div>
     } @else if (selectedSection() === 'teams') {

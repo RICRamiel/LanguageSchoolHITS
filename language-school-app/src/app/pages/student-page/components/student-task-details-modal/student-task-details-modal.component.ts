@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
-import { StudentTask, StudentTaskComment } from '../../student-page.types';
+import { StudentParticipationAssessment, StudentTask, StudentTaskComment } from '../../student-page.types';
 import { FormsModule } from '@angular/forms';
 
 @Component({
@@ -20,16 +20,23 @@ export class StudentTaskDetailsModalComponent {
   readonly comments = input<StudentTaskComment[]>([]);
   readonly teamActionInProgress = input<boolean>(false);
   readonly teamError = input<string | null>(null);
+  readonly assessmentLoading = input<boolean>(false);
+  readonly assessmentSaving = input<boolean>(false);
+  readonly assessmentError = input<string | null>(null);
+  readonly assessment = input<StudentParticipationAssessment | null>(null);
   readonly close = output<void>();
   readonly uploadFile = output<File>();
   readonly completeTask = output<void>();
   readonly submitComment = output<string>();
   readonly createTeam = output<string>();
   readonly joinTeam = output<string>();
+  readonly saveSelfAssessment = output<Array<{ criterionId: string; points: number; comment: string }>>();
 
   readonly selectedFile = signal<File | null>(null);
   readonly commentText = signal('');
   readonly newTeamName = signal('');
+  readonly selfScores = signal<Record<string, string>>({});
+  readonly selfComments = signal<Record<string, string>>({});
 
   onFileChange(event: Event): void {
     const target = event.target as HTMLInputElement | null;
@@ -86,5 +93,50 @@ export class StudentTaskDetailsModalComponent {
       return;
     }
     this.joinTeam.emit(teamId);
+  }
+
+  getSelfScore(criterionId: string, fallback: number | null): string {
+    const local = this.selfScores()[criterionId];
+    if (local !== undefined) {
+      return local;
+    }
+    return fallback === null ? '' : String(fallback);
+  }
+
+  getSelfComment(criterionId: string, fallback: string | null): string {
+    const local = this.selfComments()[criterionId];
+    if (local !== undefined) {
+      return local;
+    }
+    return fallback ?? '';
+  }
+
+  onSelfScoreInput(criterionId: string, value: string): void {
+    this.selfScores.update((state) => ({ ...state, [criterionId]: value }));
+  }
+
+  onSelfCommentInput(criterionId: string, value: string): void {
+    this.selfComments.update((state) => ({ ...state, [criterionId]: value }));
+  }
+
+  submitSelfAssessment(): void {
+    const assessment = this.assessment();
+    if (!assessment || this.assessmentSaving()) {
+      return;
+    }
+
+    const items = assessment.criteria
+      .filter((criterion) => criterion.active)
+      .map((criterion) => {
+        const rawPoints = this.getSelfScore(criterion.criterionId, criterion.selfPoints);
+        const parsedPoints = Number(rawPoints);
+        return {
+          criterionId: criterion.criterionId,
+          points: Number.isFinite(parsedPoints) ? parsedPoints : 0,
+          comment: this.getSelfComment(criterion.criterionId, criterion.selfComment).trim(),
+        };
+      });
+
+    this.saveSelfAssessment.emit(items);
   }
 }

@@ -110,6 +110,57 @@
       </div>
     }
 
+    <div class="modal__assessment">
+      <h4 class="modal__comments-title">Самооценка по критериям</h4>
+      @if (assessmentLoading()) {
+        <p class="modal__comments-state">Загрузка оценки...</p>
+      } @else if (!assessment()) {
+        <p class="modal__comments-state">Критерии для этого задания пока недоступны.</p>
+      } @else {
+        <p class="modal__comments-state">
+          Официальная оценка: {{ assessment()!.teacherTotal ?? 0 }} / {{ assessment()!.totalMaxPoints }}.
+          Самооценка: {{ assessment()!.selfTotal ?? 0 }} / {{ assessment()!.totalMaxPoints }}.
+        </p>
+
+        <div class="modal__assessment-list">
+          @for (criterion of assessment()!.criteria; track criterion.criterionId) {
+            <article class="modal__comment-item">
+              <p class="modal__comment-author">{{ criterion.title }} (max {{ criterion.maxPoints }})</p>
+              <p class="modal__comment-text">{{ criterion.description }}</p>
+              <div class="modal__assessment-row">
+                <label>
+                  Teacher: {{ criterion.teacherPoints ?? '-' }}
+                </label>
+                <input
+                  class="modal__comment-input"
+                  type="number"
+                  min="0"
+                  [max]="criterion.maxPoints"
+                  [value]="getSelfScore(criterion.criterionId, criterion.selfPoints)"
+                  (input)="onSelfScoreInput(criterion.criterionId, $any($event.target).value)"
+                />
+              </div>
+              <textarea
+                class="modal__comment-input"
+                rows="2"
+                placeholder="Комментарий к самооценке"
+                [value]="getSelfComment(criterion.criterionId, criterion.selfComment)"
+                (input)="onSelfCommentInput(criterion.criterionId, $any($event.target).value)"
+              ></textarea>
+            </article>
+          }
+        </div>
+
+        @if (assessmentError()) {
+          <p class="modal__comments-state">{{ assessmentError() }}</p>
+        }
+
+        <button class="modal__action-btn" type="button" [disabled]="assessmentSaving()" (click)="submitSelfAssessment()">
+          {{ assessmentSaving() ? 'Сохранение...' : 'Сохранить самооценку' }}
+        </button>
+      }
+    </div>
+
     <div class="modal__comments">
       <h4 class="modal__comments-title">&#1050;&#1086;&#1084;&#1084;&#1077;&#1085;&#1090;&#1072;&#1088;&#1080;&#1080;</h4>
 
