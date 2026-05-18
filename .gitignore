@@ -109,3 +109,6 @@ kzid-backend-workgroup-cabinet/src/main/resources/docker-compose.yml
 #misc
 *.orig
 *~
+
+/pgdata
+/node
