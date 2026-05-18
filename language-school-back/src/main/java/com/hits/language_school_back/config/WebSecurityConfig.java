@@ -74,7 +74,7 @@ public class WebSecurityConfig extends WebSecurityConfiguration {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(
                 "http://worker.thallassianangel.su",
-                "http://client.thallassianangel.su",
+                "http://client.thallassianangel.su:9092",
                 "http://localhost:8081",
                 "http://185.76.242.253:8081",
                 "http://localhost:4201",

@@ -91,7 +91,7 @@ services:
     image: nginx:latest
     container_name: language-school-nginx-proxy
     ports:
-      - "80:80"    # HTTP
+      - "9092:80"    # HTTP
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./logs:/var/log/nginx
