@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @AllArgsConstructor
@@ -18,11 +19,13 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register/admin")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<TokenDTO> registerAdmin(@RequestBody @Valid RegisterDTO request) {
         return ResponseEntity.ok(authService.registerAdmin(request));
     }
 
     @PostMapping("/register/teacher")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<TokenDTO> registerTeacher(@RequestBody @Valid RegisterDTO request) {
         return ResponseEntity.ok(authService.registerTeacher(request));
     }

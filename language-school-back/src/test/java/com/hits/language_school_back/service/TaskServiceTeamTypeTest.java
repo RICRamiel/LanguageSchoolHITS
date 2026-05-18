@@ -1,10 +1,13 @@
 package com.hits.language_school_back.service;
 
 import com.hits.language_school_back.dto.TaskDTO;
+import com.hits.language_school_back.dto.TaskParticipationGradeDTO;
 import com.hits.language_school_back.dto.TaskTeamCreateDTO;
 import com.hits.language_school_back.dto.TaskTeamDTO;
+import com.hits.language_school_back.dto.TaskTeamGradeDTO;
 import com.hits.language_school_back.dto.UserFullDTO;
 import com.hits.language_school_back.enums.Role;
+import com.hits.language_school_back.enums.SolutionStatus;
 import com.hits.language_school_back.enums.TaskResolveType;
 import com.hits.language_school_back.enums.TeamType;
 import com.hits.language_school_back.infrastructure.TaskServiceImpl;
@@ -35,6 +38,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -240,6 +244,134 @@ class TaskServiceTeamTypeTest {
         assertThatThrownBy(() -> taskService.completeTask(taskId, captainId))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Team does not have enough members to submit a solution");
+    }
+
+    @Test
+    void editTask_whenActorIsNotCourseTeacher_rejectsEdit() {
+        Task task = persistedTask(TeamType.FREEROAM, 1, 3);
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+
+        assertThatThrownBy(() -> taskService.editTask(TaskDTO.builder().name("New").build(), taskId, UUID.randomUUID()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Only the course teacher can manage this task");
+    }
+
+    @Test
+    void deleteTask_whenActorIsNotCourseTeacher_rejectsDelete() {
+        Task task = persistedTask(TeamType.FREEROAM, 1, 3);
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+
+        assertThatThrownBy(() -> taskService.deleteTask(taskId, UUID.randomUUID()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Only the course teacher can manage this task");
+    }
+
+    @Test
+    void createTeam_whenCaptainAlreadyHasTeam_rejectsDuplicateTeam() {
+        Task task = persistedTask(TeamType.FREEROAM, 1, 3);
+        Team existingTeam = persistedTeam(task);
+        Participation existingParticipation = participation(existingTeam, captain, true);
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(userRepository.findById(captainId)).thenReturn(Optional.of(captain));
+        when(studentsInCourseRepository.existsByStudentIdAndCourseId(captainId, courseId)).thenReturn(true);
+        when(participationRepository.findAllByTeamTaskId(taskId)).thenReturn(List.of(existingParticipation));
+
+        assertThatThrownBy(() -> taskService.createTeam(taskId, TaskTeamCreateDTO.builder().build(), captainId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Student already belongs to a team in this task");
+    }
+
+    @Test
+    void gradeParticipation_whenNoTeamMark_usesIndividualMarkAsAverage() {
+        Task task = persistedTask(TeamType.FREEROAM, 1, 3);
+        Team team = persistedTeam(task);
+        team.setCommandMark(null);
+        Participation participation = participation(team, captain, true);
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(participationRepository.findById(participation.getId())).thenReturn(Optional.of(participation));
+        when(participationRepository.findAllByTeamId(team.getId())).thenReturn(List.of(participation));
+        when(studentsInCourseRepository.findAllByCourseId(courseId)).thenReturn(List.of(enrollment(captain)));
+        when(participationRepository.findAllByStudentId(captainId)).thenReturn(List.of(participation));
+        when(teamRepository.save(team)).thenReturn(team);
+        when(teamRepository.findById(team.getId())).thenReturn(Optional.of(team));
+        when(taskTeamMapper.toDto(team)).thenReturn(TaskTeamDTO.builder().build());
+
+        taskService.gradeParticipation(taskId, participation.getId(), TaskParticipationGradeDTO.builder().mark(80).build(), teacherId);
+
+        assertThat(participation.getAverageMark()).isEqualTo(80D);
+    }
+
+    @Test
+    void gradeTeam_whenNoIndividualMarks_usesTeamMarkForMembersAverage() {
+        Task task = persistedTask(TeamType.FREEROAM, 1, 3);
+        Team team = persistedTeam(task);
+        Participation captainParticipation = participation(team, captain, true);
+        Participation studentParticipation = participation(team, student, false);
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(teamRepository.findByIdAndTaskId(team.getId(), taskId)).thenReturn(Optional.of(team));
+        when(participationRepository.findAllByTeamId(team.getId())).thenReturn(List.of(captainParticipation, studentParticipation));
+        when(studentsInCourseRepository.findAllByCourseId(courseId)).thenReturn(List.of(enrollment(captain), enrollment(student)));
+        when(participationRepository.findAllByStudentId(captainId)).thenReturn(List.of(captainParticipation));
+        when(participationRepository.findAllByStudentId(studentId)).thenReturn(List.of(studentParticipation));
+        when(teamRepository.save(team)).thenReturn(team);
+        when(teamRepository.findById(team.getId())).thenReturn(Optional.of(team));
+        when(taskTeamMapper.toDto(team)).thenReturn(TaskTeamDTO.builder().build());
+
+        taskService.gradeTeam(taskId, team.getId(), TaskTeamGradeDTO.builder().mark(70).build(), teacherId);
+
+        assertThat(captainParticipation.getAverageMark()).isEqualTo(70D);
+        assertThat(studentParticipation.getAverageMark()).isEqualTo(70D);
+    }
+
+    @Test
+    void finalizeTask_whenCaptainSolutionRequiredAndCaptainDidNotSubmit_selectsNoSolution() {
+        Task task = persistedTask(TeamType.FREEROAM, 1, 3);
+        task.setResolveType(TaskResolveType.CAPTAINS_SOLUTION);
+        Team team = persistedTeam(task);
+        Participation captainParticipation = participation(team, captain, true);
+        Participation studentParticipation = participation(team, student, false);
+        studentParticipation.setSubmittedAt(LocalDateTime.now());
+        studentParticipation.setSolutionStatus(SolutionStatus.SUBMITTED);
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(teamRepository.findAllByTaskId(taskId)).thenReturn(List.of(team));
+        when(participationRepository.findAllByTeamId(team.getId())).thenReturn(List.of(captainParticipation, studentParticipation));
+        when(studentsInCourseRepository.findAllByCourseId(courseId)).thenReturn(List.of(enrollment(captain), enrollment(student)));
+        when(participationRepository.findAllByStudentId(captainId)).thenReturn(List.of(captainParticipation));
+        when(participationRepository.findAllByStudentId(studentId)).thenReturn(List.of(studentParticipation));
+        when(teamRepository.save(team)).thenReturn(team);
+
+        taskService.finalizeTask(taskId, teacherId);
+
+        assertThat(team.getSolutionParticipation()).isNull();
+        assertThat(studentParticipation.getSolutionStatus()).isEqualTo(SolutionStatus.OVERDUE);
+    }
+
+    @Test
+    void finalizeTask_whenVotesThresholdNotReached_selectsNoSolution() {
+        Task task = persistedTask(TeamType.FREEROAM, 1, 3);
+        task.setResolveType(TaskResolveType.AT_LEAST_VOTES_SOLUTION);
+        task.setVotesThreshold(2);
+        Team team = persistedTeam(task);
+        Participation participation = participation(team, captain, true);
+        participation.setSubmittedAt(LocalDateTime.now());
+        participation.setSolutionStatus(SolutionStatus.SUBMITTED);
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(teamRepository.findAllByTaskId(taskId)).thenReturn(List.of(team));
+        when(participationRepository.findAllByTeamId(team.getId())).thenReturn(List.of(participation));
+        when(voteRepository.countByParticipationId(participation.getId())).thenReturn(1L);
+        when(studentsInCourseRepository.findAllByCourseId(courseId)).thenReturn(List.of(enrollment(captain)));
+        when(participationRepository.findAllByStudentId(captainId)).thenReturn(List.of(participation));
+        when(teamRepository.save(team)).thenReturn(team);
+
+        taskService.finalizeTask(taskId, teacherId);
+
+        assertThat(team.getSolutionParticipation()).isNull();
+        assertThat(participation.getSolutionStatus()).isEqualTo(SolutionStatus.OVERDUE);
     }
 
     private TaskDTO.TaskDTOBuilder baseTaskDto(TeamType teamType) {

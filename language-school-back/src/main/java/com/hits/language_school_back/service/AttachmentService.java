@@ -14,7 +14,7 @@ public interface AttachmentService {
 
     Attachment uploadAttachmentForParticipation(UUID participationId, MultipartFile file, UUID userId);
 
-    void deleteAttachment(UUID attachmentId);
+    void deleteAttachment(UUID attachmentId, UUID userId);
 
     String getDownloadLink(UUID attachmentId);
 

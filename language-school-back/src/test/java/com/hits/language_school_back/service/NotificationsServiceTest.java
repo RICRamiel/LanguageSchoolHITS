@@ -60,9 +60,9 @@ class NotificationsServiceTest {
         teacherId = UUID.randomUUID();
         studentId = UUID.randomUUID();
 
-        course = Course.builder().id(courseId).name("Course").build();
         teacher = User.builder().id(teacherId).build();
         student = User.builder().id(studentId).build();
+        course = Course.builder().id(courseId).name("Course").teacher(teacher).build();
     }
 
     @Test

@@ -59,8 +59,8 @@ public class AttachmentController {
     }
 
     @DeleteMapping("/{attachmentId}")
-    public void deleteAttachment(@PathVariable UUID attachmentId) {
-        attachmentService.deleteAttachment(attachmentId);
+    public void deleteAttachment(@PathVariable UUID attachmentId, HttpServletRequest request) {
+        attachmentService.deleteAttachment(attachmentId, userService.getMe(request).getId());
     }
 
     @GetMapping("/{attachmentId}/download")

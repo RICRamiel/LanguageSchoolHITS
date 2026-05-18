@@ -6,6 +6,7 @@ import com.hits.language_school_back.model.Language;
 import com.hits.language_school_back.service.LanguageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,18 +28,21 @@ public class LanguageController {
     private final LanguageMapper languageMapper;
 
     @PostMapping("/create")
+    @PreAuthorize("hasAuthority('ADMIN')")
     ResponseEntity<LanguageDTO> createLanguage(@RequestBody LanguageDTO languageDTO) {
         Language language = languageService.createLanguage(languageDTO);
         return ResponseEntity.ok(languageMapper.toDto(language));
     }
 
     @PutMapping("/{languageId}/edit")
+    @PreAuthorize("hasAuthority('ADMIN')")
     ResponseEntity<LanguageDTO> editLanguageName(@RequestBody LanguageDTO languageDTO, @PathVariable UUID languageId) {
         Language language = languageService.editLanguageName(languageDTO, languageId);
         return ResponseEntity.ok(languageMapper.toDto(language));
     }
 
     @DeleteMapping("/{languageId}/delete")
+    @PreAuthorize("hasAuthority('ADMIN')")
     void deleteLanguage(@PathVariable UUID languageId) {
         languageService.deleteLanguage(languageId);
     }

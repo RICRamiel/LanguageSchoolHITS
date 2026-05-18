@@ -71,6 +71,9 @@ public class NotificationsServiceImpl implements NotificationsService {
 
         User creator = userRepository.findById(me.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + me.getId()));
+        if (course.getTeacher() == null || !course.getTeacher().getId().equals(creator.getId())) {
+            throw new IllegalArgumentException("Only the course teacher can create notifications");
+        }
 
         Notification notification = new Notification();
         notification.setText(model.getText());

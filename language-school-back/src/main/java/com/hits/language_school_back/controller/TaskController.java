@@ -15,6 +15,7 @@ import com.hits.language_school_back.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,20 +39,23 @@ public class TaskController {
     private final TaskMapper taskMapper;
 
     @PostMapping("/create")
+    @PreAuthorize("hasAuthority('TEACHER')")
     public ResponseEntity<TaskDTO> createTask(@RequestBody TaskDTO taskDTO, HttpServletRequest request) {
         Task task = taskService.createTask(taskDTO, userService.getMe(request));
         return ResponseEntity.ok(taskMapper.toDto(task));
     }
 
     @PutMapping("/{taskId}/edit")
-    public ResponseEntity<TaskDTO> editTask(@RequestBody TaskDTO taskDTO, @PathVariable UUID taskId) {
-        Task task = taskService.editTask(taskDTO, taskId);
+    @PreAuthorize("hasAuthority('TEACHER')")
+    public ResponseEntity<TaskDTO> editTask(@RequestBody TaskDTO taskDTO, @PathVariable UUID taskId, HttpServletRequest request) {
+        Task task = taskService.editTask(taskDTO, taskId, userService.getMe(request).getId());
         return ResponseEntity.ok(taskMapper.toDto(task));
     }
 
     @DeleteMapping("/{taskId}/delete")
-    void deleteTask(@PathVariable UUID taskId) {
-        taskService.deleteTask(taskId);
+    @PreAuthorize("hasAuthority('TEACHER')")
+    void deleteTask(@PathVariable UUID taskId, HttpServletRequest request) {
+        taskService.deleteTask(taskId, userService.getMe(request).getId());
     }
 
     @GetMapping("/{teacherId}/get_by_teacher")
@@ -106,16 +110,19 @@ public class TaskController {
     }
 
     @PostMapping("/{taskId}/participations/{participationId}/grade")
+    @PreAuthorize("hasAuthority('TEACHER')")
     public ResponseEntity<TaskTeamDTO> gradeParticipation(@PathVariable UUID taskId, @PathVariable UUID participationId, @RequestBody TaskParticipationGradeDTO dto, HttpServletRequest request) {
         return ResponseEntity.ok(taskService.gradeParticipation(taskId, participationId, dto, userService.getMe(request).getId()));
     }
 
     @PostMapping("/{taskId}/teams/{teamId}/grade")
+    @PreAuthorize("hasAuthority('TEACHER')")
     public ResponseEntity<TaskTeamDTO> gradeTeam(@PathVariable UUID taskId, @PathVariable UUID teamId, @RequestBody TaskTeamGradeDTO dto, HttpServletRequest request) {
         return ResponseEntity.ok(taskService.gradeTeam(taskId, teamId, dto, userService.getMe(request).getId()));
     }
 
     @PostMapping("/{taskId}/finalize")
+    @PreAuthorize("hasAuthority('TEACHER')")
     public ResponseEntity<TaskTeacherDTO> finalizeTask(@PathVariable UUID taskId, HttpServletRequest request) {
         return ResponseEntity.ok(taskService.finalizeTask(taskId, userService.getMe(request).getId()));
     }

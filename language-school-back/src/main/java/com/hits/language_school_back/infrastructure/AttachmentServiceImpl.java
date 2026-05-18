@@ -3,6 +3,7 @@ package com.hits.language_school_back.infrastructure;
 import com.hits.language_school_back.config.MinioConfig;
 import com.hits.language_school_back.dto.AttachmentDownloadInfo;
 import com.hits.language_school_back.exception.ResourceNotFoundException;
+import com.hits.language_school_back.enums.Role;
 import com.hits.language_school_back.model.Attachment;
 import com.hits.language_school_back.model.Notification;
 import com.hits.language_school_back.model.Participation;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Service
@@ -64,6 +66,7 @@ public class AttachmentServiceImpl implements AttachmentService {
         if (!participation.getStudent().getId().equals(userId)) {
             throw new IllegalArgumentException("Only the owner can upload files to the solution");
         }
+        ensureParticipationSubmissionOpen(participation);
 
         Attachment attachment = buildAttachment(file, user);
         attachment.setParticipation(participation);
@@ -71,9 +74,11 @@ public class AttachmentServiceImpl implements AttachmentService {
     }
 
     @Transactional
-    public void deleteAttachment(UUID attachmentId) {
+    public void deleteAttachment(UUID attachmentId, UUID userId) {
         Attachment attachment = attachmentRepository.findById(attachmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Attachment not found: " + attachmentId));
+        User actor = getUser(userId);
+        ensureCanDeleteAttachment(attachment, actor);
 
         minioService.deleteFile(attachment.getObjectKey());
         attachmentRepository.delete(attachment);
@@ -124,5 +129,52 @@ public class AttachmentServiceImpl implements AttachmentService {
     private User getUser(UUID userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+    }
+
+    private void ensureParticipationSubmissionOpen(Participation participation) {
+        Task task = participation.getTeam() == null ? null : participation.getTeam().getTask();
+        if (task == null) {
+            return;
+        }
+
+        boolean deadlinePassed = task.getDeadline() != null && LocalDate.now().isAfter(task.getDeadline());
+        if (Boolean.TRUE.equals(task.getSubmissionClosed()) || deadlinePassed) {
+            throw new IllegalArgumentException("Task submissions are closed");
+        }
+    }
+
+    private void ensureCanDeleteAttachment(Attachment attachment, User actor) {
+        if (attachment.getUser() != null && attachment.getUser().getId().equals(actor.getId())) {
+            return;
+        }
+        if (actor.getRole() == Role.TEACHER && isCourseTeacher(attachment, actor)) {
+            return;
+        }
+        throw new IllegalArgumentException("Only the owner or course teacher can delete this attachment");
+    }
+
+    private boolean isCourseTeacher(Attachment attachment, User actor) {
+        if (attachment.getNotification() != null
+                && attachment.getNotification().getCourse() != null
+                && attachment.getNotification().getCourse().getTeacher() != null) {
+            return attachment.getNotification().getCourse().getTeacher().getId().equals(actor.getId());
+        }
+
+        Task task = resolveAttachmentTask(attachment);
+        return task != null
+                && task.getCourse() != null
+                && task.getCourse().getTeacher() != null
+                && task.getCourse().getTeacher().getId().equals(actor.getId());
+    }
+
+    private Task resolveAttachmentTask(Attachment attachment) {
+        if (attachment.getTask() != null) {
+            return attachment.getTask();
+        }
+        if (attachment.getParticipation() != null
+                && attachment.getParticipation().getTeam() != null) {
+            return attachment.getParticipation().getTeam().getTask();
+        }
+        return null;
     }
 }

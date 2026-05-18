@@ -23,9 +23,9 @@ public interface TaskService {
 
     Task createTask(TaskDTO taskDTO, UserFullDTO userFullDTO);
 
-    void deleteTask(UUID id);
+    void deleteTask(UUID id, UUID actorId);
 
-    Task editTask(TaskDTO taskDTO, UUID taskId);
+    Task editTask(TaskDTO taskDTO, UUID taskId, UUID actorId);
 
     TaskTeamDTO createTeam(UUID taskId, TaskTeamCreateDTO dto, UUID userId);
 

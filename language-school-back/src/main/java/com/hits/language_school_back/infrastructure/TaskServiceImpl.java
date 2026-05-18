@@ -35,6 +35,7 @@ import com.hits.language_school_back.service.TaskService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -61,6 +62,12 @@ public class TaskServiceImpl implements TaskService {
     private final TaskTeacherMapper taskTeacherMapper;
     private final TaskStudentMapper taskStudentMapper;
     private final TaskTeamMapper taskTeamMapper;
+
+    @Scheduled(fixedDelayString = "${tasks.deadline-finalization-delay-ms:60000}")
+    @Transactional
+    public void finalizeOverdueTasks() {
+        taskRepository.findAllByOrderByDeadlineAsc().forEach(this::finalizeIfDeadlineReached);
+    }
 
     @Override
     @Transactional
@@ -107,20 +114,22 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
-    public void deleteTask(UUID id) {
+    public void deleteTask(UUID id, UUID actorId) {
+        Task task = getTask(id);
+        ensureTeacherCanManageCourse(actorId, task.getCourse());
         taskRepository.deleteById(id);
     }
 
     @Override
     @Transactional
-    public Task editTask(TaskDTO taskDTO, UUID taskId) {
+    public Task editTask(TaskDTO taskDTO, UUID taskId, UUID actorId) {
         Task task = getTask(taskId);
-        ensureTeacherCanManageCourse(task.getCreatedBy().getId(), task.getCourse());
+        ensureTeacherCanManageCourse(actorId, task.getCourse());
 
         Course course = task.getCourse();
         if (taskDTO.getCourseId() != null && !taskDTO.getCourseId().equals(course.getId())) {
             course = getCourse(taskDTO.getCourseId());
-            ensureTeacherCanManageCourse(task.getCreatedBy().getId(), course);
+            ensureTeacherCanManageCourse(actorId, course);
         }
 
         applyTaskDto(task, taskDTO, course, task.getCreatedBy());
@@ -145,13 +154,15 @@ public class TaskServiceImpl implements TaskService {
 
         ensureStudentInCourse(task.getCourse().getId(), captainId);
         ensureCanCreateTeam(task, actor);
+        ensureCanCreateTeamForCaptain(task, actor, captainId);
+        ensureStudentHasNoTeam(taskId, captainId);
         ensureTeamSlotsAvailable(task);
 
         Team team = new Team();
         team.setName(resolveTeamName(task, dto, captain));
         team.setTask(task);
-        team.setCommandMark(0);
-        team.setAverageMark(0D);
+        team.setCommandMark(null);
+        team.setAverageMark(null);
         Team savedTeam = teamRepository.save(team);
 
         Participation captainParticipation = createParticipation(savedTeam, captain, true);
@@ -437,8 +448,8 @@ public class TaskServiceImpl implements TaskService {
             Team team = new Team();
             team.setName("Team " + (i + 1));
             team.setTask(task);
-            team.setCommandMark(0);
-            team.setAverageMark(0D);
+            team.setCommandMark(null);
+            team.setAverageMark(null);
             Team savedTeam = teamRepository.save(team);
 
             List<User> members = buckets.get(i);
@@ -513,6 +524,13 @@ public class TaskServiceImpl implements TaskService {
 
         if (task.getTeamType() != TeamType.FREEROAM && task.getTeamType() != TeamType.DRAFT && !isSoloTask(task)) {
             throw new IllegalArgumentException("Students cannot create teams for this task type");
+        }
+    }
+
+    private void ensureCanCreateTeamForCaptain(Task task, User actor, UUID captainId) {
+        boolean teacher = actor.getRole() == Role.TEACHER && task.getCourse().getTeacher().getId().equals(actor.getId());
+        if (!teacher && !actor.getId().equals(captainId)) {
+            throw new IllegalArgumentException("Students can create teams only for themselves");
         }
     }
 
@@ -686,7 +704,7 @@ public class TaskServiceImpl implements TaskService {
             case CAPTAINS_SOLUTION -> submitted.stream()
                     .filter(Participation::getIsCaptain)
                     .max(Comparator.comparing(Participation::getSubmittedAt))
-                    .orElse(submitted.stream().max(Comparator.comparing(Participation::getSubmittedAt)).orElse(null));
+                    .orElse(null);
             case MOST_VOTES_SOLUTION -> submitted.stream()
                     .max(Comparator.comparingLong((Participation p) -> voteRepository.countByParticipationId(p.getId()))
                             .thenComparing(Participation::getSubmittedAt))
@@ -694,19 +712,22 @@ public class TaskServiceImpl implements TaskService {
             case AT_LEAST_VOTES_SOLUTION -> submitted.stream()
                     .filter(p -> voteRepository.countByParticipationId(p.getId()) >= (task.getVotesThreshold() == null ? 0 : task.getVotesThreshold()))
                     .max(Comparator.comparing(Participation::getSubmittedAt))
-                    .orElseGet(() -> submitted.stream()
-                            .max(Comparator.comparingLong((Participation p) -> voteRepository.countByParticipationId(p.getId()))
-                                    .thenComparing(Participation::getSubmittedAt))
-                            .orElse(null));
+                    .orElse(null);
         };
     }
 
     private void recalculateTeamStats(Team team) {
         List<Participation> participations = participationRepository.findAllByTeamId(team.getId());
-        double teamMark = team.getCommandMark() == null ? 0D : team.getCommandMark();
         for (Participation participation : participations) {
-            double individualMark = participation.getMark() == null ? 0D : participation.getMark();
-            if (participation.getMark() != null || team.getCommandMark() != null) {
+            Integer individualMark = participation.getMark();
+            Integer teamMark = team.getCommandMark();
+            if (individualMark == null && teamMark == null) {
+                participation.setAverageMark(null);
+            } else if (individualMark == null) {
+                participation.setAverageMark(round(teamMark));
+            } else if (teamMark == null) {
+                participation.setAverageMark(round(individualMark));
+            } else {
                 participation.setAverageMark(round((individualMark + teamMark) / 2D));
             }
         }

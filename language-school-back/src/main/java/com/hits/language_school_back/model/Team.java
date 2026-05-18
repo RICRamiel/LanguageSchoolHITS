@@ -29,7 +29,6 @@ public class Team {
     @NotBlank
     private String name;
 
-    @Column(nullable = false)
     private Integer commandMark = 0;
 
     private Double averageMark;

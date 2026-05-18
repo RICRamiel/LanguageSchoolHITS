@@ -7,6 +7,7 @@ import com.hits.language_school_back.dto.CourseStudentAddDTO;
 import com.hits.language_school_back.infrastructure.CourseServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,16 +28,19 @@ public class CourseController {
     private final CourseServiceImpl courseService;
 
     @PostMapping("/create")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<CourseDTO> createCourse(@RequestBody CourseCreateDTO dto) {
         return ResponseEntity.ok(courseService.createCourse(dto));
     }
 
     @DeleteMapping("/delete")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public void deleteCourse(@RequestParam("courseId") UUID courseId) {
         courseService.deleteCourse(courseId);
     }
 
     @PutMapping("/{courseId}/edit")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<CourseDTO> editCourse(@PathVariable("courseId") UUID courseId, @RequestBody CourseEditDTO dto) {
         return ResponseEntity.ok(courseService.updateCourse(courseId, dto));
     }
@@ -47,6 +51,7 @@ public class CourseController {
     }
 
     @PostMapping("/addStudents")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Boolean> addStudents(@RequestBody CourseStudentAddDTO studentIds) {
         return ResponseEntity.ok(courseService.addStudentsToCourse(studentIds.getCourseId(), studentIds.getStudentIds()));
     }

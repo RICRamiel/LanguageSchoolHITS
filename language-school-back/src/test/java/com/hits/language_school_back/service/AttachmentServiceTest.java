@@ -2,12 +2,14 @@ package com.hits.language_school_back.service;
 
 import com.hits.language_school_back.config.MinioConfig;
 import com.hits.language_school_back.dto.AttachmentDownloadInfo;
+import com.hits.language_school_back.enums.Role;
 import com.hits.language_school_back.exception.ResourceNotFoundException;
 import com.hits.language_school_back.infrastructure.AttachmentServiceImpl;
 import com.hits.language_school_back.model.Attachment;
 import com.hits.language_school_back.model.Notification;
 import com.hits.language_school_back.model.Participation;
 import com.hits.language_school_back.model.Task;
+import com.hits.language_school_back.model.Team;
 import com.hits.language_school_back.model.User;
 import com.hits.language_school_back.repository.AttachmentRepository;
 import com.hits.language_school_back.repository.NotificationRepository;
@@ -24,6 +26,7 @@ import org.springframework.mock.web.MockMultipartFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -129,12 +132,69 @@ class AttachmentServiceTest {
         Attachment attachment = new Attachment();
         attachment.setId(attachmentId);
         attachment.setObjectKey("object-key");
+        attachment.setUser(user);
         when(attachmentRepository.findById(attachmentId)).thenReturn(Optional.of(attachment));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-        attachmentService.deleteAttachment(attachmentId);
+        attachmentService.deleteAttachment(attachmentId, userId);
 
         verify(minioService).deleteFile("object-key");
         verify(attachmentRepository).delete(attachment);
+    }
+
+    @Test
+    void uploadAttachmentForParticipation_whenTaskClosed_throws() {
+        Task task = Task.builder().id(taskId).submissionClosed(true).build();
+        Team team = new Team();
+        team.setTask(task);
+        Participation participation = new Participation();
+        participation.setId(participationId);
+        participation.setStudent(user);
+        participation.setTeam(team);
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(participationRepository.findById(participationId)).thenReturn(Optional.of(participation));
+
+        assertThatThrownBy(() -> attachmentService.uploadAttachmentForParticipation(participationId, file, userId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Task submissions are closed");
+
+        verify(attachmentRepository, never()).save(any(Attachment.class));
+    }
+
+    @Test
+    void uploadAttachmentForParticipation_whenDeadlinePassed_throws() {
+        Task task = Task.builder().id(taskId).deadline(LocalDate.now().minusDays(1)).submissionClosed(false).build();
+        Team team = new Team();
+        team.setTask(task);
+        Participation participation = new Participation();
+        participation.setId(participationId);
+        participation.setStudent(user);
+        participation.setTeam(team);
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(participationRepository.findById(participationId)).thenReturn(Optional.of(participation));
+
+        assertThatThrownBy(() -> attachmentService.uploadAttachmentForParticipation(participationId, file, userId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Task submissions are closed");
+    }
+
+    @Test
+    void deleteAttachment_whenActorIsNotOwnerOrTeacher_throws() {
+        User owner = User.builder().id(UUID.randomUUID()).role(Role.STUDENT).build();
+        User actor = User.builder().id(userId).role(Role.STUDENT).build();
+        Attachment attachment = new Attachment();
+        attachment.setId(attachmentId);
+        attachment.setUser(owner);
+        when(attachmentRepository.findById(attachmentId)).thenReturn(Optional.of(attachment));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(actor));
+
+        assertThatThrownBy(() -> attachmentService.deleteAttachment(attachmentId, userId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Only the owner or course teacher can delete this attachment");
+
+        verify(minioService, never()).deleteFile(any());
     }
 
     @Test
