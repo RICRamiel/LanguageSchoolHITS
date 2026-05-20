@@ -1019,16 +1019,17 @@ export class StudentPageComponent implements OnInit {
     this.teacherService.getParticipationAssessment(task.id, task.participationId).pipe(
       catchError(() => {
         this.taskAssessmentError = 'Не удалось загрузить оценку по критериям';
-        return of(null);
-      }),
-      finalize(() => {
         this.taskAssessmentLoading = false;
+        this.taskAssessment = null;
         this.cdr.detectChanges();
+        return of(null);
       }),
       takeUntilDestroyed(this.destroyRef),
     ).subscribe({
       next: (assessment) => {
         this.taskAssessment = assessment;
+        this.taskAssessmentLoading = false;
+        this.cdr.detectChanges();
       },
     });
   }

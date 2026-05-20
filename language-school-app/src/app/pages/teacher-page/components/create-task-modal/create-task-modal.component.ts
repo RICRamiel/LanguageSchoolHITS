@@ -124,9 +124,11 @@ export class CreateTaskModalComponent {
   }
 
   onTeamTypeChange(value: string): void {
-    this.teamType = this.teamTypes.some((item) => item.value === value)
-      ? (value as CreateTaskPayload['teamType'])
-      : 'FREEROAM';
+    const normalized = value.trim().toUpperCase();
+    const matched = this.teamTypes.find((item) => item.value === normalized);
+    if (matched) {
+      this.teamType = matched.value;
+    }
 
     if (this.teamType === 'DRAFT') {
       this.draftTeamsCreationHours ??= 24;
