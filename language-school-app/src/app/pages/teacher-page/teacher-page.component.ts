@@ -1,6 +1,6 @@
 ﻿import { AsyncPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { BehaviorSubject, catchError, combineLatest, finalize, forkJoin, map, of, shareReplay, switchMap, tap } from 'rxjs';
@@ -57,6 +57,7 @@ export class TeacherPageComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly userService = inject(UserService);
   private readonly teacherService = inject(TeacherService);
+  private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
   private teacherId: string | null = null;
@@ -868,6 +869,7 @@ export class TeacherPageComponent implements OnInit {
     this.teacherAssessmentLoading = true;
     this.teacherAssessmentError = null;
     this.teacherAssessment = null;
+    this.cdr.detectChanges();
 
     this.teacherService.getParticipationAssessment(this.gradingTaskId, this.selectedAssessmentParticipationId).pipe(
       catchError(() => {
@@ -876,11 +878,13 @@ export class TeacherPageComponent implements OnInit {
       }),
       finalize(() => {
         this.teacherAssessmentLoading = false;
+        this.cdr.detectChanges();
       }),
       takeUntilDestroyed(this.destroyRef),
     ).subscribe({
       next: (assessment) => {
         this.teacherAssessment = assessment;
+        this.cdr.detectChanges();
       },
     });
   }
