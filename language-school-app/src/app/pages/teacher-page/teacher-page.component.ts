@@ -709,7 +709,20 @@ export class TeacherPageComponent implements OnInit {
   onOpenTeacherAssessment(studentId: string): void {
     const student = this.gradeStudentsSubject.value.find((item) => item.id === studentId) ?? null;
     const participationId = this.resolveParticipationId(studentId);
-    if (!student || !this.gradingTaskId || !participationId) {
+    if (!student || !this.gradingTaskId) {
+      return;
+    }
+    if (!participationId) {
+      this.gradeStudentsSubject.next(
+        this.gradeStudentsSubject.value.map((item) =>
+          item.id === studentId
+            ? {
+                ...item,
+                error: 'Студент не участвует в выбранном задании',
+              }
+            : item,
+        ),
+      );
       return;
     }
 
@@ -717,6 +730,13 @@ export class TeacherPageComponent implements OnInit {
     this.selectedAssessmentParticipationId = participationId;
     this.teacherAssessmentDraft = {};
     this.loadTeacherAssessment();
+  }
+
+  canOpenTeacherAssessment(studentId: string): boolean {
+    if (!this.gradingTaskId) {
+      return false;
+    }
+    return Boolean(this.resolveParticipationId(studentId));
   }
 
   onTeacherAssessmentPointsChange(criterionId: string, value: string): void {

@@ -80,9 +80,10 @@
                           {{ student.saving ? 'Сохранение...' : 'Сохранить' }}
                         </button>
                         <button
-                          class="teacher-grading__save"
+                          class="teacher-grading__save teacher-grading__save--criteria"
                           type="button"
-                          [disabled]="!gradingTaskId"
+                          [disabled]="!canOpenTeacherAssessment(student.id)"
+                          [title]="canOpenTeacherAssessment(student.id) ? '' : 'Нет участия в выбранном задании'"
                           (click)="onOpenTeacherAssessment(student.id)"
                         >
                           Оценить по критериям
