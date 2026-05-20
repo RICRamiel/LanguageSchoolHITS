@@ -379,6 +379,7 @@ export class TeacherService {
 
   createTask(payload: CreateTaskPayload): Observable<TeacherTask> {
     const isTeamTask = payload.assignmentType === 'TEAM';
+    const teamType = this.normalizeTeamTypeForApi(payload.teamType);
 
     return this.http
       .post<TeacherTaskResponse>(withOpenApiBase(OPENAPI_PATHS.teacher.createTask), {
@@ -387,14 +388,14 @@ export class TeacherService {
         deadline: payload.dueDate,
         courseId: payload.groupId,
         courseName: payload.groupName,
-        teamType: payload.teamType === 'CUSTOM' ? 'FREEROAM' : payload.teamType,
+        teamType,
         resolveType: payload.resolveType,
         maxTeamSize: isTeamTask ? payload.maxTeamSize : null,
         minTeamSize: isTeamTask ? payload.minTeamSize : null,
         maxTeamsAmount: isTeamTask ? payload.maxTeamsAmount : null,
         minTeamsAmount: isTeamTask ? payload.minTeamsAmount : null,
         votesThreshold: payload.resolveType === 'AT_LEAST_VOTES_SOLUTION' ? payload.votesThreshold : null,
-        teamsCreationTimeout: isTeamTask && payload.teamType === 'DRAFT' ? payload.teamsCreationTimeout : null,
+        teamsCreationTimeout: isTeamTask && teamType === 'DRAFT' ? payload.teamsCreationTimeout : null,
       })
       .pipe(
         map((task) => {
@@ -810,6 +811,14 @@ export class TeacherService {
 
   private normalizeNullableNumber(value: unknown): number | null {
     return typeof value === 'number' && Number.isFinite(value) ? value : null;
+  }
+
+  private normalizeTeamTypeForApi(value: string | null | undefined): 'RANDOM' | 'FREEROAM' | 'DRAFT' {
+    const normalized = String(value ?? '').trim().toUpperCase();
+    if (normalized === 'RANDOM' || normalized === 'DRAFT' || normalized === 'FREEROAM') {
+      return normalized;
+    }
+    return 'FREEROAM';
   }
 
   private mapTaskAttachments(task: TeacherTaskResponse | null | undefined): TeacherTask['attachedWorks'] {
