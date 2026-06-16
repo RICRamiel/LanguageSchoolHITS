@@ -17,11 +17,14 @@ import {
   StudentParticipationAssessment,
   StudentTask,
   StudentTaskComment,
+  StudentTaskPeerAssessment,
   StudentTeam,
 } from './student-page.types';
 import { OPENAPI_PATHS, withOpenApiBase } from '../../core/api/openapi.config';
 import { CommentDTO } from '../../api/model/commentDTO';
 import { NotificationAttachment } from '../../core/teacher/teacher.models';
+import { PeerAssessmentSubmitItem } from '../../core/peer-assessment/peer-assessment.contracts';
+import { MockPeerAssessmentApiService } from '../../core/peer-assessment/mock-peer-assessment-api.service';
 
 type StudentNotificationResponse = {
   id?: string;
@@ -117,6 +120,7 @@ export class StudentPageComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly userService = inject(UserService);
   private readonly teacherService = inject(TeacherService);
+  private readonly peerAssessmentApi = inject(MockPeerAssessmentApiService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -155,6 +159,10 @@ export class StudentPageComponent implements OnInit {
   taskAssessmentLoading = false;
   taskAssessmentSaving = false;
   taskAssessmentError: string | null = null;
+  taskPeerAssessment: StudentTaskPeerAssessment | null = null;
+  taskPeerAssessmentLoading = false;
+  taskPeerAssessmentSaving = false;
+  taskPeerAssessmentError: string | null = null;
 
   ngOnInit(): void {
     this.destroyRef.onDestroy(() => this.clearUploadedFileLink());
@@ -182,6 +190,7 @@ export class StudentPageComponent implements OnInit {
     this.clearUploadedFileLink();
     this.loadTaskComments(taskId);
     this.loadTaskAssessment(task);
+    this.loadTaskPeerAssessment(task);
   }
 
   closeTaskDetailsModal() {
@@ -199,6 +208,10 @@ export class StudentPageComponent implements OnInit {
     this.taskAssessmentLoading = false;
     this.taskAssessmentSaving = false;
     this.taskAssessmentError = null;
+    this.taskPeerAssessment = null;
+    this.taskPeerAssessmentLoading = false;
+    this.taskPeerAssessmentSaving = false;
+    this.taskPeerAssessmentError = null;
   }
 
   onSaveSelfAssessment(items: Array<{ criterionId: string; points: number; comment: string }>): void {
@@ -230,6 +243,40 @@ export class StudentPageComponent implements OnInit {
         this.taskAssessment = assessment;
       },
     });
+  }
+
+  onSavePeerAssessment(items: PeerAssessmentSubmitItem[]): void {
+    const task = this.selectedTask;
+    const assessment = this.taskPeerAssessment;
+    if (!task || !assessment || this.taskPeerAssessmentSaving) {
+      return;
+    }
+
+    this.taskPeerAssessmentSaving = true;
+    this.taskPeerAssessmentError = null;
+    this.cdr.detectChanges();
+
+    this.peerAssessmentApi
+      .submitPeerAssessment(task.id, assessment.targetParticipationId, items, assessment)
+      .pipe(
+        catchError(() => {
+          this.taskPeerAssessmentError = 'Не удалось сохранить peer-оценку';
+          return of(null);
+        }),
+        finalize(() => {
+          this.taskPeerAssessmentSaving = false;
+          this.cdr.detectChanges();
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (updatedAssessment) => {
+          if (!updatedAssessment) {
+            return;
+          }
+          this.taskPeerAssessment = updatedAssessment;
+        },
+      });
   }
 
   openNotificationDetails(notificationId: string): void {
@@ -1032,6 +1079,32 @@ export class StudentPageComponent implements OnInit {
         this.cdr.detectChanges();
       },
     });
+  }
+
+  private loadTaskPeerAssessment(task: StudentTask): void {
+    this.taskPeerAssessmentLoading = true;
+    this.taskPeerAssessmentError = null;
+    this.taskPeerAssessment = null;
+    this.cdr.detectChanges();
+
+    this.peerAssessmentApi
+      .getAssignedPeerAssessment(task, this.studentId)
+      .pipe(
+        catchError(() => {
+          this.taskPeerAssessmentError = 'Не удалось загрузить peer-оценивание';
+          return of(null);
+        }),
+        finalize(() => {
+          this.taskPeerAssessmentLoading = false;
+          this.cdr.detectChanges();
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (assessment) => {
+          this.taskPeerAssessment = assessment;
+        },
+      });
   }
 }
 

@@ -1,5 +1,6 @@
 import { NotificationAttachment } from '../../core/teacher/teacher.models';
 import { ParticipationAssessment, ParticipationAssessmentItem } from '../../core/teacher/teacher.models';
+import { StudentPeerAssessment } from '../../core/peer-assessment/peer-assessment.contracts';
 
 export type StudentTeam = {
   id: string;
@@ -42,3 +43,4 @@ export type StudentNotification = {
 
 export type StudentParticipationAssessment = ParticipationAssessment;
 export type StudentParticipationAssessmentItem = ParticipationAssessmentItem;
+export type StudentTaskPeerAssessment = StudentPeerAssessment;

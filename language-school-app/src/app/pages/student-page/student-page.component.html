@@ -69,12 +69,17 @@
       [assessmentSaving]="taskAssessmentSaving"
       [assessmentError]="taskAssessmentError"
       [assessment]="taskAssessment"
+      [peerAssessmentLoading]="taskPeerAssessmentLoading"
+      [peerAssessmentSaving]="taskPeerAssessmentSaving"
+      [peerAssessmentError]="taskPeerAssessmentError"
+      [peerAssessment]="taskPeerAssessment"
       (uploadFile)="onUploadTaskFile($event)"
       (completeTask)="onCompleteTask()"
       (submitComment)="onSubmitComment($event)"
       (createTeam)="onCreateTeam($event)"
       (joinTeam)="onJoinTeam($event)"
       (saveSelfAssessment)="onSaveSelfAssessment($event)"
+      (savePeerAssessment)="onSavePeerAssessment($event)"
       (close)="closeTaskDetailsModal()"
     />
   }

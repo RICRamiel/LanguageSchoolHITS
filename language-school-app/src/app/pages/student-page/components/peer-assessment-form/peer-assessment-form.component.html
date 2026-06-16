@@ -1,0 +1,81 @@
+@if (loading()) {
+  <section class="peer-assessment" aria-live="polite">
+    <h4 class="peer-assessment__title">Peer-оценивание</h4>
+    <p class="peer-assessment__state">Загрузка peer-оценивания...</p>
+  </section>
+} @else if (assessment(); as peerAssessment) {
+  <section class="peer-assessment" aria-labelledby="peer-assessment-title">
+    <div class="peer-assessment__header">
+      <h4 id="peer-assessment-title" class="peer-assessment__title">Peer-оценивание</h4>
+      <p class="peer-assessment__team">
+        Оцениваемая команда: <strong>{{ peerAssessment.targetTeamName }}</strong>
+      </p>
+    </div>
+
+    <p class="peer-assessment__state">
+      Итог: {{ peerAssessment.peerTotal ?? 0 }} / {{ peerAssessment.totalMaxPoints }}
+    </p>
+
+    @if (activeCriteria().length) {
+      <div class="peer-assessment__criteria">
+        @for (criterion of activeCriteria(); track criterion.criterionId) {
+          <article class="peer-assessment__criterion">
+            <div class="peer-assessment__criterion-header">
+              <p class="peer-assessment__criterion-title">
+                {{ criterion.title }} (max {{ criterion.maxPoints }})
+              </p>
+              @if (criterion.sectionName) {
+                <span class="peer-assessment__section">{{ criterion.sectionName }}</span>
+              }
+            </div>
+            <p class="peer-assessment__description">{{ criterion.description }}</p>
+
+            <label class="peer-assessment__label" [for]="'peer-score-' + criterion.criterionId">
+              Баллы
+            </label>
+            <input
+              class="peer-assessment__input"
+              [id]="'peer-score-' + criterion.criterionId"
+              type="number"
+              min="0"
+              [max]="criterion.maxPoints"
+              [value]="getPeerScore(criterion.criterionId, criterion.peerPoints)"
+              [disabled]="saving()"
+              (input)="onPeerScoreInput(criterion.criterionId, $any($event.target).value)"
+            />
+
+            <label class="peer-assessment__label" [for]="'peer-comment-' + criterion.criterionId">
+              Комментарий
+            </label>
+            <textarea
+              class="peer-assessment__textarea"
+              [id]="'peer-comment-' + criterion.criterionId"
+              rows="2"
+              [value]="getPeerComment(criterion.criterionId, criterion.peerComment)"
+              [disabled]="saving()"
+              (input)="onPeerCommentInput(criterion.criterionId, $any($event.target).value)"
+            ></textarea>
+          </article>
+        }
+      </div>
+    } @else {
+      <p class="peer-assessment__state">Критерии для peer-оценивания пока недоступны.</p>
+    }
+
+    @if (localValidationError()) {
+      <p class="peer-assessment__error">{{ localValidationError() }}</p>
+    }
+    @if (error()) {
+      <p class="peer-assessment__error">{{ error() }}</p>
+    }
+
+    <button
+      class="peer-assessment__button"
+      type="button"
+      [disabled]="saving() || !activeCriteria().length"
+      (click)="submitPeerAssessment()"
+    >
+      {{ saving() ? 'Сохранение...' : 'Сохранить peer-оценку' }}
+    </button>
+  </section>
+}
