@@ -1,11 +1,18 @@
 import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
-import { StudentParticipationAssessment, StudentTask, StudentTaskComment } from '../../student-page.types';
+import {
+  StudentParticipationAssessment,
+  StudentTask,
+  StudentTaskComment,
+  StudentTaskPeerAssessment,
+} from '../../student-page.types';
 import { FormsModule } from '@angular/forms';
+import { PeerAssessmentFormComponent } from '../peer-assessment-form/peer-assessment-form.component';
+import { PeerAssessmentSubmitItem } from '../../../../core/peer-assessment/peer-assessment.contracts';
 
 @Component({
   selector: 'app-student-task-details-modal',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, PeerAssessmentFormComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './student-task-details-modal.component.html',
   styleUrl: './student-task-details-modal.component.less',
@@ -24,6 +31,10 @@ export class StudentTaskDetailsModalComponent {
   readonly assessmentSaving = input<boolean>(false);
   readonly assessmentError = input<string | null>(null);
   readonly assessment = input<StudentParticipationAssessment | null>(null);
+  readonly peerAssessmentLoading = input<boolean>(false);
+  readonly peerAssessmentSaving = input<boolean>(false);
+  readonly peerAssessmentError = input<string | null>(null);
+  readonly peerAssessment = input<StudentTaskPeerAssessment | null>(null);
   readonly close = output<void>();
   readonly uploadFile = output<File>();
   readonly completeTask = output<void>();
@@ -31,6 +42,7 @@ export class StudentTaskDetailsModalComponent {
   readonly createTeam = output<string>();
   readonly joinTeam = output<string>();
   readonly saveSelfAssessment = output<Array<{ criterionId: string; points: number; comment: string }>>();
+  readonly savePeerAssessment = output<PeerAssessmentSubmitItem[]>();
 
   readonly selectedFile = signal<File | null>(null);
   readonly commentText = signal('');
