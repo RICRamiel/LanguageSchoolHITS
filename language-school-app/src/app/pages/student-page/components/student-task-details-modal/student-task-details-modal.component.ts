@@ -8,6 +8,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import { PeerAssessmentFormComponent } from '../peer-assessment-form/peer-assessment-form.component';
 import { PeerAssessmentSubmitItem } from '../../../../core/peer-assessment/peer-assessment.contracts';
+import { NotificationAttachment } from '../../../../core/teacher/teacher.models';
 
 @Component({
   selector: 'app-student-task-details-modal',
@@ -37,6 +38,7 @@ export class StudentTaskDetailsModalComponent {
   readonly peerAssessment = input<StudentTaskPeerAssessment | null>(null);
   readonly close = output<void>();
   readonly uploadFile = output<File>();
+  readonly downloadAttachment = output<NotificationAttachment>();
   readonly completeTask = output<void>();
   readonly submitComment = output<string>();
   readonly createTeam = output<string>();

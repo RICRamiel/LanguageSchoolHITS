@@ -25,6 +25,7 @@ import { CommentDTO } from '../../api/model/commentDTO';
 import { NotificationAttachment } from '../../core/teacher/teacher.models';
 import { PeerAssessmentSubmitItem } from '../../core/peer-assessment/peer-assessment.contracts';
 import { MockPeerAssessmentApiService } from '../../core/peer-assessment/mock-peer-assessment-api.service';
+import { ErrorToastService } from '../../core/errors/error-toast.service';
 
 type StudentNotificationResponse = {
   id?: string;
@@ -56,6 +57,13 @@ type StudentTeamResponse = {
   name?: string;
   membersCount?: number | null;
   captainId?: string | null;
+  participations?: StudentParticipationResponse[] | null;
+};
+
+type StudentParticipationResponse = {
+  id?: string;
+  studentId?: string;
+  attachments?: StudentAttachmentResponse[] | null;
 };
 
 type StudentTaskResponse = {
@@ -68,6 +76,7 @@ type StudentTaskResponse = {
   courseName?: string;
   taskStatus?: 'COMPLETE' | 'OVERDUE' | 'PENDING';
   teamType?: string | null;
+  maxTeamSize?: number | null;
   currentTeamId?: string | null;
   teams?: StudentTeamResponse[] | null;
   teacher?: {
@@ -121,6 +130,7 @@ export class StudentPageComponent implements OnInit {
   private readonly userService = inject(UserService);
   private readonly teacherService = inject(TeacherService);
   private readonly peerAssessmentApi = inject(MockPeerAssessmentApiService);
+  private readonly errorToastService = inject(ErrorToastService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -295,8 +305,8 @@ export class StudentPageComponent implements OnInit {
   }
 
   onUploadTaskFile(file: File): void {
-    const taskId = this.selectedTask?.id;
-    if (!taskId || this.uploadInProgress) {
+    const task = this.selectedTask;
+    if (!task || this.uploadInProgress) {
       return;
     }
 
@@ -306,28 +316,21 @@ export class StudentPageComponent implements OnInit {
     const formData = new FormData();
     formData.append('file', file);
 
-    this.http
-      .post<unknown>(withOpenApiBase(OPENAPI_PATHS.attachments.upload), formData, {
-        params: { taskId },
-      })
+    this.ensureParticipationForUpload(task)
       .pipe(
-        timeout(15000),
-        switchMap((response) => {
-          const attachmentId = this.extractAttachmentId(response);
-          if (!attachmentId) {
-            return of(null as string | null);
+        switchMap((participationId) => {
+          if (!participationId) {
+            return of(null);
           }
           return this.http
-            .get(withOpenApiBase(OPENAPI_PATHS.attachments.download(attachmentId)), {
-              responseType: 'blob',
-            })
-            .pipe(
-              timeout(15000),
-              map((blob) => URL.createObjectURL(blob)),
-              catchError(() => of(null as string | null)),
-            );
+            .post<StudentAttachmentResponse>(
+              withOpenApiBase(OPENAPI_PATHS.attachments.uploadToParticipation),
+              formData,
+              { params: { participationId } },
+            )
+            .pipe(timeout(15000));
         }),
-        catchError(() => of(null as string | null)),
+        catchError(() => of(null)),
         finalize(() => {
           this.uploadInProgress = false;
           this.cdr.detectChanges();
@@ -336,10 +339,10 @@ export class StudentPageComponent implements OnInit {
       .pipe(
         takeUntilDestroyed(this.destroyRef),
       ).subscribe({
-        next: (downloadUrl) => {
-          if (downloadUrl) {
-            this.clearUploadedFileLink();
-            this.uploadedFileLink = downloadUrl;
+        next: (attachment) => {
+          const mappedAttachment = this.mapAttachment(attachment);
+          if (mappedAttachment) {
+            this.appendTaskAttachment(task.id, mappedAttachment);
           }
         },
       });
@@ -412,20 +415,13 @@ export class StudentPageComponent implements OnInit {
       .subscribe({
         next: (team) => {
           if (!team || !this.selectedTask) return;
-          const newTeam: StudentTeam = {
-            id: String(team.id ?? ''),
-            name: (team.name ?? name).trim() || 'Команда',
-            membersCount: typeof team.membersCount === 'number' ? team.membersCount : null,
-            captainId: team.captainId ? String(team.captainId) : this.studentId || null,
-          };
-          const updatedTask: StudentTask = {
-            ...this.selectedTask,
-            currentTeamId: newTeam.id || this.selectedTask.currentTeamId,
-            teams: [...this.selectedTask.teams, newTeam],
-          };
-          this.selectedTask = updatedTask;
-          this.allTasks = this.allTasks.map((t) => t.id === updatedTask.id ? updatedTask : t);
-          this.tasks = this.tasks.map((t) => t.id === updatedTask.id ? updatedTask : t);
+          const newTeam = this.mapTeamResponse(team, name, this.studentId || null);
+          const updatedTask = this.upsertTeamInTask(
+            this.selectedTask,
+            newTeam,
+            this.resolveParticipationIdFromTeam(team) ?? this.selectedTask.participationId,
+          );
+          this.replaceTask(updatedTask);
           this.cdr.detectChanges();
         },
       });
@@ -459,13 +455,12 @@ export class StudentPageComponent implements OnInit {
         next: (team) => {
           if (!team || !this.selectedTask) return;
           this.teamError = null;
-          const updatedTask: StudentTask = {
-            ...this.selectedTask,
-            currentTeamId: team.id ? String(team.id) : teamId,
-          };
-          this.selectedTask = updatedTask;
-          this.allTasks = this.allTasks.map((t) => t.id === updatedTask.id ? updatedTask : t);
-          this.tasks = this.tasks.map((t) => t.id === updatedTask.id ? updatedTask : t);
+          const updatedTask = this.upsertTeamInTask(
+            this.selectedTask,
+            this.mapTeamResponse(team, 'Команда'),
+            this.resolveParticipationIdFromTeam(team) ?? this.selectedTask.participationId,
+          );
+          this.replaceTask({ ...updatedTask, currentTeamId: team.id ? String(team.id) : teamId });
           this.cdr.detectChanges();
         },
       });
@@ -666,10 +661,11 @@ export class StudentPageComponent implements OnInit {
       .filter(Boolean)
       .join(' ')
       .trim();
+    const participationId = this.resolveTaskParticipationId(task);
 
     return {
       id: String(task?.id ?? Date.now()),
-      participationId: task?.participationId ? String(task.participationId).trim() : null,
+      participationId,
       title,
       pillText: this.mapTaskStatusLabel(status),
       pillVariant: status === 'COMPLETE' ? 'success' : 'neutral',
@@ -678,14 +674,165 @@ export class StudentPageComponent implements OnInit {
       dueText: this.formatDate(task?.deadline),
       groupId: group?.id ?? (task?.courseId != null ? String(task.courseId) : null),
       teamType: task?.teamType ?? null,
+      maxTeamSize: typeof task?.maxTeamSize === 'number' ? task.maxTeamSize : null,
       currentTeamId: task?.currentTeamId ?? null,
-      teams: (task?.teams ?? []).map((t): StudentTeam => ({
-        id: String(t.id ?? ''),
-        name: (t.name ?? '').trim() || 'Команда',
-        membersCount: typeof t.membersCount === 'number' ? t.membersCount : null,
-        captainId: t.captainId ? String(t.captainId) : null,
-      })),
+      teams: (task?.teams ?? []).map((t) => this.mapTeamResponse(t, 'Команда')),
+      attachedWorks: this.resolveTaskAttachments(task, participationId),
     };
+  }
+
+  private mapTeamResponse(
+    team: StudentTeamResponse | null | undefined,
+    fallbackName: string,
+    fallbackCaptainId: string | null = null,
+  ): StudentTeam {
+    const participations = team?.participations ?? [];
+
+    return {
+      id: String(team?.id ?? ''),
+      name: (team?.name ?? fallbackName).trim() || 'Команда',
+      membersCount: typeof team?.membersCount === 'number' ? team.membersCount : participations.length || null,
+      captainId: team?.captainId ? String(team.captainId) : fallbackCaptainId,
+    };
+  }
+
+  private resolveTaskParticipationId(task: StudentTaskResponse | null | undefined): string | null {
+    const direct = typeof task?.participationId === 'string' ? task.participationId.trim() : '';
+    if (direct) {
+      return direct;
+    }
+
+    return this.findCurrentParticipation(task)?.id?.trim() || null;
+  }
+
+  private resolveParticipationIdFromTeam(team: StudentTeamResponse | null | undefined): string | null {
+    const participation = (team?.participations ?? []).find((item) =>
+      item.studentId != null && String(item.studentId) === this.studentId,
+    );
+    return participation?.id ? String(participation.id).trim() || null : null;
+  }
+
+  private resolveTaskAttachments(
+    task: StudentTaskResponse | null | undefined,
+    participationId: string | null,
+  ): NotificationAttachment[] {
+    const participation = this.findCurrentParticipation(task, participationId);
+    return this.mapAttachments(participation?.attachments ?? []);
+  }
+
+  private findCurrentParticipation(
+    task: StudentTaskResponse | null | undefined,
+    participationId: string | null = null,
+  ): StudentParticipationResponse | null {
+    const participations = (task?.teams ?? []).flatMap((team) => team.participations ?? []);
+    const normalizedParticipationId = participationId?.trim();
+
+    if (normalizedParticipationId) {
+      const byId = participations.find((participation) => String(participation.id ?? '') === normalizedParticipationId);
+      if (byId) {
+        return byId;
+      }
+    }
+
+    return participations.find((participation) =>
+      participation.studentId != null && String(participation.studentId) === this.studentId,
+    ) ?? null;
+  }
+
+  private ensureParticipationForUpload(task: StudentTask): Observable<string | null> {
+    if (task.participationId) {
+      return of(task.participationId);
+    }
+
+    if (task.maxTeamSize === 1) {
+      return this.http
+        .post<StudentTeamResponse>(withOpenApiBase(OPENAPI_PATHS.tasks.teams(task.id)), {
+          name: '',
+          captainId: this.studentId || null,
+        })
+        .pipe(
+          map((team) => {
+            const participationId = this.resolveParticipationIdFromTeam(team);
+            if (!participationId) {
+              return null;
+            }
+
+            this.replaceTask(this.upsertTeamInTask(
+              task,
+              this.mapTeamResponse(team, 'Команда', this.studentId || null),
+              participationId,
+            ));
+            return participationId;
+          }),
+          catchError(() => of(null)),
+        );
+    }
+
+    this.teamError = 'Сначала вступите в команду или создайте ее';
+    this.errorToastService.show(this.teamError, 'Нельзя прикрепить файл');
+    this.cdr.detectChanges();
+    return of(null);
+  }
+
+  private upsertTeamInTask(
+    task: StudentTask,
+    team: StudentTeam,
+    participationId: string | null,
+  ): StudentTask {
+    const teamExists = task.teams.some((item) => item.id === team.id);
+    const teams = teamExists
+      ? task.teams.map((item) => item.id === team.id ? team : item)
+      : [...task.teams, team];
+
+    return {
+      ...task,
+      participationId,
+      currentTeamId: team.id || task.currentTeamId,
+      teams,
+    };
+  }
+
+  private replaceTask(updatedTask: StudentTask): void {
+    this.selectedTask = this.selectedTask?.id === updatedTask.id ? updatedTask : this.selectedTask;
+    this.allTasks = this.allTasks.map((task) => task.id === updatedTask.id ? updatedTask : task);
+    this.tasks = this.tasks.map((task) => task.id === updatedTask.id ? updatedTask : task);
+  }
+
+  private appendTaskAttachment(taskId: string, attachment: NotificationAttachment): void {
+    const append = (task: StudentTask): StudentTask => {
+      if (task.id !== taskId) {
+        return task;
+      }
+
+      return {
+        ...task,
+        attachedWorks: this.mergeAttachments(task.attachedWorks, [attachment]),
+      };
+    };
+
+    this.selectedTask = this.selectedTask?.id === taskId ? append(this.selectedTask) : this.selectedTask;
+    this.allTasks = this.allTasks.map(append);
+    this.tasks = this.tasks.map(append);
+    this.cdr.detectChanges();
+  }
+
+  private mergeAttachments(
+    current: NotificationAttachment[],
+    incoming: NotificationAttachment[],
+  ): NotificationAttachment[] {
+    const result = [...current];
+    for (const attachment of incoming) {
+      const key = this.getAttachmentKey(attachment);
+      const exists = result.some((item) => this.getAttachmentKey(item) === key);
+      if (!exists) {
+        result.push(attachment);
+      }
+    }
+    return result;
+  }
+
+  private getAttachmentKey(attachment: NotificationAttachment): string {
+    return String(attachment.id ?? attachment.objectKey ?? attachment.fileName).trim();
   }
 
   private loadTaskComments(taskId: string): void {
@@ -858,42 +1005,51 @@ export class StudentPageComponent implements OnInit {
   private mapNotificationAttachments(
     notification: StudentNotificationResponse | null | undefined,
   ): NotificationAttachment[] {
-    const candidates: Array<StudentAttachmentResponse | null | undefined> = [
+    return this.mapAttachments([
       notification?.attachmentDownloadInfo,
       notification?.attachment,
       ...(notification?.attachmentDownloadInfos ?? []),
       ...(notification?.attachments ?? []),
-    ];
-    const result: NotificationAttachment[] = [];
+    ]);
+  }
 
-    for (const candidate of candidates) {
-      if (!candidate) {
-        continue;
-      }
+  private mapAttachments(
+    candidates: Array<StudentAttachmentResponse | null | undefined>,
+  ): NotificationAttachment[] {
+    return candidates
+      .map((candidate) => this.mapAttachment(candidate))
+      .filter((attachment): attachment is NotificationAttachment => Boolean(attachment));
+  }
 
-      const id = this.resolveAttachmentId(candidate.id ?? candidate.attachmentId);
-      const objectKey = (candidate.objectKey ?? '').trim() || null;
-      const fileName =
-        (candidate.fileName ?? candidate.name ?? candidate.objectKey ?? '').trim() || 'вложение';
-      const fileType = (candidate.fileType ?? candidate.contentType ?? '').trim();
-      const sizeCandidate = candidate.fileSize ?? candidate.size;
-      const fileSize =
-        typeof sizeCandidate === 'number' && Number.isFinite(sizeCandidate) && sizeCandidate >= 0
-          ? sizeCandidate
-          : null;
-
-      if (id || fileName) {
-        result.push({
-          id,
-          objectKey,
-          fileName,
-          fileType,
-          fileSize,
-        });
-      }
+  private mapAttachment(
+    candidate: StudentAttachmentResponse | null | undefined,
+  ): NotificationAttachment | null {
+    if (!candidate) {
+      return null;
     }
 
-    return result;
+    const id = this.resolveAttachmentId(candidate.id ?? candidate.attachmentId);
+    const objectKey = (candidate.objectKey ?? '').trim() || null;
+    const fileName =
+      (candidate.fileName ?? candidate.name ?? candidate.objectKey ?? '').trim() || 'вложение';
+    const fileType = (candidate.fileType ?? candidate.contentType ?? '').trim();
+    const sizeCandidate = candidate.fileSize ?? candidate.size;
+    const fileSize =
+      typeof sizeCandidate === 'number' && Number.isFinite(sizeCandidate) && sizeCandidate >= 0
+        ? sizeCandidate
+        : null;
+
+    if (!id && !fileName) {
+      return null;
+    }
+
+    return {
+      id,
+      objectKey,
+      fileName,
+      fileType,
+      fileSize,
+    };
   }
 
   private formatDate(value: string | undefined): string {
@@ -923,31 +1079,6 @@ export class StudentPageComponent implements OnInit {
       default:
         return RU.inProgress;
     }
-  }
-
-  private extractAttachmentId(response: unknown): string | null {
-    if (typeof response === 'number' && Number.isFinite(response) && response > 0) {
-      return String(response);
-    }
-
-    if (typeof response === 'string') {
-      const normalized = response.trim();
-      return normalized || null;
-    }
-
-    if (response && typeof response === 'object') {
-      const candidate = response as Record<string, unknown>;
-      const id = candidate['id'] ?? candidate['attachmentId'];
-      if (typeof id === 'number' && Number.isFinite(id) && id > 0) {
-        return String(id);
-      }
-      if (typeof id === 'string') {
-        const normalized = id.trim();
-        return normalized || null;
-      }
-    }
-
-    return null;
   }
 
   private resolveAttachmentId(value: unknown): string | null {
