@@ -1,5 +1,6 @@
 package com.hits.language_school_back.model;
 
+import com.hits.language_school_back.enums.PeerReviewDistributionType;
 import com.hits.language_school_back.enums.TaskResolveType;
 import com.hits.language_school_back.enums.TeamType;
 import jakarta.persistence.Entity;
@@ -53,6 +54,17 @@ public class Task {
     private LocalDateTime createdAt;
     private LocalDateTime finalizedAt;
 
+    @Builder.Default
+    private Boolean peerReviewEnabled = Boolean.FALSE;
+
+    @Enumerated(EnumType.STRING)
+    private PeerReviewDistributionType peerReviewDistributionType;
+
+    @Builder.Default
+    private Boolean peerReviewerVisibleToTeams = Boolean.FALSE;
+
+    private LocalDateTime peerReviewConfirmedAt;
+
     @NotNull
     @Enumerated(EnumType.STRING)
     private TeamType teamType;
@@ -77,4 +89,7 @@ public class Task {
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "task")
     private List<Team> teamList;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "task")
+    private List<PeerReviewAssignment> peerReviewAssignmentList;
 }

@@ -6,6 +6,7 @@ import com.hits.language_school_back.dto.TaskTeamCreateDTO;
 import com.hits.language_school_back.dto.TaskTeamDTO;
 import com.hits.language_school_back.dto.TaskTeamGradeDTO;
 import com.hits.language_school_back.dto.UserFullDTO;
+import com.hits.language_school_back.enums.PeerReviewDistributionType;
 import com.hits.language_school_back.enums.Role;
 import com.hits.language_school_back.enums.SolutionStatus;
 import com.hits.language_school_back.enums.TaskResolveType;
@@ -150,6 +151,39 @@ class TaskServiceTeamTypeTest {
     }
 
     @Test
+    void createTask_whenPeerReviewConfigured_persistsPeerReviewSettings() {
+        TaskDTO dto = baseTaskDto(TeamType.FREEROAM)
+                .peerReviewEnabled(true)
+                .peerReviewDistributionType(PeerReviewDistributionType.PAIR)
+                .peerReviewerVisibleToTeams(true)
+                .build();
+
+        when(userRepository.findById(teacherId)).thenReturn(Optional.of(teacher));
+        when(courseRepository.findById(courseId)).thenReturn(Optional.of(course));
+        when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Task result = taskService.createTask(dto, UserFullDTO.builder().id(teacherId).build());
+
+        assertThat(result.getPeerReviewEnabled()).isTrue();
+        assertThat(result.getPeerReviewDistributionType()).isEqualTo(PeerReviewDistributionType.PAIR);
+        assertThat(result.getPeerReviewerVisibleToTeams()).isTrue();
+    }
+
+    @Test
+    void createTask_whenPeerReviewEnabledWithoutDistribution_rejectsConfiguration() {
+        TaskDTO dto = baseTaskDto(TeamType.FREEROAM)
+                .peerReviewEnabled(true)
+                .build();
+
+        when(userRepository.findById(teacherId)).thenReturn(Optional.of(teacher));
+        when(courseRepository.findById(courseId)).thenReturn(Optional.of(course));
+
+        assertThatThrownBy(() -> taskService.createTask(dto, UserFullDTO.builder().id(teacherId).build()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("peerReviewDistributionType is required when peer review is enabled");
+    }
+
+    @Test
     void createTeam_whenFreeroam_allowsStudentToCreateOwnTeam() {
         Task task = persistedTask(TeamType.FREEROAM, 1, 3);
         when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
@@ -257,6 +291,21 @@ class TaskServiceTeamTypeTest {
         assertThatThrownBy(() -> taskService.editTask(TaskDTO.builder().name("New").build(), taskId, UUID.randomUUID()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Only the course teacher can manage this task");
+    }
+
+    @Test
+    void editTask_whenPeerReviewerVisibilityChanged_rejectsEdit() {
+        Task task = persistedTask(TeamType.FREEROAM, 1, 3);
+        task.setPeerReviewerVisibleToTeams(false);
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+
+        assertThatThrownBy(() -> taskService.editTask(
+                TaskDTO.builder().peerReviewerVisibleToTeams(true).build(),
+                taskId,
+                teacherId
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("peerReviewerVisibleToTeams cannot be changed after task creation");
     }
 
     @Test

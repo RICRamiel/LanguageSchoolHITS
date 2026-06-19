@@ -1,5 +1,6 @@
 package com.hits.language_school_back.dto;
 
+import com.hits.language_school_back.enums.PeerReviewDistributionType;
 import com.hits.language_school_back.enums.TaskResolveType;
 import com.hits.language_school_back.enums.TeamType;
 import lombok.AllArgsConstructor;
@@ -9,6 +10,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
@@ -32,4 +34,8 @@ public class TaskDTO {
     private TeamType teamType;
     private TaskResolveType resolveType;
     private Boolean submissionClosed;
+    private Boolean peerReviewEnabled;
+    private PeerReviewDistributionType peerReviewDistributionType;
+    private Boolean peerReviewerVisibleToTeams;
+    private LocalDateTime peerReviewConfirmedAt;
 }

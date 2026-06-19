@@ -1,5 +1,6 @@
 package com.hits.language_school_back.dto;
 
+import com.hits.language_school_back.enums.PeerReviewDistributionType;
 import com.hits.language_school_back.enums.TaskResolveType;
 import com.hits.language_school_back.enums.TeamType;
 import lombok.AllArgsConstructor;
@@ -33,6 +34,10 @@ public class TaskTeacherDTO {
     private TaskResolveType resolveType;
     private Boolean submissionClosed;
     private LocalDateTime finalizedAt;
+    private Boolean peerReviewEnabled;
+    private PeerReviewDistributionType peerReviewDistributionType;
+    private Boolean peerReviewerVisibleToTeams;
+    private LocalDateTime peerReviewConfirmedAt;
     private List<CommentDTO> commentList;
     private List<AttachmentDownloadInfo> attachmentDownloadInfos;
     private List<TaskTeamDTO> teams;

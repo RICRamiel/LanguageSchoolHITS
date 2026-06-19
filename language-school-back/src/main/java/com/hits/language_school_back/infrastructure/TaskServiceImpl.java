@@ -10,6 +10,7 @@ import com.hits.language_school_back.dto.TaskTeamCreateDTO;
 import com.hits.language_school_back.dto.TaskTeamDTO;
 import com.hits.language_school_back.dto.TaskTeamGradeDTO;
 import com.hits.language_school_back.dto.UserFullDTO;
+import com.hits.language_school_back.enums.PeerReviewDistributionType;
 import com.hits.language_school_back.enums.Role;
 import com.hits.language_school_back.enums.SolutionStatus;
 import com.hits.language_school_back.enums.TaskResolveType;
@@ -127,6 +128,7 @@ public class TaskServiceImpl implements TaskService {
     public Task editTask(TaskDTO taskDTO, UUID taskId, UUID actorId) {
         Task task = getTask(taskId);
         ensureTeacherCanManageCourse(actorId, task.getCourse());
+        ensurePeerReviewerVisibilityImmutable(taskDTO, task);
 
         Course course = task.getCourse();
         if (taskDTO.getCourseId() != null && !taskDTO.getCourseId().equals(course.getId())) {
@@ -350,6 +352,22 @@ public class TaskServiceImpl implements TaskService {
         } else if (task.getSubmissionClosed() == null) {
             task.setSubmissionClosed(Boolean.FALSE);
         }
+        if (taskDTO.getPeerReviewEnabled() != null) {
+            task.setPeerReviewEnabled(taskDTO.getPeerReviewEnabled());
+        } else if (task.getPeerReviewEnabled() == null) {
+            task.setPeerReviewEnabled(Boolean.FALSE);
+        }
+        if (taskDTO.getPeerReviewDistributionType() != null) {
+            task.setPeerReviewDistributionType(taskDTO.getPeerReviewDistributionType());
+        }
+        if (taskDTO.getPeerReviewerVisibleToTeams() != null) {
+            task.setPeerReviewerVisibleToTeams(taskDTO.getPeerReviewerVisibleToTeams());
+        } else if (task.getPeerReviewerVisibleToTeams() == null) {
+            task.setPeerReviewerVisibleToTeams(Boolean.FALSE);
+        }
+        if (taskDTO.getPeerReviewConfirmedAt() != null) {
+            task.setPeerReviewConfirmedAt(taskDTO.getPeerReviewConfirmedAt());
+        }
 
         task.setCourse(course);
         task.setCreatedBy(creator);
@@ -402,6 +420,7 @@ public class TaskServiceImpl implements TaskService {
         if (teamType == TeamType.DRAFT && task.getTeamsCreationTimeout() == null && taskDTO.getTeamsCreationTimeout() == null) {
             throw new IllegalArgumentException("teamsCreationTimeout is required for draft team creation");
         }
+        validatePeerReviewConfiguration(taskDTO, task);
 
         task.setTeamType(teamType);
         task.setResolveType(resolveType);
@@ -411,6 +430,28 @@ public class TaskServiceImpl implements TaskService {
         task.setMaxTeamsAmount(maxTeamsAmount);
         if (teamType != TeamType.DRAFT) {
             task.setTeamsCreationTimeout(null);
+        }
+    }
+
+    private void validatePeerReviewConfiguration(TaskDTO taskDTO, Task task) {
+        Boolean peerReviewEnabled = taskDTO.getPeerReviewEnabled() == null
+                ? task.getPeerReviewEnabled()
+                : taskDTO.getPeerReviewEnabled();
+        PeerReviewDistributionType distributionType = taskDTO.getPeerReviewDistributionType() == null
+                ? task.getPeerReviewDistributionType()
+                : taskDTO.getPeerReviewDistributionType();
+        if (Boolean.TRUE.equals(peerReviewEnabled) && distributionType == null) {
+            throw new IllegalArgumentException("peerReviewDistributionType is required when peer review is enabled");
+        }
+    }
+
+    private void ensurePeerReviewerVisibilityImmutable(TaskDTO taskDTO, Task task) {
+        if (taskDTO.getPeerReviewerVisibleToTeams() == null) {
+            return;
+        }
+        Boolean currentVisibility = Boolean.TRUE.equals(task.getPeerReviewerVisibleToTeams());
+        if (!Objects.equals(currentVisibility, taskDTO.getPeerReviewerVisibleToTeams())) {
+            throw new IllegalArgumentException("peerReviewerVisibleToTeams cannot be changed after task creation");
         }
     }
 

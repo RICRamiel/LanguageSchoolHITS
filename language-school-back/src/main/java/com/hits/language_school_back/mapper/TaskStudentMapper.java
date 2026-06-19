@@ -47,6 +47,10 @@ public class TaskStudentMapper {
                 .participationId(userParticipation == null ? null : userParticipation.getId())
                 .currentTeamId(userParticipation == null || userParticipation.getTeam() == null ? null : userParticipation.getTeam().getId())
                 .finalizedAt(task.getFinalizedAt())
+                .peerReviewEnabled(task.getPeerReviewEnabled())
+                .peerReviewDistributionType(task.getPeerReviewDistributionType())
+                .peerReviewerVisibleToTeams(task.getPeerReviewerVisibleToTeams())
+                .peerReviewConfirmedAt(task.getPeerReviewConfirmedAt())
                 .teams(task.getTeamList() == null ? List.of() : task.getTeamList().stream().map(taskTeamMapper::toDto).toList())
                 .build();
     }

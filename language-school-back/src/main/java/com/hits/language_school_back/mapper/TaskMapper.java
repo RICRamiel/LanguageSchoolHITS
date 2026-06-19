@@ -24,6 +24,10 @@ public class TaskMapper {
                 .teamType(task.getTeamType())
                 .resolveType(task.getResolveType())
                 .submissionClosed(task.getSubmissionClosed())
+                .peerReviewEnabled(task.getPeerReviewEnabled())
+                .peerReviewDistributionType(task.getPeerReviewDistributionType())
+                .peerReviewerVisibleToTeams(task.getPeerReviewerVisibleToTeams())
+                .peerReviewConfirmedAt(task.getPeerReviewConfirmedAt())
                 .build();
     }
 }

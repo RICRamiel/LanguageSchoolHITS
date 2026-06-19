@@ -1,5 +1,6 @@
 package com.hits.language_school_back.dto;
 
+import com.hits.language_school_back.enums.PeerReviewDistributionType;
 import com.hits.language_school_back.enums.TaskResolveType;
 import com.hits.language_school_back.enums.TaskStatus;
 import com.hits.language_school_back.enums.TeamType;
@@ -38,5 +39,9 @@ public class TaskStudentDTO {
     private UUID participationId;
     private UUID currentTeamId;
     private LocalDateTime finalizedAt;
+    private Boolean peerReviewEnabled;
+    private PeerReviewDistributionType peerReviewDistributionType;
+    private Boolean peerReviewerVisibleToTeams;
+    private LocalDateTime peerReviewConfirmedAt;
     private List<TaskTeamDTO> teams;
 }
