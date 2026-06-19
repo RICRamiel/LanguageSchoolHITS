@@ -6,11 +6,15 @@ import { AdminService, type AdminGroupDTO, type AdminUserDTO } from '../../../co
 import { catchError, EMPTY, finalize, forkJoin, map, of } from 'rxjs';
 
 function toGroup(dto: AdminGroupDTO): Group {
+  const teacherName = [dto.teacher?.firstName, dto.teacher?.lastName]
+    .filter(Boolean)
+    .join(' ');
+
   return {
     id: dto.id ?? '',
     name: dto.name ?? '',
     language: dto.language?.name ?? '',
-    teacherName: '—',
+    teacherName: teacherName || dto.teacher?.email || '—',
     studentsCount: 0,
   };
 }

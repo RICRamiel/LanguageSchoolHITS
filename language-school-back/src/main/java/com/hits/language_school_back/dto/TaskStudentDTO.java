@@ -25,11 +25,17 @@ public class TaskStudentDTO {
     private UUID courseId;
     private String courseName;
     private Integer totalPoints;
+    private Integer maxTeamSize;
+    private Integer minTeamSize;
+    private Integer maxTeamsAmount;
+    private Integer minTeamsAmount;
+    private Integer votesThreshold;
     private TeamType teamType;
     private TaskResolveType resolveType;
     private Boolean submissionClosed;
     private TaskStatus taskStatus;
     private UserDTO teacher;
+    private UUID participationId;
     private UUID currentTeamId;
     private LocalDateTime finalizedAt;
     private List<TaskTeamDTO> teams;

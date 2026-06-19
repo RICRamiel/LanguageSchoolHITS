@@ -24,6 +24,8 @@ public class TaskStudentMapper {
     }
 
     public TaskStudentDTO toDto(Task task, UUID userId) {
+        Participation userParticipation = findParticipation(task, userId);
+
         return TaskStudentDTO.builder()
                 .id(task.getId())
                 .name(task.getName())
@@ -32,12 +34,18 @@ public class TaskStudentMapper {
                 .courseId(task.getCourse() == null ? null : task.getCourse().getId())
                 .courseName(task.getCourse() == null ? null : task.getCourse().getName())
                 .totalPoints(task.getTotalPoints())
+                .maxTeamSize(task.getMaxTeamSize())
+                .minTeamSize(task.getMinTeamSize())
+                .maxTeamsAmount(task.getMaxTeamsAmount())
+                .minTeamsAmount(task.getMinTeamsAmount())
+                .votesThreshold(task.getVotesThreshold())
                 .teamType(task.getTeamType())
                 .resolveType(task.getResolveType())
                 .submissionClosed(task.getSubmissionClosed())
                 .taskStatus(resolveStatus(task, userId))
                 .teacher(task.getCourse() == null || task.getCourse().getTeacher() == null ? null : userMapper.userToUserDto(task.getCourse().getTeacher()))
-                .currentTeamId(resolveCurrentTeamId(task, userId))
+                .participationId(userParticipation == null ? null : userParticipation.getId())
+                .currentTeamId(userParticipation == null || userParticipation.getTeam() == null ? null : userParticipation.getTeam().getId())
                 .finalizedAt(task.getFinalizedAt())
                 .teams(task.getTeamList() == null ? List.of() : task.getTeamList().stream().map(taskTeamMapper::toDto).toList())
                 .build();
@@ -62,12 +70,10 @@ public class TaskStudentMapper {
         return TaskStatus.PENDING;
     }
 
-    private UUID resolveCurrentTeamId(Task task, UUID userId) {
-        Participation participation = findParticipation(task, userId);
-        return participation == null || participation.getTeam() == null ? null : participation.getTeam().getId();
-    }
-
     private Participation findParticipation(Task task, UUID userId) {
+        if (userId == null) {
+            return null;
+        }
         if (task.getTeamList() == null) {
             return null;
         }

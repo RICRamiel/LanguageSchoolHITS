@@ -39,8 +39,8 @@ public class CourseServiceImpl {
         Language lang = languageRepository.findById(dto.getLanguageId()).orElseThrow(() -> new LanguageNotFoundException("language with id" + dto.getLanguageId() + " not found"));
 
         Course course = Course.builder().name(dto.getName()).description(dto.getDescription()).teacher(teacher).language(lang).satisfactorilyMarkThreshold(dto.getSatisfactorilyMarkThreshold()).goodMarkThreshold(dto.getGoodMarkThreshold()).excellentMarkThreshold(dto.getExcellentMarkThreshold()).build();
-        courseRepository.save(course);
-        return CourseMapper.courseToCourseDTO(course);
+        Course saved = courseRepository.save(course);
+        return CourseMapper.courseToCourseDTO(saved);
     }
 
     public void deleteCourse(UUID courseId) {

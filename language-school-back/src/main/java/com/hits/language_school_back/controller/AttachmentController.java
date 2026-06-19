@@ -1,6 +1,7 @@
 package com.hits.language_school_back.controller;
 
 import com.hits.language_school_back.dto.AttachmentDownloadInfo;
+import com.hits.language_school_back.model.Attachment;
 import com.hits.language_school_back.service.AttachmentService;
 import com.hits.language_school_back.service.MinioService;
 import com.hits.language_school_back.service.UserService;
@@ -35,27 +36,27 @@ public class AttachmentController {
     private final MinioService minioService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public void uploadAttachment(
+    public AttachmentDownloadInfo uploadAttachment(
             @RequestParam("taskId") UUID taskId,
             @RequestParam("file") MultipartFile file,
             HttpServletRequest request) {
-        attachmentService.uploadAttachment(taskId, file, userService.getMe(request).getId());
+        return mapAttachment(attachmentService.uploadAttachment(taskId, file, userService.getMe(request).getId()));
     }
 
     @PostMapping(value = "/to-notification", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public void uploadAttachmentForNotification(
+    public AttachmentDownloadInfo uploadAttachmentForNotification(
             @RequestParam("taskId") UUID notificationId,
             @RequestParam("file") MultipartFile file,
             HttpServletRequest request) {
-        attachmentService.uploadAttachmentForNotification(notificationId, file, userService.getMe(request).getId());
+        return mapAttachment(attachmentService.uploadAttachmentForNotification(notificationId, file, userService.getMe(request).getId()));
     }
 
     @PostMapping(value = "/to-participation", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public void uploadAttachmentForParticipation(
+    public AttachmentDownloadInfo uploadAttachmentForParticipation(
             @RequestParam("participationId") UUID participationId,
             @RequestParam("file") MultipartFile file,
             HttpServletRequest request) {
-        attachmentService.uploadAttachmentForParticipation(participationId, file, userService.getMe(request).getId());
+        return mapAttachment(attachmentService.uploadAttachmentForParticipation(participationId, file, userService.getMe(request).getId()));
     }
 
     @DeleteMapping("/{attachmentId}")
@@ -89,5 +90,15 @@ public class AttachmentController {
             log.error("Error downloading attachment {}: {}", attachmentId, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    private AttachmentDownloadInfo mapAttachment(Attachment attachment) {
+        return AttachmentDownloadInfo.builder()
+                .id(attachment.getId())
+                .fileName(attachment.getFileName())
+                .fileType(attachment.getFileType())
+                .fileSize(attachment.getFileSize())
+                .objectKey(attachment.getObjectKey())
+                .build();
     }
 }

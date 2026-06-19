@@ -15,6 +15,7 @@ public class CourseDTO {
     UUID id;
     String name;
     String description;
+    UserDTO teacher;
     Integer satisfactorilyMarkThreshold;
     Integer goodMarkThreshold;
     Integer excellentMarkThreshold;

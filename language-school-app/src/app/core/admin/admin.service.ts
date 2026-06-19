@@ -9,6 +9,7 @@ export type AdminGroupDTO = {
   name?: string;
   description?: string;
   language?: { name?: string };
+  teacher?: AdminUserDTO | null;
 };
 export type AdminUserDTO = {
   id?: string;

@@ -4,7 +4,7 @@ package com.hits.language_school_back.advice;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.security.SignatureException;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.HibernateException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.access.AccessDeniedException;
@@ -21,48 +21,71 @@ import java.util.concurrent.atomic.AtomicReference;
 @Slf4j
 @RestControllerAdvice
 public class CustomExceptionHandler {
-    @ExceptionHandler(Exception.class)
-    public ProblemDetail handleSecurityException(Exception e) {
-        ProblemDetail errorDetail = null;
-
+    @ExceptionHandler(BadCredentialsException.class)
+    public ProblemDetail handleBadCredentialsException(BadCredentialsException e) {
         log.warn(e.getMessage(), e);
 
-        if (e instanceof BadCredentialsException) {
-            errorDetail = ProblemDetail
-                    .forStatusAndDetail(HttpStatusCode.valueOf(401), e.getMessage());
-            errorDetail.setProperty("access_denied_reason", "Authentication Failure");
-        }
-        if (e instanceof InternalAuthenticationServiceException) {
-            errorDetail = ProblemDetail
-                    .forStatusAndDetail(HttpStatusCode.valueOf(401), "Bad Credentials");
-            errorDetail.setProperty("access_denied_reason", "Authentication Failure");
-        }
-
-        if (e instanceof AccessDeniedException) {
-            errorDetail = ProblemDetail
-                    .forStatusAndDetail(HttpStatusCode.valueOf(403), e.getMessage());
-            errorDetail.setProperty("access_denied_reason", "Not Authorized");
-        }
-
-        if (e instanceof AuthorizationDeniedException) {
-            errorDetail = ProblemDetail
-                    .forStatusAndDetail(HttpStatusCode.valueOf(403), e.getMessage());
-            errorDetail.setProperty("access_denied_reason", "Not Authorized");
-        }
-
-        if (e instanceof SignatureException) {
-            errorDetail = ProblemDetail
-                    .forStatusAndDetail(HttpStatusCode.valueOf(403), e.getMessage());
-            errorDetail.setProperty("access_denied_reason", "JWT Signature Error");
-        }
-
-        if (e instanceof ExpiredJwtException) {
-            errorDetail = ProblemDetail
-                    .forStatusAndDetail(HttpStatusCode.valueOf(403), e.getMessage());
-            errorDetail.setProperty("access_denied_reason", "JWT Token Expired");
-        }
-
+        ProblemDetail errorDetail = ProblemDetail
+                .forStatusAndDetail(HttpStatusCode.valueOf(401), e.getMessage());
+        errorDetail.setProperty("access_denied_reason", "Authentication Failure");
         return errorDetail;
+    }
+
+    @ExceptionHandler(InternalAuthenticationServiceException.class)
+    public ProblemDetail handleInternalAuthenticationServiceException(InternalAuthenticationServiceException e) {
+        log.warn(e.getMessage(), e);
+
+        ProblemDetail errorDetail = ProblemDetail
+                .forStatusAndDetail(HttpStatusCode.valueOf(401), "Bad Credentials");
+        errorDetail.setProperty("access_denied_reason", "Authentication Failure");
+        return errorDetail;
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ProblemDetail handleAccessDeniedException(AccessDeniedException e) {
+        log.warn(e.getMessage(), e);
+
+        ProblemDetail errorDetail = ProblemDetail
+                .forStatusAndDetail(HttpStatusCode.valueOf(403), e.getMessage());
+        errorDetail.setProperty("access_denied_reason", "Not Authorized");
+        return errorDetail;
+    }
+
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ProblemDetail handleAuthorizationDeniedException(AuthorizationDeniedException e) {
+        log.warn(e.getMessage(), e);
+
+        ProblemDetail errorDetail = ProblemDetail
+                .forStatusAndDetail(HttpStatusCode.valueOf(403), e.getMessage());
+        errorDetail.setProperty("access_denied_reason", "Not Authorized");
+        return errorDetail;
+    }
+
+    @ExceptionHandler(SignatureException.class)
+    public ProblemDetail handleSignatureException(SignatureException e) {
+        log.warn(e.getMessage(), e);
+
+        ProblemDetail errorDetail = ProblemDetail
+                .forStatusAndDetail(HttpStatusCode.valueOf(403), e.getMessage());
+        errorDetail.setProperty("access_denied_reason", "JWT Signature Error");
+        return errorDetail;
+    }
+
+    @ExceptionHandler(ExpiredJwtException.class)
+    public ProblemDetail handleExpiredJwtException(ExpiredJwtException e) {
+        log.warn(e.getMessage(), e);
+
+        ProblemDetail errorDetail = ProblemDetail
+                .forStatusAndDetail(HttpStatusCode.valueOf(403), e.getMessage());
+        errorDetail.setProperty("access_denied_reason", "JWT Token Expired");
+        return errorDetail;
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ProblemDetail handleDataIntegrityViolationException(DataIntegrityViolationException e) {
+        log.warn(e.getMessage(), e);
+
+        return ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(409), "Data integrity violation");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

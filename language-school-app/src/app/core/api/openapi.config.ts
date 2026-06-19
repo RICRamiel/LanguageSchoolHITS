@@ -1,6 +1,6 @@
 import { API_URL } from '../../../secrets';
 
-const OPENAPI_SERVER_URL = 'http://api.thallassianangel.su:5461';
+const OPENAPI_SERVER_URL = 'https://api.thallassianangel.su';
 
 export const OPENAPI_PATHS = {
   auth: {
@@ -22,6 +22,7 @@ export const OPENAPI_PATHS = {
   attachments: {
     upload: '/attachments',
     uploadToNotification: '/attachments/to-notification',
+    uploadToParticipation: '/attachments/to-participation',
     download: (attachmentId: string | number) => `/attachments/${attachmentId}/download`,
   },
   tasks: {

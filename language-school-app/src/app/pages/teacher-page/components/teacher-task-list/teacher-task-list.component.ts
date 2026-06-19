@@ -38,4 +38,26 @@ export class TeacherTaskListComponent {
         return 'task-card__status--pending';
     }
   }
+
+  getTeamSizeLabel(task: TeacherTask): string {
+    return `В команде: ${this.formatRange(task.minTeamSize, task.maxTeamSize)}`;
+  }
+
+  getTeamsAmountLabel(task: TeacherTask): string {
+    const limit = this.formatRange(task.minTeamsAmount, task.maxTeamsAmount);
+    return task.teams.length > 0 ? `Команд: ${task.teams.length} / ${limit}` : `Команд: ${limit}`;
+  }
+
+  private formatRange(min: number | null, max: number | null): string {
+    if (min !== null && max !== null) {
+      return min === max ? String(min) : `${min}-${max}`;
+    }
+    if (min !== null) {
+      return `от ${min}`;
+    }
+    if (max !== null) {
+      return `до ${max}`;
+    }
+    return 'не задано';
+  }
 }

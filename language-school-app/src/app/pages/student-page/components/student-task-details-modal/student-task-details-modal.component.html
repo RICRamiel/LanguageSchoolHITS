@@ -43,15 +43,24 @@
       </button>
     </div>
 
-    @if (uploadedFileLink()) {
-      <a
-        class="modal__download-link"
-        [href]="uploadedFileLink()!"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        &#1057;&#1082;&#1072;&#1095;&#1072;&#1090;&#1100; &#1087;&#1088;&#1080;&#1082;&#1088;&#1077;&#1087;&#1083;&#1077;&#1085;&#1085;&#1099;&#1081; &#1092;&#1072;&#1081;&#1083;
-      </a>
+    @if (task().attachedWorks.length) {
+      <div class="modal__attachments">
+        <h4 class="modal__comments-title">Прикрепленные файлы</h4>
+        <ul class="modal__attachment-list">
+          @for (attachment of task().attachedWorks; track attachment.id || attachment.objectKey || attachment.fileName) {
+            <li class="modal__attachment-item">
+              <span class="modal__attachment-name">{{ attachment.fileName }}</span>
+              <button
+                class="modal__download-link"
+                type="button"
+                (click)="downloadAttachment.emit(attachment)"
+              >
+                Скачать
+              </button>
+            </li>
+          }
+        </ul>
+      </div>
     }
 
     @if (task().teamType && task().teamType !== 'RANDOM' && task().teamType !== 'INDIVIDUAL') {

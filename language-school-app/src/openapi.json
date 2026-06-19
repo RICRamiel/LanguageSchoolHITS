@@ -6,7 +6,7 @@
   },
   "servers": [
     {
-      "url": "http://api.thallassianangel.su:5461",
+      "url": "https://api.thallassianangel.su",
       "description": "Generated server url"
     }
   ],

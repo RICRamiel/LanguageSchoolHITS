@@ -1,6 +1,6 @@
 import type { Page, Route } from '@playwright/test';
 
-const API_BASE = 'http://worker.thallassianangel.su';
+const API_BASE = 'https://api.thallassianangel.su';
 
 function json(route: Route, body: unknown, status = 200) {
   return route.fulfill({

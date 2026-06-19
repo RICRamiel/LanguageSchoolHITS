@@ -20,8 +20,10 @@ export type StudentTask = {
   dueText: string;
   groupId: string | null;
   teamType: string | null;
+  maxTeamSize: number | null;
   currentTeamId: string | null;
   teams: StudentTeam[];
+  attachedWorks: NotificationAttachment[];
 };
 
 export type StudentTaskComment = {

@@ -39,6 +39,7 @@ type TeacherTeamResponse = {
     studentId?: string;
     studentName?: string;
     mark?: number | null;
+    attachments?: TeacherAttachmentResponse[] | null;
   }> | null;
 };
 
@@ -793,19 +794,29 @@ export class TeacherService {
   }
 
   private mapTeam(team: TeacherTeamResponse | null | undefined): TaskTeam {
+    const participations = (team?.participations ?? [])
+      .map((item) => ({
+        id: (item?.id ?? '').trim(),
+        studentId: (item?.studentId ?? '').trim(),
+        studentName: (item?.studentName ?? '').trim(),
+        mark: typeof item?.mark === 'number' && Number.isFinite(item.mark) ? item.mark : null,
+        attachments: this.mapAttachments(
+          item?.attachments ?? [],
+          {
+            studentName: (item?.studentName ?? '').trim() || null,
+            teamName: (team?.name ?? '').trim() || null,
+            participationId: (item?.id ?? '').trim() || null,
+          },
+        ),
+      }))
+      .filter((item) => Boolean(item.id) && Boolean(item.studentId));
+
     return {
       id: (team?.id ?? '').trim(),
       name: (team?.name ?? '').trim() || 'Команда',
-      membersCount: typeof team?.membersCount === 'number' ? team.membersCount : null,
+      membersCount: typeof team?.membersCount === 'number' ? team.membersCount : participations.length,
       captainId: (team?.captainId ?? null) ? String(team?.captainId) : null,
-      participations: (team?.participations ?? [])
-        .map((item) => ({
-          id: (item?.id ?? '').trim(),
-          studentId: (item?.studentId ?? '').trim(),
-          studentName: (item?.studentName ?? '').trim(),
-          mark: typeof item?.mark === 'number' && Number.isFinite(item.mark) ? item.mark : null,
-        }))
-        .filter((item) => Boolean(item.id) && Boolean(item.studentId)),
+      participations,
     };
   }
 
@@ -822,28 +833,76 @@ export class TeacherService {
   }
 
   private mapTaskAttachments(task: TeacherTaskResponse | null | undefined): TeacherTask['attachedWorks'] {
-    return (task?.attachmentDownloadInfos ?? [])
-      .map((attachment) => {
-        const id = this.resolveAttachmentId(attachment?.id ?? attachment?.attachmentId);
-        const objectKey = (attachment?.objectKey ?? '').trim() || null;
-        const fileName =
-          (attachment?.fileName ?? attachment?.name ?? attachment?.objectKey ?? '').trim() || 'вложение';
-        const fileType = (attachment?.fileType ?? attachment?.contentType ?? '').trim();
-        const sizeCandidate = attachment?.fileSize ?? attachment?.size;
-        const fileSize =
-          typeof sizeCandidate === 'number' && Number.isFinite(sizeCandidate) && sizeCandidate >= 0
-            ? sizeCandidate
-            : null;
+    const legacyTaskAttachments = this.mapAttachments(task?.attachmentDownloadInfos ?? [], {
+      studentName: null,
+      teamName: null,
+      participationId: null,
+    });
 
-        return {
-          id,
-          fileName,
-          fileType,
-          fileSize,
-          objectKey,
-        };
-      })
-      .filter((attachment) => Boolean(attachment.fileName));
+    const participationAttachments = (task?.teams ?? []).flatMap((team) =>
+      (team.participations ?? []).flatMap((participation) =>
+        this.mapAttachments(participation.attachments ?? [], {
+          studentName: (participation.studentName ?? '').trim() || null,
+          teamName: (team.name ?? '').trim() || null,
+          participationId: (participation.id ?? '').trim() || null,
+        }),
+      ),
+    );
+
+    return this.deduplicateAttachments([...participationAttachments, ...legacyTaskAttachments]);
+  }
+
+  private mapAttachments(
+    attachments: TeacherAttachmentResponse[],
+    meta: Pick<TeacherTask['attachedWorks'][number], 'studentName' | 'teamName' | 'participationId'>,
+  ): TeacherTask['attachedWorks'] {
+    return attachments
+      .map((attachment) => this.mapTaskAttachment(attachment, meta))
+      .filter((attachment): attachment is TeacherTask['attachedWorks'][number] => attachment !== null);
+  }
+
+  private mapTaskAttachment(
+    attachment: TeacherAttachmentResponse | null | undefined,
+    meta: Pick<TeacherTask['attachedWorks'][number], 'studentName' | 'teamName' | 'participationId'>,
+  ): TeacherTask['attachedWorks'][number] | null {
+    const id = this.resolveAttachmentId(attachment?.id ?? attachment?.attachmentId);
+    const objectKey = (attachment?.objectKey ?? '').trim() || null;
+    const fileName =
+      (attachment?.fileName ?? attachment?.name ?? attachment?.objectKey ?? '').trim() || 'вложение';
+    const fileType = (attachment?.fileType ?? attachment?.contentType ?? '').trim();
+    const sizeCandidate = attachment?.fileSize ?? attachment?.size;
+    const fileSize =
+      typeof sizeCandidate === 'number' && Number.isFinite(sizeCandidate) && sizeCandidate >= 0
+        ? sizeCandidate
+        : null;
+
+    if (!id && !objectKey && !fileName) {
+      return null;
+    }
+
+    return {
+      id,
+      fileName,
+      fileType,
+      fileSize,
+      objectKey,
+      studentName: meta.studentName,
+      teamName: meta.teamName,
+      participationId: meta.participationId,
+    };
+  }
+
+  private deduplicateAttachments(attachments: TeacherTask['attachedWorks']): TeacherTask['attachedWorks'] {
+    const byKey = new Map<string, TeacherTask['attachedWorks'][number]>();
+    for (const attachment of attachments) {
+      const key = String(attachment.id ?? attachment.objectKey ?? `${attachment.participationId}:${attachment.fileName}`).trim();
+      if (!key || byKey.has(key)) {
+        continue;
+      }
+      byKey.set(key, attachment);
+    }
+
+    return [...byKey.values()];
   }
 
   private mapNotification(

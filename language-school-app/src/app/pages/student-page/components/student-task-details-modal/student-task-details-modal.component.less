@@ -60,10 +60,43 @@
 }
 
 .modal__download-link {
-  display: inline-block;
-  margin-top: 14px;
+  border: 0;
+  background: transparent;
   color: #1d4ed8;
   text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}
+
+.modal__attachments {
+  margin-top: 16px;
+}
+
+.modal__attachment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.modal__attachment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f9fafb;
+}
+
+.modal__attachment-name {
+  min-width: 0;
+  color: #111827;
+  overflow-wrap: anywhere;
 }
 
 .modal__comments {

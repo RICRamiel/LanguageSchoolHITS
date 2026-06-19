@@ -8,23 +8,42 @@ import { catchError, EMPTY, finalize, forkJoin, map, of, switchMap } from 'rxjs'
 
 function toStudent(
   dto: AdminUserDTO,
-  groupNameFromMap?: string,
+  groupNamesFromMap?: string[],
   groupIdsFromMap?: string[],
 ): Student {
   const first = dto.firstName ?? '';
   const last = dto.lastName ?? '';
   const fullName = [first, last].filter(Boolean).join(' ') || '—';
-  const groupName =
-    groupNameFromMap ??
-    (Array.isArray(dto.groups) ? dto.groups.map((gr) => gr.name).filter(Boolean).join(', ') : undefined) ??
-    '—';
+  const groupNames = groupNamesFromMap?.length ? groupNamesFromMap : getGroupNames(dto);
+  const groupIds = groupIdsFromMap?.length ? groupIdsFromMap : getGroupIds(dto);
+
   return {
     id: dto.id ?? '',
     fullName,
     email: dto.email ?? '',
-    groupName,
-    groupIds: groupIdsFromMap,
+    groupName: groupNames.length > 0 ? groupNames.join(', ') : '—',
+    groupIds,
   };
+}
+
+function getGroupNames(dto: AdminUserDTO): string[] {
+  if (!Array.isArray(dto.groups)) {
+    return [];
+  }
+
+  return unique(dto.groups.map((group) => group.name?.trim()).filter((name): name is string => !!name));
+}
+
+function getGroupIds(dto: AdminUserDTO): string[] {
+  if (!Array.isArray(dto.groups)) {
+    return [];
+  }
+
+  return unique(dto.groups.map((group) => group.id).filter((id): id is string => !!id));
+}
+
+function unique(values: string[]): string[] {
+  return [...new Set(values)];
 }
 
 function toGroup(dto: AdminGroupDTO): Group {
@@ -89,8 +108,7 @@ export class StudentsTabComponent implements OnInit {
                   groupDtos.map((g) =>
                     this.adminService.getStudentsByGroupId(g.id ?? '').pipe(
                       map((students) => {
-                        const fromResponse = students[0]?.groups?.[0]?.name;
-                        const groupName = (fromResponse ?? g.name ?? '—').trim() || '—';
+                        const groupName = (g.name ?? '—').trim() || '—';
                         return { groupId: g.id ?? '', groupName, students };
                       }),
                       catchError(() =>
@@ -116,8 +134,12 @@ export class StudentsTabComponent implements OnInit {
                 studentToGroupNames.set(id, []);
                 studentToGroupIds.set(id, []);
               }
-              studentToGroupNames.get(id)!.push(groupName);
-              studentToGroupIds.get(id)!.push(groupId);
+              if (groupName && !studentToGroupNames.get(id)!.includes(groupName)) {
+                studentToGroupNames.get(id)!.push(groupName);
+              }
+              if (groupId && !studentToGroupIds.get(id)!.includes(groupId)) {
+                studentToGroupIds.get(id)!.push(groupId);
+              }
             }
           }
           return {
@@ -125,8 +147,7 @@ export class StudentsTabComponent implements OnInit {
               const id = s.id ?? '';
               const names = studentToGroupNames.get(id);
               const ids = studentToGroupIds.get(id);
-              const groupNameStr = names?.length ? names.join(', ') : undefined;
-              return toStudent(s, groupNameStr, ids);
+              return toStudent(s, names, ids);
             }),
             groups: groupDtos.map(toGroup),
           };

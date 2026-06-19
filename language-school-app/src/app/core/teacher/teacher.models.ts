@@ -19,6 +19,9 @@ export type TeacherTaskSubmission = {
   fileType: string;
   fileSize: number | null;
   objectKey: string | null;
+  studentName: string | null;
+  teamName: string | null;
+  participationId: string | null;
 };
 
 export type TeacherTaskComment = {
@@ -40,6 +43,7 @@ export type TaskTeamParticipation = {
   studentId: string;
   studentName: string;
   mark: number | null;
+  attachments: TeacherTaskSubmission[];
 };
 
 export type TeacherTask = {

@@ -1,0 +1,23 @@
+<section class="error-toasts" aria-live="assertive" aria-label="Ошибки">
+  @for (toast of errorToasts.toasts(); track toast.id) {
+    <article class="error-toast">
+      <div class="error-toast__content">
+        <div class="error-toast__head">
+          <strong class="error-toast__title">{{ toast.title }}</strong>
+          @if (toast.status) {
+            <span class="error-toast__status">{{ toast.status }}</span>
+          }
+        </div>
+        <p class="error-toast__message">{{ toast.message }}</p>
+      </div>
+      <button
+        class="error-toast__close"
+        type="button"
+        aria-label="Закрыть уведомление"
+        (click)="errorToasts.dismiss(toast.id)"
+      >
+        &times;
+      </button>
+    </article>
+  }
+</section>

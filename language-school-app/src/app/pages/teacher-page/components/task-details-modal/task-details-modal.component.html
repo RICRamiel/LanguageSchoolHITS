@@ -71,11 +71,11 @@
           </div>
           <div class="modal__meta-row">
             <dt>Людей в команде:</dt>
-            <dd>{{ task().minTeamSize ?? '-' }} - {{ task().maxTeamSize ?? '-' }}</dd>
+            <dd>{{ formatRange(task().minTeamSize, task().maxTeamSize) }}</dd>
           </div>
           <div class="modal__meta-row">
             <dt>Количество команд:</dt>
-            <dd>{{ task().minTeamsAmount ?? '-' }} - {{ task().maxTeamsAmount ?? '-' }}</dd>
+            <dd>{{ getTeamsAmountLabel(task()) }}</dd>
           </div>
         }
         @if (task().resolveType === 'AT_LEAST_VOTES_SOLUTION') {
@@ -96,9 +96,17 @@
     } @else if (selectedSection() === 'submissions') {
       <div class="modal__list">
         @if (task().attachedWorks.length) {
-          @for (work of task().attachedWorks; track work.fileName) {
+          @for (work of task().attachedWorks; track work.id || work.objectKey || work.participationId + ':' + work.fileName) {
             <article class="modal__item">
               <p class="modal__item-title">{{ work.fileName }}</p>
+              @if (work.studentName || work.teamName) {
+                <p class="modal__item-owner">
+                  {{ work.studentName || 'Студент не указан' }}
+                  @if (work.teamName) {
+                    <span>· {{ work.teamName }}</span>
+                  }
+                </p>
+              }
               <p class="modal__item-meta">{{ work.fileType || 'Файл' }}</p>
               <p class="modal__item-meta">
                 {{ work.fileSize !== null ? (work.fileSize + ' байт') : 'Размер неизвестен' }}
@@ -230,7 +238,7 @@
               <li class="modal__team-item">
                 <div class="modal__team-header">
                   <span class="modal__team-name">{{ team.name }}</span>
-                  <span class="modal__team-meta">{{ team.membersCount ?? 0 }} чел.</span>
+                  <span class="modal__team-meta">{{ getTeamMemberCount(team) }} чел.</span>
                 </div>
                 @if (courseStudents().length) {
                   <div class="modal__team-add-student">

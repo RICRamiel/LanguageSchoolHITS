@@ -140,6 +140,32 @@ export class TaskDetailsModalComponent implements OnInit {
     }
   }
 
+  formatRange(min: number | null, max: number | null): string {
+    if (min !== null && max !== null) {
+      return min === max ? String(min) : `${min} - ${max}`;
+    }
+    if (min !== null) {
+      return `от ${min}`;
+    }
+    if (max !== null) {
+      return `до ${max}`;
+    }
+    return 'Не задано';
+  }
+
+  getTeamsAmountLabel(task: TeacherTask): string {
+    const limit = this.formatRange(task.minTeamsAmount, task.maxTeamsAmount);
+    if (task.teams.length === 0) {
+      return limit;
+    }
+
+    return `Создано: ${task.teams.length}; лимит: ${limit}`;
+  }
+
+  getTeamMemberCount(team: TeacherTask['teams'][number]): number {
+    return team.membersCount ?? team.participations.length;
+  }
+
   onCriterionTitleInput(event: Event): void {
     this.criterionTitle.set((event.target as HTMLInputElement | null)?.value ?? '');
   }

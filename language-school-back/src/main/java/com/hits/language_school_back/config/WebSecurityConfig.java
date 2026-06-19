@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
@@ -48,6 +49,7 @@ public class WebSecurityConfig extends WebSecurityConfiguration {
                                 "/swagger-ui/**",
                                 "/webjars/**",
                                 "/v3/api-docs/**").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/auth/register/student", "/auth/login").permitAll()
                         .requestMatchers("/error").permitAll()
 //                        .requestMatchers(HttpMethod.POST, "/request/**").hasAuthority(Role.STUDENT.toString())
@@ -75,7 +77,8 @@ public class WebSecurityConfig extends WebSecurityConfiguration {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(
-                "http://worker.thallassianangel.su",
+                "https://client.thallassianangel.su",
+                "http://client.thallassianangel.su",
                 "http://client.thallassianangel.su:9092",
                 "http://localhost:8081",
                 "http://185.76.242.253:8081",
