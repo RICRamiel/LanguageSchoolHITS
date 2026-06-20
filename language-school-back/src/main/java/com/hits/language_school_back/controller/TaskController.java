@@ -5,6 +5,7 @@ import com.hits.language_school_back.dto.PeerReviewAssignmentDTO;
 import com.hits.language_school_back.dto.PeerReviewAccessDTO;
 import com.hits.language_school_back.dto.PeerReviewEnableDTO;
 import com.hits.language_school_back.dto.PeerReviewManualAssignmentDTO;
+import com.hits.language_school_back.dto.PeerReviewResultDTO;
 import com.hits.language_school_back.dto.PeerReviewResultsDTO;
 import com.hits.language_school_back.dto.PeerReviewSettingsDTO;
 import com.hits.language_school_back.dto.TaskDTO;
@@ -93,6 +94,17 @@ public class TaskController {
     @PreAuthorize("hasAuthority('TEACHER')")
     public ResponseEntity<PeerReviewResultsDTO> getPeerReviewResults(@PathVariable UUID taskId, HttpServletRequest request) {
         return ResponseEntity.ok(peerReviewService.getPeerReviewResults(taskId, userService.getMe(request).getId()));
+    }
+
+    @PutMapping("/{taskId}/peer-review/assignments/{assignmentId}/assessment")
+    @PreAuthorize("hasAuthority('TEACHER')")
+    public ResponseEntity<PeerReviewResultDTO> editPeerReviewAssessment(
+            @PathVariable UUID taskId,
+            @PathVariable UUID assignmentId,
+            @RequestBody AssessmentSubmitDTO dto,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity.ok(peerReviewService.editPeerReviewAssessment(taskId, assignmentId, dto, userService.getMe(request).getId()));
     }
 
     @GetMapping("/{taskId}/peer-review/my-assignment")

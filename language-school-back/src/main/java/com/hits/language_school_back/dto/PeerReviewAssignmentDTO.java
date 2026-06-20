@@ -23,5 +23,6 @@ public class PeerReviewAssignmentDTO {
     private PeerReviewAssignmentStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime submittedAt;
+    private UUID teacherEditorId;
     private LocalDateTime teacherEditedAt;
 }

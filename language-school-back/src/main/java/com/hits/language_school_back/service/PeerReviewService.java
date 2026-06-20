@@ -4,6 +4,7 @@ import com.hits.language_school_back.dto.PeerReviewAccessDTO;
 import com.hits.language_school_back.dto.PeerReviewAssignmentDTO;
 import com.hits.language_school_back.dto.PeerReviewEnableDTO;
 import com.hits.language_school_back.dto.PeerReviewManualAssignmentDTO;
+import com.hits.language_school_back.dto.PeerReviewResultDTO;
 import com.hits.language_school_back.dto.PeerReviewResultsDTO;
 import com.hits.language_school_back.dto.PeerReviewSettingsDTO;
 import com.hits.language_school_back.dto.AssessmentSubmitDTO;
@@ -23,4 +24,6 @@ public interface PeerReviewService {
     PeerReviewAccessDTO getMyPeerReviewAssignment(UUID taskId, UUID studentId);
 
     PeerReviewAccessDTO submitMyPeerReviewAssignment(UUID taskId, AssessmentSubmitDTO dto, UUID studentId);
+
+    PeerReviewResultDTO editPeerReviewAssessment(UUID taskId, UUID assignmentId, AssessmentSubmitDTO dto, UUID teacherId);
 }

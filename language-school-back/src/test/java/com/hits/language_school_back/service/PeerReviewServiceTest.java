@@ -418,6 +418,71 @@ class PeerReviewServiceTest {
     }
 
     @Test
+    void editPeerReviewAssessment_whenTeacherOwnsTask_updatesAssessmentAndMarksTeacherEdit() {
+        task.setPeerReviewEnabled(true);
+        PeerReviewAssignment assignment = assignment(reviewerTeam, reviewedTeam);
+        assignment.setStatus(PeerReviewAssignmentStatus.SUBMITTED);
+        TaskCriterion criterion = criterion("Architecture", 10);
+        Assessment assessment = peerAssessment(targetParticipation, User.builder().id(studentId).role(Role.STUDENT).build(), 8);
+        AssessmentItem item = assessmentItem(assessment, criterion, 8, "Original peer comment");
+        assignment.setAssessment(assessment);
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(peerReviewAssignmentRepository.findById(assignment.getId())).thenReturn(Optional.of(assignment));
+        when(taskCriterionRepository.findAllByTaskIdAndActiveTrueOrderByOrderIndexAscTitleAsc(taskId)).thenReturn(List.of(criterion));
+        when(assessmentItemRepository.findAllByAssessmentId(assessment.getId())).thenReturn(List.of(item));
+        when(assessmentItemRepository.save(any(AssessmentItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(assessmentRepository.save(any(Assessment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(peerReviewAssignmentRepository.save(any(PeerReviewAssignment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(participationRepository.findAllByTeamId(reviewedTeamId)).thenReturn(List.of(targetParticipation));
+
+        var result = peerReviewService.editPeerReviewAssessment(
+                taskId,
+                assignment.getId(),
+                assessmentPayload(criterion.getId(), 9, "Teacher override"),
+                teacherId
+        );
+
+        assertThat(result.getStatus()).isEqualTo(PeerReviewAssignmentStatus.TEACHER_EDITED);
+        assertThat(result.getAssignment().getTeacherEditorId()).isEqualTo(teacherId);
+        assertThat(result.getAssignment().getTeacherEditedAt()).isNotNull();
+        assertThat(result.getAssessment().getTotalPoints()).isEqualTo(9);
+        assertThat(result.getAssessment().getItems()).singleElement().satisfies(dto -> {
+            assertThat(dto.getPoints()).isEqualTo(9);
+            assertThat(dto.getComment()).isEqualTo("Teacher override");
+        });
+        assertThat(assignment.getStatus()).isEqualTo(PeerReviewAssignmentStatus.TEACHER_EDITED);
+        assertThat(assignment.getTeacherEditor().getId()).isEqualTo(teacherId);
+        assertThat(assignment.getTeacherEditedAt()).isNotNull();
+        assertThat(assessment.getAssessor().getId()).isEqualTo(studentId);
+        assertThat(assessment.getTotalPoints()).isEqualTo(9);
+        assertThat(reviewedTeam.getCommandMark()).isEqualTo(9);
+        assertThat(targetParticipation.getAverageMark()).isEqualTo(9D);
+    }
+
+    @Test
+    void editPeerReviewAssessment_whenAssessmentIsNotSubmitted_rejectsEdit() {
+        task.setPeerReviewEnabled(true);
+        PeerReviewAssignment assignment = assignment(reviewerTeam, reviewedTeam);
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(peerReviewAssignmentRepository.findById(assignment.getId())).thenReturn(Optional.of(assignment));
+
+        assertThatThrownBy(() -> peerReviewService.editPeerReviewAssessment(
+                taskId,
+                assignment.getId(),
+                assessmentPayload(UUID.randomUUID(), 9, "Teacher override"),
+                teacherId
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Peer review assessment is not submitted yet");
+
+        verify(assessmentRepository, never()).save(any(Assessment.class));
+        verify(assessmentItemRepository, never()).save(any(AssessmentItem.class));
+        verify(peerReviewAssignmentRepository, never()).save(any(PeerReviewAssignment.class));
+    }
+
+    @Test
     void getMyPeerReviewAssignment_whenUserIsReviewerTeamCaptain_returnsAssignmentAndCriteria() {
         task.setPeerReviewEnabled(true);
         PeerReviewAssignment assignment = assignment(reviewerTeam, reviewedTeam);

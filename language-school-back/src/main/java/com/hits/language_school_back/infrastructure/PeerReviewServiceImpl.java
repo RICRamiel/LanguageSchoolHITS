@@ -212,6 +212,32 @@ public class PeerReviewServiceImpl implements PeerReviewService {
         return toAccessDto(task, reviewerTeam, savedAssignment);
     }
 
+    @Override
+    @Transactional
+    public PeerReviewResultDTO editPeerReviewAssessment(UUID taskId, UUID assignmentId, AssessmentSubmitDTO dto, UUID teacherId) {
+        Task task = getTask(taskId);
+        ensureTeacherCanManageCourse(teacherId, task.getCourse());
+        ensurePeerReviewEnabled(task);
+
+        PeerReviewAssignment assignment = getAssignmentInTask(taskId, assignmentId);
+        ensureAssignmentCanBeEditedByTeacher(assignment);
+
+        Assessment assessment = assignment.getAssessment();
+        assessment.setTotalPoints(replacePeerAssessmentItems(assessment, dto));
+        assessment.setUpdatedAt(LocalDateTime.now());
+        Assessment savedAssessment = assessmentRepository.save(assessment);
+
+        assignment.setAssessment(savedAssessment);
+        assignment.setStatus(PeerReviewAssignmentStatus.TEACHER_EDITED);
+        assignment.setTeacherEditor(task.getCourse().getTeacher());
+        assignment.setTeacherEditedAt(LocalDateTime.now());
+        PeerReviewAssignment savedAssignment = peerReviewAssignmentRepository.save(assignment);
+
+        syncPeerAssessmentAsTeamMark(savedAssignment.getReviewedTeam(), savedAssessment.getTotalPoints());
+        Integer totalMaxPoints = calculateTotalMaxPoints(taskCriterionRepository.findAllByTaskIdAndActiveTrueOrderByOrderIndexAscTitleAsc(taskId));
+        return toResultDto(savedAssignment, totalMaxPoints);
+    }
+
     private Participation getReviewerCaptainParticipation(UUID taskId, UUID studentId) {
         Participation reviewerParticipation = participationRepository.findAllByTeamTaskId(taskId).stream()
                 .filter(participation -> participation.getStudent() != null && participation.getStudent().getId().equals(studentId))
@@ -226,6 +252,15 @@ public class PeerReviewServiceImpl implements PeerReviewService {
     private PeerReviewAssignment getReviewerAssignment(UUID taskId, Team reviewerTeam) {
         return peerReviewAssignmentRepository.findByTaskIdAndReviewerTeamId(taskId, reviewerTeam.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Reviewer team has no peer review assignment"));
+    }
+
+    private PeerReviewAssignment getAssignmentInTask(UUID taskId, UUID assignmentId) {
+        PeerReviewAssignment assignment = peerReviewAssignmentRepository.findById(assignmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Peer review assignment not found: " + assignmentId));
+        if (assignment.getTask() == null || !Objects.equals(assignment.getTask().getId(), taskId)) {
+            throw new IllegalArgumentException("Peer review assignment does not belong to this task");
+        }
+        return assignment;
     }
 
     private PeerReviewAccessDTO toAccessDto(Task task, Team reviewerTeam, PeerReviewAssignment assignment) {
@@ -295,12 +330,12 @@ public class PeerReviewServiceImpl implements PeerReviewService {
         assessment.setUpdatedAt(now);
 
         Assessment saved = assessmentRepository.save(assessment);
-        saved.setTotalPoints(savePeerAssessmentItems(saved, dto));
+        saved.setTotalPoints(replacePeerAssessmentItems(saved, dto));
         saved.setUpdatedAt(LocalDateTime.now());
         return assessmentRepository.save(saved);
     }
 
-    private Integer savePeerAssessmentItems(Assessment assessment, AssessmentSubmitDTO dto) {
+    private Integer replacePeerAssessmentItems(Assessment assessment, AssessmentSubmitDTO dto) {
         List<AssessmentItemRequestDTO> requestedItems = dto == null || dto.getItems() == null ? List.of() : dto.getItems();
         Map<UUID, TaskCriterion> criteriaById = taskCriterionRepository.findAllByTaskIdAndActiveTrueOrderByOrderIndexAscTitleAsc(assessment.getTask().getId()).stream()
                 .collect(Collectors.toMap(TaskCriterion::getId, Function.identity()));
@@ -326,10 +361,18 @@ public class PeerReviewServiceImpl implements PeerReviewService {
             throw new IllegalArgumentException("Peer assessment must include every active criterion");
         }
 
+        Map<UUID, AssessmentItem> currentItems = assessmentItemRepository.findAllByAssessmentId(assessment.getId()).stream()
+                .collect(Collectors.toMap(item -> item.getCriterion().getId(), Function.identity()));
+        List<AssessmentItem> itemsToDelete = currentItems.entrySet().stream()
+                .filter(entry -> !seenCriteria.contains(entry.getKey()))
+                .map(Map.Entry::getValue)
+                .toList();
+        assessmentItemRepository.deleteAll(itemsToDelete);
+
         int total = 0;
         for (AssessmentItemRequestDTO itemDto : requestedItems) {
             TaskCriterion criterion = criteriaById.get(itemDto.getCriterionId());
-            AssessmentItem item = new AssessmentItem();
+            AssessmentItem item = currentItems.getOrDefault(itemDto.getCriterionId(), new AssessmentItem());
             item.setAssessment(assessment);
             item.setCriterion(criterion);
             item.setPoints(itemDto.getPoints());
@@ -528,6 +571,19 @@ public class PeerReviewServiceImpl implements PeerReviewService {
         }
     }
 
+    private void ensureAssignmentCanBeEditedByTeacher(PeerReviewAssignment assignment) {
+        if (assignment.getAssessment() == null) {
+            throw new IllegalArgumentException("Peer review assessment is not submitted yet");
+        }
+        if (assignment.getAssessment().getType() != AssessmentType.PEER) {
+            throw new IllegalArgumentException("Assignment assessment is not a peer assessment");
+        }
+        if (assignment.getStatus() != PeerReviewAssignmentStatus.SUBMITTED
+                && assignment.getStatus() != PeerReviewAssignmentStatus.TEACHER_EDITED) {
+            throw new IllegalArgumentException("Peer review assessment is not available for teacher edit");
+        }
+    }
+
     private void ensureTaskClosedForAssignments(Task task) {
         if (!Boolean.TRUE.equals(task.getSubmissionClosed())) {
             throw new IllegalArgumentException("Task submissions must be closed before assigning peer reviews");
@@ -558,6 +614,7 @@ public class PeerReviewServiceImpl implements PeerReviewService {
                 .status(assignment.getStatus())
                 .createdAt(assignment.getCreatedAt())
                 .submittedAt(assignment.getSubmittedAt())
+                .teacherEditorId(assignment.getTeacherEditor() == null ? null : assignment.getTeacherEditor().getId())
                 .teacherEditedAt(assignment.getTeacherEditedAt())
                 .build();
     }
