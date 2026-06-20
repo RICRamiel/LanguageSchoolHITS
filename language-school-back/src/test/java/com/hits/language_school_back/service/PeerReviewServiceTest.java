@@ -713,6 +713,28 @@ class PeerReviewServiceTest {
         verify(peerReviewAssignmentRepository, never()).save(any(PeerReviewAssignment.class));
     }
 
+    @Test
+    void submitMyPeerReviewAssignment_whenUserIsReviewerTeamMemberButNotCaptain_rejectsSubmit() {
+        task.setPeerReviewEnabled(true);
+        Participation memberParticipation = participation(reviewerTeam, studentId, false);
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(participationRepository.findAllByTeamTaskId(taskId)).thenReturn(List.of(memberParticipation));
+
+        assertThatThrownBy(() -> peerReviewService.submitMyPeerReviewAssignment(
+                taskId,
+                assessmentPayload(UUID.randomUUID(), 8, "Score"),
+                studentId
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Only reviewer team captain can access peer review assignment");
+
+        verify(peerReviewAssignmentRepository, never()).findByTaskIdAndReviewerTeamId(any(), any());
+        verify(assessmentRepository, never()).save(any(Assessment.class));
+        verify(assessmentItemRepository, never()).save(any(AssessmentItem.class));
+        verify(peerReviewAssignmentRepository, never()).save(any(PeerReviewAssignment.class));
+    }
+
     private PeerReviewEnableDTO enableDto(PeerReviewDistributionType distributionType, Boolean reviewerVisibleToTeams) {
         return PeerReviewEnableDTO.builder()
                 .peerReviewDistributionType(distributionType)
