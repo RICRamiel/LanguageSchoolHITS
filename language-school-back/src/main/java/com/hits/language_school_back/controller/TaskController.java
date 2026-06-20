@@ -1,5 +1,6 @@
 package com.hits.language_school_back.controller;
 
+import com.hits.language_school_back.dto.PeerReviewEnableDTO;
 import com.hits.language_school_back.dto.TaskDTO;
 import com.hits.language_school_back.dto.TaskParticipationGradeDTO;
 import com.hits.language_school_back.dto.TaskSolutionSubmitDTO;
@@ -10,9 +11,11 @@ import com.hits.language_school_back.dto.TaskTeamDTO;
 import com.hits.language_school_back.dto.TaskTeamGradeDTO;
 import com.hits.language_school_back.mapper.TaskMapper;
 import com.hits.language_school_back.model.Task;
+import com.hits.language_school_back.service.PeerReviewService;
 import com.hits.language_school_back.service.TaskService;
 import com.hits.language_school_back.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -35,6 +38,7 @@ import java.util.UUID;
 public class TaskController {
 
     private final TaskService taskService;
+    private final PeerReviewService peerReviewService;
     private final UserService userService;
     private final TaskMapper taskMapper;
 
@@ -49,6 +53,17 @@ public class TaskController {
     @PreAuthorize("hasAuthority('TEACHER')")
     public ResponseEntity<TaskDTO> editTask(@RequestBody TaskDTO taskDTO, @PathVariable UUID taskId, HttpServletRequest request) {
         Task task = taskService.editTask(taskDTO, taskId, userService.getMe(request).getId());
+        return ResponseEntity.ok(taskMapper.toDto(task));
+    }
+
+    @PostMapping("/{taskId}/peer-review/enable")
+    @PreAuthorize("hasAuthority('TEACHER')")
+    public ResponseEntity<TaskDTO> enablePeerReview(
+            @PathVariable UUID taskId,
+            @Valid @RequestBody PeerReviewEnableDTO dto,
+            HttpServletRequest request
+    ) {
+        Task task = peerReviewService.enablePeerReview(taskId, dto, userService.getMe(request).getId());
         return ResponseEntity.ok(taskMapper.toDto(task));
     }
 

@@ -33,6 +33,7 @@ import com.hits.language_school_back.repository.TaskCriterionRepository;
 import com.hits.language_school_back.repository.TeamRepository;
 import com.hits.language_school_back.repository.UserRepository;
 import com.hits.language_school_back.repository.VoteRepository;
+import com.hits.language_school_back.service.PeerReviewDistributionService;
 import com.hits.language_school_back.service.TaskService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,6 +63,7 @@ public class TaskServiceImpl implements TaskService {
     private final VoteRepository voteRepository;
     private final StudentsInCourseRepository studentsInCourseRepository;
     private final TaskCriterionRepository taskCriterionRepository;
+    private final PeerReviewDistributionService peerReviewDistributionService;
     private final TaskTeacherMapper taskTeacherMapper;
     private final TaskStudentMapper taskStudentMapper;
     private final TaskTeamMapper taskTeamMapper;
@@ -734,6 +736,9 @@ public class TaskServiceImpl implements TaskService {
         }
 
         taskRepository.save(task);
+        if (Boolean.TRUE.equals(task.getPeerReviewEnabled())) {
+            peerReviewDistributionService.createDistributionIfReady(task);
+        }
         recalculateCourseGrades(task.getCourse().getId());
     }
 

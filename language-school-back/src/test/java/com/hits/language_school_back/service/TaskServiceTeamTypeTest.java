@@ -29,6 +29,7 @@ import com.hits.language_school_back.repository.TaskCriterionRepository;
 import com.hits.language_school_back.repository.TeamRepository;
 import com.hits.language_school_back.repository.UserRepository;
 import com.hits.language_school_back.repository.VoteRepository;
+import com.hits.language_school_back.service.PeerReviewDistributionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -68,6 +69,8 @@ class TaskServiceTeamTypeTest {
     private StudentsInCourseRepository studentsInCourseRepository;
     @Mock
     private TaskCriterionRepository taskCriterionRepository;
+    @Mock
+    private PeerReviewDistributionService peerReviewDistributionService;
     @Mock
     private TaskTeacherMapper taskTeacherMapper;
     @Mock
@@ -424,6 +427,28 @@ class TaskServiceTeamTypeTest {
 
         assertThat(team.getSolutionParticipation()).isNull();
         assertThat(participation.getSolutionStatus()).isEqualTo(SolutionStatus.OVERDUE);
+    }
+
+    @Test
+    void finalizeTask_whenPeerReviewEnabled_startsPeerReviewDistribution() {
+        Task task = persistedTask(TeamType.FREEROAM, 1, 3);
+        task.setPeerReviewEnabled(true);
+        task.setPeerReviewDistributionType(PeerReviewDistributionType.PAIR);
+        Team team = persistedTeam(task);
+        Participation participation = participation(team, captain, true);
+        participation.setSubmittedAt(LocalDateTime.now());
+        participation.setSolutionStatus(SolutionStatus.SUBMITTED);
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(teamRepository.findAllByTaskId(taskId)).thenReturn(List.of(team));
+        when(participationRepository.findAllByTeamId(team.getId())).thenReturn(List.of(participation));
+        when(studentsInCourseRepository.findAllByCourseId(courseId)).thenReturn(List.of(enrollment(captain)));
+        when(participationRepository.findAllByStudentId(captainId)).thenReturn(List.of(participation));
+        when(teamRepository.save(team)).thenReturn(team);
+
+        taskService.finalizeTask(taskId, teacherId);
+
+        verify(peerReviewDistributionService).createDistributionIfReady(task);
     }
 
     private TaskDTO.TaskDTOBuilder baseTaskDto(TeamType teamType) {
