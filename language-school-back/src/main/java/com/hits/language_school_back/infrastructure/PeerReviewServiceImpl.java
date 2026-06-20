@@ -1,16 +1,23 @@
 package com.hits.language_school_back.infrastructure;
 
+import com.hits.language_school_back.dto.PeerReviewAccessDTO;
 import com.hits.language_school_back.dto.PeerReviewAssignmentDTO;
 import com.hits.language_school_back.dto.PeerReviewEnableDTO;
 import com.hits.language_school_back.dto.PeerReviewManualAssignmentDTO;
+import com.hits.language_school_back.dto.PeerReviewSettingsDTO;
+import com.hits.language_school_back.dto.PeerReviewWithoutReviewerWarningDTO;
+import com.hits.language_school_back.dto.TaskCriterionDTO;
 import com.hits.language_school_back.enums.PeerReviewAssignmentStatus;
 import com.hits.language_school_back.enums.PeerReviewDistributionType;
 import com.hits.language_school_back.model.Course;
 import com.hits.language_school_back.model.PeerReviewAssignment;
 import com.hits.language_school_back.model.Participation;
 import com.hits.language_school_back.model.Task;
+import com.hits.language_school_back.model.TaskCriterion;
 import com.hits.language_school_back.model.Team;
+import com.hits.language_school_back.repository.ParticipationRepository;
 import com.hits.language_school_back.repository.PeerReviewAssignmentRepository;
+import com.hits.language_school_back.repository.TaskCriterionRepository;
 import com.hits.language_school_back.repository.TaskRepository;
 import com.hits.language_school_back.repository.TeamRepository;
 import com.hits.language_school_back.service.PeerReviewDistributionService;
@@ -19,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -27,6 +35,8 @@ import java.util.UUID;
 public class PeerReviewServiceImpl implements PeerReviewService {
     private final TaskRepository taskRepository;
     private final TeamRepository teamRepository;
+    private final ParticipationRepository participationRepository;
+    private final TaskCriterionRepository taskCriterionRepository;
     private final PeerReviewAssignmentRepository peerReviewAssignmentRepository;
     private final PeerReviewDistributionService peerReviewDistributionService;
 
@@ -97,6 +107,68 @@ public class PeerReviewServiceImpl implements PeerReviewService {
         return toAssignmentDto(peerReviewAssignmentRepository.save(assignment));
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public PeerReviewSettingsDTO getPeerReviewSettings(UUID taskId, UUID teacherId) {
+        Task task = getTask(taskId);
+        ensureTeacherCanManageCourse(teacherId, task.getCourse());
+
+        List<PeerReviewAssignment> assignments = peerReviewAssignmentRepository.findAllByTaskId(taskId);
+        List<PeerReviewWithoutReviewerWarningDTO> warnings = assignments.stream()
+                .filter(assignment -> assignment.getStatus() == PeerReviewAssignmentStatus.WITHOUT_REVIEWER)
+                .map(this::toWithoutReviewerWarningDto)
+                .toList();
+
+        return PeerReviewSettingsDTO.builder()
+                .taskId(task.getId())
+                .peerReviewEnabled(task.getPeerReviewEnabled())
+                .peerReviewDistributionType(task.getPeerReviewDistributionType())
+                .peerReviewerVisibleToTeams(task.getPeerReviewerVisibleToTeams())
+                .peerReviewConfirmedAt(task.getPeerReviewConfirmedAt())
+                .hasTeamsWithoutReviewer(!warnings.isEmpty())
+                .assignments(assignments.stream().map(this::toAssignmentDto).toList())
+                .teamsWithoutReviewer(warnings)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PeerReviewAccessDTO getMyPeerReviewAssignment(UUID taskId, UUID studentId) {
+        Task task = getTask(taskId);
+        ensurePeerReviewEnabled(task);
+
+        Participation reviewerParticipation = participationRepository.findAllByTeamTaskId(taskId).stream()
+                .filter(participation -> participation.getStudent() != null && participation.getStudent().getId().equals(studentId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Student is not assigned to a team in this task"));
+        if (!Boolean.TRUE.equals(reviewerParticipation.getIsCaptain())) {
+            throw new IllegalArgumentException("Only reviewer team captain can access peer review assignment");
+        }
+
+        Team reviewerTeam = reviewerParticipation.getTeam();
+        PeerReviewAssignment assignment = peerReviewAssignmentRepository.findByTaskIdAndReviewerTeamId(taskId, reviewerTeam.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Reviewer team has no peer review assignment"));
+        if (assignment.getStatus() != PeerReviewAssignmentStatus.ASSIGNED) {
+            throw new IllegalArgumentException("Peer review assignment is not available for submission");
+        }
+
+        Team reviewedTeam = assignment.getReviewedTeam();
+        return PeerReviewAccessDTO.builder()
+                .taskId(task.getId())
+                .assignment(toAssignmentDto(assignment))
+                .reviewerTeamId(reviewerTeam.getId())
+                .reviewerTeamName(reviewerTeam.getName())
+                .reviewedTeamId(reviewedTeam == null ? null : reviewedTeam.getId())
+                .reviewedTeamName(reviewedTeam == null ? null : reviewedTeam.getName())
+                .targetParticipationId(assignment.getTargetParticipation() == null ? null : assignment.getTargetParticipation().getId())
+                .status(assignment.getStatus())
+                .canSubmit(Boolean.TRUE)
+                .criteria(taskCriterionRepository.findAllByTaskIdAndActiveTrueOrderByOrderIndexAscTitleAsc(taskId).stream()
+                        .map(this::toCriterionDto)
+                        .toList())
+                .build();
+    }
+
     private Task getTask(UUID taskId) {
         return taskRepository.findById(taskId)
                 .orElseThrow(() -> new IllegalArgumentException("Task not found: " + taskId));
@@ -154,6 +226,12 @@ public class PeerReviewServiceImpl implements PeerReviewService {
         }
     }
 
+    private void ensurePeerReviewEnabled(Task task) {
+        if (!Boolean.TRUE.equals(task.getPeerReviewEnabled())) {
+            throw new IllegalArgumentException("Peer review is not enabled for this task");
+        }
+    }
+
     private void ensureTaskClosedForAssignments(Task task) {
         if (!Boolean.TRUE.equals(task.getSubmissionClosed())) {
             throw new IllegalArgumentException("Task submissions must be closed before assigning peer reviews");
@@ -185,6 +263,30 @@ public class PeerReviewServiceImpl implements PeerReviewService {
                 .createdAt(assignment.getCreatedAt())
                 .submittedAt(assignment.getSubmittedAt())
                 .teacherEditedAt(assignment.getTeacherEditedAt())
+                .build();
+    }
+
+    private PeerReviewWithoutReviewerWarningDTO toWithoutReviewerWarningDto(PeerReviewAssignment assignment) {
+        Team team = assignment.getReviewedTeam();
+        String teamName = team == null ? null : team.getName();
+        return PeerReviewWithoutReviewerWarningDTO.builder()
+                .assignmentId(assignment.getId())
+                .teamId(team == null ? null : team.getId())
+                .teamName(teamName)
+                .message("Team has no peer reviewer: " + (teamName == null ? "unknown team" : teamName))
+                .build();
+    }
+
+    private TaskCriterionDTO toCriterionDto(TaskCriterion criterion) {
+        return TaskCriterionDTO.builder()
+                .id(criterion.getId())
+                .taskId(criterion.getTask() == null ? null : criterion.getTask().getId())
+                .title(criterion.getTitle())
+                .description(criterion.getDescription())
+                .maxPoints(criterion.getMaxPoints())
+                .sectionName(criterion.getSectionName())
+                .orderIndex(criterion.getOrderIndex())
+                .active(criterion.getActive())
                 .build();
     }
 }

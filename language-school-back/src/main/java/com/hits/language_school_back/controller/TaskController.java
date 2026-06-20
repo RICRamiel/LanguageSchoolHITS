@@ -1,8 +1,10 @@
 package com.hits.language_school_back.controller;
 
 import com.hits.language_school_back.dto.PeerReviewAssignmentDTO;
+import com.hits.language_school_back.dto.PeerReviewAccessDTO;
 import com.hits.language_school_back.dto.PeerReviewEnableDTO;
 import com.hits.language_school_back.dto.PeerReviewManualAssignmentDTO;
+import com.hits.language_school_back.dto.PeerReviewSettingsDTO;
 import com.hits.language_school_back.dto.TaskDTO;
 import com.hits.language_school_back.dto.TaskParticipationGradeDTO;
 import com.hits.language_school_back.dto.TaskSolutionSubmitDTO;
@@ -77,6 +79,17 @@ public class TaskController {
             HttpServletRequest request
     ) {
         return ResponseEntity.ok(peerReviewService.assignManualPeerReview(taskId, dto, userService.getMe(request).getId()));
+    }
+
+    @GetMapping("/{taskId}/peer-review")
+    @PreAuthorize("hasAuthority('TEACHER')")
+    public ResponseEntity<PeerReviewSettingsDTO> getPeerReviewSettings(@PathVariable UUID taskId, HttpServletRequest request) {
+        return ResponseEntity.ok(peerReviewService.getPeerReviewSettings(taskId, userService.getMe(request).getId()));
+    }
+
+    @GetMapping("/{taskId}/peer-review/my-assignment")
+    public ResponseEntity<PeerReviewAccessDTO> getMyPeerReviewAssignment(@PathVariable UUID taskId, HttpServletRequest request) {
+        return ResponseEntity.ok(peerReviewService.getMyPeerReviewAssignment(taskId, userService.getMe(request).getId()));
     }
 
     @DeleteMapping("/{taskId}/delete")
