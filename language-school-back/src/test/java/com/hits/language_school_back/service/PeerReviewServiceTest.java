@@ -1,17 +1,26 @@
 package com.hits.language_school_back.service;
 
+import com.hits.language_school_back.dto.PeerReviewAssignmentDTO;
 import com.hits.language_school_back.dto.PeerReviewEnableDTO;
+import com.hits.language_school_back.dto.PeerReviewManualAssignmentDTO;
+import com.hits.language_school_back.enums.PeerReviewAssignmentStatus;
 import com.hits.language_school_back.enums.PeerReviewDistributionType;
 import com.hits.language_school_back.enums.Role;
+import com.hits.language_school_back.enums.SolutionStatus;
 import com.hits.language_school_back.infrastructure.PeerReviewServiceImpl;
 import com.hits.language_school_back.model.Course;
+import com.hits.language_school_back.model.PeerReviewAssignment;
+import com.hits.language_school_back.model.Participation;
 import com.hits.language_school_back.model.Task;
+import com.hits.language_school_back.model.Team;
 import com.hits.language_school_back.model.User;
+import com.hits.language_school_back.repository.PeerReviewAssignmentRepository;
 import com.hits.language_school_back.repository.TaskRepository;
 import com.hits.language_school_back.repository.TeamRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -33,6 +42,8 @@ class PeerReviewServiceTest {
     @Mock
     private TeamRepository teamRepository;
     @Mock
+    private PeerReviewAssignmentRepository peerReviewAssignmentRepository;
+    @Mock
     private PeerReviewDistributionService peerReviewDistributionService;
 
     @InjectMocks
@@ -41,13 +52,20 @@ class PeerReviewServiceTest {
     private UUID taskId;
     private UUID teacherId;
     private UUID otherTeacherId;
+    private UUID reviewerTeamId;
+    private UUID reviewedTeamId;
     private Task task;
+    private Team reviewerTeam;
+    private Team reviewedTeam;
+    private Participation targetParticipation;
 
     @BeforeEach
     void setUp() {
         taskId = UUID.randomUUID();
         teacherId = UUID.randomUUID();
         otherTeacherId = UUID.randomUUID();
+        reviewerTeamId = UUID.randomUUID();
+        reviewedTeamId = UUID.randomUUID();
 
         User teacher = User.builder()
                 .id(teacherId)
@@ -66,6 +84,11 @@ class PeerReviewServiceTest {
                 .peerReviewEnabled(false)
                 .peerReviewerVisibleToTeams(false)
                 .build();
+
+        reviewerTeam = team(reviewerTeamId, "Reviewer");
+        reviewedTeam = team(reviewedTeamId, "Reviewed");
+        targetParticipation = participation(reviewedTeam);
+        reviewedTeam.setSolutionParticipation(targetParticipation);
     }
 
     @Test
@@ -151,10 +174,182 @@ class PeerReviewServiceTest {
         verify(peerReviewDistributionService, never()).createDistributionIfReady(any(Task.class));
     }
 
+    @Test
+    void assignManualPeerReview_whenSettingsValid_savesAssignment() {
+        prepareManualTask();
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(teamRepository.findByIdAndTaskId(reviewerTeamId, taskId)).thenReturn(Optional.of(reviewerTeam));
+        when(teamRepository.findByIdAndTaskId(reviewedTeamId, taskId)).thenReturn(Optional.of(reviewedTeam));
+        when(peerReviewAssignmentRepository.findByTaskIdAndReviewedTeamId(taskId, reviewedTeamId)).thenReturn(Optional.empty());
+        when(peerReviewAssignmentRepository.findByTaskIdAndReviewerTeamId(taskId, reviewerTeamId)).thenReturn(Optional.empty());
+        when(peerReviewAssignmentRepository.save(any(PeerReviewAssignment.class))).thenAnswer(invocation -> {
+            PeerReviewAssignment assignment = invocation.getArgument(0);
+            assignment.setId(UUID.randomUUID());
+            return assignment;
+        });
+
+        PeerReviewAssignmentDTO result = peerReviewService.assignManualPeerReview(taskId, manualAssignmentDto(), teacherId);
+
+        assertThat(result.getTaskId()).isEqualTo(taskId);
+        assertThat(result.getReviewerTeamId()).isEqualTo(reviewerTeamId);
+        assertThat(result.getReviewedTeamId()).isEqualTo(reviewedTeamId);
+        assertThat(result.getTargetParticipationId()).isEqualTo(targetParticipation.getId());
+        assertThat(result.getStatus()).isEqualTo(PeerReviewAssignmentStatus.ASSIGNED);
+
+        ArgumentCaptor<PeerReviewAssignment> assignmentCaptor = ArgumentCaptor.forClass(PeerReviewAssignment.class);
+        verify(peerReviewAssignmentRepository).save(assignmentCaptor.capture());
+        assertThat(assignmentCaptor.getValue().getTask()).isEqualTo(task);
+        assertThat(assignmentCaptor.getValue().getReviewerTeam()).isEqualTo(reviewerTeam);
+        assertThat(assignmentCaptor.getValue().getReviewedTeam()).isEqualTo(reviewedTeam);
+        assertThat(assignmentCaptor.getValue().getTargetParticipation()).isEqualTo(targetParticipation);
+    }
+
+    @Test
+    void assignManualPeerReview_whenTeamReviewsItself_rejectsAssignment() {
+        prepareManualTask();
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(teamRepository.findByIdAndTaskId(reviewerTeamId, taskId)).thenReturn(Optional.of(reviewerTeam));
+
+        assertThatThrownBy(() -> peerReviewService.assignManualPeerReview(
+                taskId,
+                PeerReviewManualAssignmentDTO.builder()
+                        .reviewerTeamId(reviewerTeamId)
+                        .reviewedTeamId(reviewerTeamId)
+                        .build(),
+                teacherId
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Team cannot review itself");
+
+        verify(peerReviewAssignmentRepository, never()).save(any(PeerReviewAssignment.class));
+    }
+
+    @Test
+    void assignManualPeerReview_whenReviewedTeamAlreadyHasReviewer_rejectsAssignment() {
+        prepareManualTask();
+        Team otherReviewer = team(UUID.randomUUID(), "Other reviewer");
+        PeerReviewAssignment existing = assignment(otherReviewer, reviewedTeam);
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(teamRepository.findByIdAndTaskId(reviewerTeamId, taskId)).thenReturn(Optional.of(reviewerTeam));
+        when(teamRepository.findByIdAndTaskId(reviewedTeamId, taskId)).thenReturn(Optional.of(reviewedTeam));
+        when(peerReviewAssignmentRepository.findByTaskIdAndReviewedTeamId(taskId, reviewedTeamId)).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> peerReviewService.assignManualPeerReview(taskId, manualAssignmentDto(), teacherId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Reviewed team already has reviewer");
+
+        verify(peerReviewAssignmentRepository, never()).save(any(PeerReviewAssignment.class));
+    }
+
+    @Test
+    void assignManualPeerReview_whenReviewerAlreadyHasAssignment_rejectsAssignment() {
+        prepareManualTask();
+        Team otherReviewed = team(UUID.randomUUID(), "Other reviewed");
+        PeerReviewAssignment existing = assignment(reviewerTeam, otherReviewed);
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(teamRepository.findByIdAndTaskId(reviewerTeamId, taskId)).thenReturn(Optional.of(reviewerTeam));
+        when(teamRepository.findByIdAndTaskId(reviewedTeamId, taskId)).thenReturn(Optional.of(reviewedTeam));
+        when(peerReviewAssignmentRepository.findByTaskIdAndReviewedTeamId(taskId, reviewedTeamId)).thenReturn(Optional.empty());
+        when(peerReviewAssignmentRepository.findByTaskIdAndReviewerTeamId(taskId, reviewerTeamId)).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> peerReviewService.assignManualPeerReview(taskId, manualAssignmentDto(), teacherId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Reviewer team already has review assignment");
+
+        verify(peerReviewAssignmentRepository, never()).save(any(PeerReviewAssignment.class));
+    }
+
+    @Test
+    void assignManualPeerReview_whenTaskIsOpen_rejectsAssignment() {
+        prepareManualTask();
+        task.setSubmissionClosed(false);
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+
+        assertThatThrownBy(() -> peerReviewService.assignManualPeerReview(taskId, manualAssignmentDto(), teacherId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Task submissions must be closed before assigning peer reviews");
+
+        verify(peerReviewAssignmentRepository, never()).save(any(PeerReviewAssignment.class));
+    }
+
+    @Test
+    void assignManualPeerReview_whenDistributionTypeIsNotManual_rejectsAssignment() {
+        prepareManualTask();
+        task.setPeerReviewDistributionType(PeerReviewDistributionType.PAIR);
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+
+        assertThatThrownBy(() -> peerReviewService.assignManualPeerReview(taskId, manualAssignmentDto(), teacherId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Manual peer-review assignment requires MANUAL distribution type");
+
+        verify(peerReviewAssignmentRepository, never()).save(any(PeerReviewAssignment.class));
+    }
+
+    @Test
+    void assignManualPeerReview_whenReviewedTeamHasNoSolution_rejectsAssignment() {
+        prepareManualTask();
+        reviewedTeam.setSolutionParticipation(null);
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(teamRepository.findByIdAndTaskId(reviewerTeamId, taskId)).thenReturn(Optional.of(reviewerTeam));
+        when(teamRepository.findByIdAndTaskId(reviewedTeamId, taskId)).thenReturn(Optional.of(reviewedTeam));
+        when(peerReviewAssignmentRepository.findByTaskIdAndReviewedTeamId(taskId, reviewedTeamId)).thenReturn(Optional.empty());
+        when(peerReviewAssignmentRepository.findByTaskIdAndReviewerTeamId(taskId, reviewerTeamId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> peerReviewService.assignManualPeerReview(taskId, manualAssignmentDto(), teacherId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Reviewed team has no submitted solution");
+
+        verify(peerReviewAssignmentRepository, never()).save(any(PeerReviewAssignment.class));
+    }
+
     private PeerReviewEnableDTO enableDto(PeerReviewDistributionType distributionType, Boolean reviewerVisibleToTeams) {
         return PeerReviewEnableDTO.builder()
                 .peerReviewDistributionType(distributionType)
                 .peerReviewerVisibleToTeams(reviewerVisibleToTeams)
                 .build();
+    }
+
+    private PeerReviewManualAssignmentDTO manualAssignmentDto() {
+        return PeerReviewManualAssignmentDTO.builder()
+                .reviewerTeamId(reviewerTeamId)
+                .reviewedTeamId(reviewedTeamId)
+                .build();
+    }
+
+    private void prepareManualTask() {
+        task.setPeerReviewEnabled(true);
+        task.setPeerReviewDistributionType(PeerReviewDistributionType.MANUAL);
+        task.setSubmissionClosed(true);
+    }
+
+    private Team team(UUID id, String name) {
+        Team team = new Team();
+        team.setId(id);
+        team.setName(name);
+        team.setTask(task);
+        return team;
+    }
+
+    private Participation participation(Team team) {
+        Participation participation = new Participation();
+        participation.setId(UUID.randomUUID());
+        participation.setTeam(team);
+        participation.setStudent(User.builder().id(UUID.randomUUID()).role(Role.STUDENT).build());
+        participation.setIsCaptain(true);
+        participation.setSolutionStatus(SolutionStatus.LOCKED);
+        return participation;
+    }
+
+    private PeerReviewAssignment assignment(Team reviewerTeam, Team reviewedTeam) {
+        PeerReviewAssignment assignment = new PeerReviewAssignment();
+        assignment.setId(UUID.randomUUID());
+        assignment.setTask(task);
+        assignment.setReviewerTeam(reviewerTeam);
+        assignment.setReviewedTeam(reviewedTeam);
+        assignment.setTargetParticipation(reviewedTeam.getSolutionParticipation());
+        assignment.setStatus(PeerReviewAssignmentStatus.ASSIGNED);
+        return assignment;
     }
 }
