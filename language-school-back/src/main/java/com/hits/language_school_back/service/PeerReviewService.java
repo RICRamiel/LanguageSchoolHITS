@@ -21,6 +21,8 @@ public interface PeerReviewService {
 
     PeerReviewResultsDTO getPeerReviewResults(UUID taskId, UUID teacherId);
 
+    PeerReviewResultsDTO confirmPeerReviewResults(UUID taskId, UUID teacherId);
+
     PeerReviewAccessDTO getMyPeerReviewAssignment(UUID taskId, UUID studentId);
 
     PeerReviewAccessDTO submitMyPeerReviewAssignment(UUID taskId, AssessmentSubmitDTO dto, UUID studentId);

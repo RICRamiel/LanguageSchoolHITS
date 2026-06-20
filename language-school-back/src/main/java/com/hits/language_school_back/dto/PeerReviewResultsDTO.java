@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -18,6 +19,7 @@ public class PeerReviewResultsDTO {
     private Boolean peerReviewEnabled;
     private PeerReviewDistributionType peerReviewDistributionType;
     private Boolean peerReviewerVisibleToTeams;
+    private LocalDateTime peerReviewConfirmedAt;
     private Integer totalMaxPoints;
     private List<PeerReviewResultDTO> results;
 }

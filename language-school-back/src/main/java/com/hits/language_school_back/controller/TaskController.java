@@ -96,6 +96,12 @@ public class TaskController {
         return ResponseEntity.ok(peerReviewService.getPeerReviewResults(taskId, userService.getMe(request).getId()));
     }
 
+    @PostMapping("/{taskId}/peer-review/confirm")
+    @PreAuthorize("hasAuthority('TEACHER')")
+    public ResponseEntity<PeerReviewResultsDTO> confirmPeerReviewResults(@PathVariable UUID taskId, HttpServletRequest request) {
+        return ResponseEntity.ok(peerReviewService.confirmPeerReviewResults(taskId, userService.getMe(request).getId()));
+    }
+
     @PutMapping("/{taskId}/peer-review/assignments/{assignmentId}/assessment")
     @PreAuthorize("hasAuthority('TEACHER')")
     public ResponseEntity<PeerReviewResultDTO> editPeerReviewAssessment(

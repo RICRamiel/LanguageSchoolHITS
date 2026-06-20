@@ -483,6 +483,93 @@ class PeerReviewServiceTest {
     }
 
     @Test
+    void confirmPeerReviewResults_whenPeerAssessmentSubmitted_marksResultFinalAndUsesPeerScore() {
+        task.setPeerReviewEnabled(true);
+        task.setPeerReviewDistributionType(PeerReviewDistributionType.PAIR);
+        PeerReviewAssignment assignment = assignment(reviewerTeam, reviewedTeam);
+        assignment.setStatus(PeerReviewAssignmentStatus.SUBMITTED);
+        TaskCriterion criterion = criterion("Architecture", 10);
+        Assessment assessment = peerAssessment(targetParticipation, User.builder().id(studentId).role(Role.STUDENT).build(), 8);
+        AssessmentItem item = assessmentItem(assessment, criterion, 8, "Strong structure");
+        assignment.setAssessment(assessment);
+        reviewedTeam.setCommandMark(2);
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(peerReviewAssignmentRepository.findAllByTaskId(taskId)).thenReturn(List.of(assignment));
+        when(peerReviewAssignmentRepository.save(any(PeerReviewAssignment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(participationRepository.findAllByTeamId(reviewedTeamId)).thenReturn(List.of(targetParticipation));
+        when(taskCriterionRepository.findAllByTaskIdAndActiveTrueOrderByOrderIndexAscTitleAsc(taskId)).thenReturn(List.of(criterion));
+        when(assessmentItemRepository.findAllByAssessmentId(assessment.getId())).thenReturn(List.of(item));
+
+        PeerReviewResultsDTO result = peerReviewService.confirmPeerReviewResults(taskId, teacherId);
+
+        assertThat(task.getPeerReviewConfirmedAt()).isNotNull();
+        assertThat(assignment.getStatus()).isEqualTo(PeerReviewAssignmentStatus.FINAL);
+        assertThat(reviewedTeam.getCommandMark()).isEqualTo(8);
+        assertThat(targetParticipation.getAverageMark()).isEqualTo(8D);
+        assertThat(result.getPeerReviewConfirmedAt()).isEqualTo(task.getPeerReviewConfirmedAt());
+        assertThat(result.getResults()).singleElement().satisfies(review -> {
+            assertThat(review.getStatus()).isEqualTo(PeerReviewAssignmentStatus.FINAL);
+            assertThat(review.getAssessment().getTotalPoints()).isEqualTo(8);
+        });
+
+        verify(taskRepository).save(task);
+        verify(peerReviewAssignmentRepository).save(assignment);
+    }
+
+    @Test
+    void confirmPeerReviewResults_whenTeacherEditedAssessment_usesEditedScoreAsFinal() {
+        task.setPeerReviewEnabled(true);
+        task.setPeerReviewDistributionType(PeerReviewDistributionType.PAIR);
+        PeerReviewAssignment assignment = assignment(reviewerTeam, reviewedTeam);
+        assignment.setStatus(PeerReviewAssignmentStatus.TEACHER_EDITED);
+        TaskCriterion criterion = criterion("Architecture", 10);
+        Assessment assessment = peerAssessment(targetParticipation, User.builder().id(studentId).role(Role.STUDENT).build(), 9);
+        AssessmentItem item = assessmentItem(assessment, criterion, 9, "Teacher override");
+        assignment.setAssessment(assessment);
+        reviewedTeam.setCommandMark(8);
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(peerReviewAssignmentRepository.findAllByTaskId(taskId)).thenReturn(List.of(assignment));
+        when(peerReviewAssignmentRepository.save(any(PeerReviewAssignment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(participationRepository.findAllByTeamId(reviewedTeamId)).thenReturn(List.of(targetParticipation));
+        when(taskCriterionRepository.findAllByTaskIdAndActiveTrueOrderByOrderIndexAscTitleAsc(taskId)).thenReturn(List.of(criterion));
+        when(assessmentItemRepository.findAllByAssessmentId(assessment.getId())).thenReturn(List.of(item));
+
+        PeerReviewResultsDTO result = peerReviewService.confirmPeerReviewResults(taskId, teacherId);
+
+        assertThat(assignment.getStatus()).isEqualTo(PeerReviewAssignmentStatus.FINAL);
+        assertThat(reviewedTeam.getCommandMark()).isEqualTo(9);
+        assertThat(targetParticipation.getAverageMark()).isEqualTo(9D);
+        assertThat(result.getResults()).singleElement().satisfies(review -> {
+            assertThat(review.getStatus()).isEqualTo(PeerReviewAssignmentStatus.FINAL);
+            assertThat(review.getAssessment().getTotalPoints()).isEqualTo(9);
+            assertThat(review.getAssessment().getItems()).singleElement().satisfies(dto -> {
+                assertThat(dto.getPoints()).isEqualTo(9);
+                assertThat(dto.getComment()).isEqualTo("Teacher override");
+            });
+        });
+    }
+
+    @Test
+    void confirmPeerReviewResults_whenAssessmentIsMissing_rejectsFinalization() {
+        task.setPeerReviewEnabled(true);
+        PeerReviewAssignment assignment = assignment(reviewerTeam, reviewedTeam);
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(peerReviewAssignmentRepository.findAllByTaskId(taskId)).thenReturn(List.of(assignment));
+
+        assertThatThrownBy(() -> peerReviewService.confirmPeerReviewResults(taskId, teacherId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Peer review assessment is not submitted yet");
+
+        verify(taskRepository, never()).save(any(Task.class));
+        verify(peerReviewAssignmentRepository, never()).save(any(PeerReviewAssignment.class));
+    }
+
+    @Test
     void getMyPeerReviewAssignment_whenUserIsReviewerTeamCaptain_returnsAssignmentAndCriteria() {
         task.setPeerReviewEnabled(true);
         PeerReviewAssignment assignment = assignment(reviewerTeam, reviewedTeam);

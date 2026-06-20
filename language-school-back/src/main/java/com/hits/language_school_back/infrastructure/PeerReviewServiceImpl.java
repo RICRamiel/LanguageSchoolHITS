@@ -171,11 +171,40 @@ public class PeerReviewServiceImpl implements PeerReviewService {
                 .peerReviewEnabled(task.getPeerReviewEnabled())
                 .peerReviewDistributionType(task.getPeerReviewDistributionType())
                 .peerReviewerVisibleToTeams(task.getPeerReviewerVisibleToTeams())
+                .peerReviewConfirmedAt(task.getPeerReviewConfirmedAt())
                 .totalMaxPoints(totalMaxPoints)
                 .results(peerReviewAssignmentRepository.findAllByTaskId(taskId).stream()
                         .map(assignment -> toResultDto(assignment, totalMaxPoints))
                         .toList())
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public PeerReviewResultsDTO confirmPeerReviewResults(UUID taskId, UUID teacherId) {
+        Task task = getTask(taskId);
+        ensureTeacherCanManageCourse(teacherId, task.getCourse());
+        ensurePeerReviewEnabled(task);
+
+        List<PeerReviewAssignment> assignments = peerReviewAssignmentRepository.findAllByTaskId(taskId);
+        if (assignments.isEmpty()) {
+            throw new IllegalArgumentException("Task has no peer review assignments");
+        }
+
+        for (PeerReviewAssignment assignment : assignments) {
+            ensureAssignmentCanBeFinalized(assignment);
+            syncPeerAssessmentAsTeamMark(assignment.getReviewedTeam(), assignment.getAssessment().getTotalPoints());
+            if (assignment.getStatus() != PeerReviewAssignmentStatus.FINAL) {
+                assignment.setStatus(PeerReviewAssignmentStatus.FINAL);
+                peerReviewAssignmentRepository.save(assignment);
+            }
+        }
+
+        if (task.getPeerReviewConfirmedAt() == null) {
+            task.setPeerReviewConfirmedAt(LocalDateTime.now());
+            taskRepository.save(task);
+        }
+        return getPeerReviewResults(taskId, teacherId);
     }
 
     @Override
@@ -581,6 +610,20 @@ public class PeerReviewServiceImpl implements PeerReviewService {
         if (assignment.getStatus() != PeerReviewAssignmentStatus.SUBMITTED
                 && assignment.getStatus() != PeerReviewAssignmentStatus.TEACHER_EDITED) {
             throw new IllegalArgumentException("Peer review assessment is not available for teacher edit");
+        }
+    }
+
+    private void ensureAssignmentCanBeFinalized(PeerReviewAssignment assignment) {
+        if (assignment.getAssessment() == null) {
+            throw new IllegalArgumentException("Peer review assessment is not submitted yet");
+        }
+        if (assignment.getAssessment().getType() != AssessmentType.PEER) {
+            throw new IllegalArgumentException("Assignment assessment is not a peer assessment");
+        }
+        if (assignment.getStatus() != PeerReviewAssignmentStatus.SUBMITTED
+                && assignment.getStatus() != PeerReviewAssignmentStatus.TEACHER_EDITED
+                && assignment.getStatus() != PeerReviewAssignmentStatus.FINAL) {
+            throw new IllegalArgumentException("Peer review assessment is not available for finalization");
         }
     }
 
