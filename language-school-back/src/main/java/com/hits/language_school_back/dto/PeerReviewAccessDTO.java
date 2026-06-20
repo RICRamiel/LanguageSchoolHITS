@@ -16,6 +16,7 @@ import java.util.UUID;
 public class PeerReviewAccessDTO {
     private UUID taskId;
     private PeerReviewAssignmentDTO assignment;
+    private AssessmentDTO assessment;
     private UUID reviewerTeamId;
     private String reviewerTeamName;
     private UUID reviewedTeamId;
@@ -23,5 +24,6 @@ public class PeerReviewAccessDTO {
     private UUID targetParticipationId;
     private PeerReviewAssignmentStatus status;
     private Boolean canSubmit;
+    private Integer totalMaxPoints;
     private List<TaskCriterionDTO> criteria;
 }

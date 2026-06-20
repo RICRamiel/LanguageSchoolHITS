@@ -1,5 +1,6 @@
 package com.hits.language_school_back.controller;
 
+import com.hits.language_school_back.dto.AssessmentSubmitDTO;
 import com.hits.language_school_back.dto.PeerReviewAssignmentDTO;
 import com.hits.language_school_back.dto.PeerReviewAccessDTO;
 import com.hits.language_school_back.dto.PeerReviewEnableDTO;
@@ -90,6 +91,15 @@ public class TaskController {
     @GetMapping("/{taskId}/peer-review/my-assignment")
     public ResponseEntity<PeerReviewAccessDTO> getMyPeerReviewAssignment(@PathVariable UUID taskId, HttpServletRequest request) {
         return ResponseEntity.ok(peerReviewService.getMyPeerReviewAssignment(taskId, userService.getMe(request).getId()));
+    }
+
+    @PostMapping("/{taskId}/peer-review/my-assignment/submit")
+    public ResponseEntity<PeerReviewAccessDTO> submitMyPeerReviewAssignment(
+            @PathVariable UUID taskId,
+            @RequestBody AssessmentSubmitDTO dto,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity.ok(peerReviewService.submitMyPeerReviewAssignment(taskId, dto, userService.getMe(request).getId()));
     }
 
     @DeleteMapping("/{taskId}/delete")

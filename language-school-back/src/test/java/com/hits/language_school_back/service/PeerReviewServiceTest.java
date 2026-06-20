@@ -1,15 +1,21 @@
 package com.hits.language_school_back.service;
 
+import com.hits.language_school_back.dto.AssessmentItemRequestDTO;
+import com.hits.language_school_back.dto.AssessmentSubmitDTO;
 import com.hits.language_school_back.dto.PeerReviewAccessDTO;
 import com.hits.language_school_back.dto.PeerReviewAssignmentDTO;
 import com.hits.language_school_back.dto.PeerReviewEnableDTO;
 import com.hits.language_school_back.dto.PeerReviewManualAssignmentDTO;
 import com.hits.language_school_back.dto.PeerReviewSettingsDTO;
+import com.hits.language_school_back.enums.AssessmentStatus;
+import com.hits.language_school_back.enums.AssessmentType;
 import com.hits.language_school_back.enums.PeerReviewAssignmentStatus;
 import com.hits.language_school_back.enums.PeerReviewDistributionType;
 import com.hits.language_school_back.enums.Role;
 import com.hits.language_school_back.enums.SolutionStatus;
 import com.hits.language_school_back.infrastructure.PeerReviewServiceImpl;
+import com.hits.language_school_back.model.Assessment;
+import com.hits.language_school_back.model.AssessmentItem;
 import com.hits.language_school_back.model.Course;
 import com.hits.language_school_back.model.PeerReviewAssignment;
 import com.hits.language_school_back.model.Participation;
@@ -17,8 +23,11 @@ import com.hits.language_school_back.model.Task;
 import com.hits.language_school_back.model.TaskCriterion;
 import com.hits.language_school_back.model.Team;
 import com.hits.language_school_back.model.User;
+import com.hits.language_school_back.repository.AssessmentItemRepository;
+import com.hits.language_school_back.repository.AssessmentRepository;
 import com.hits.language_school_back.repository.ParticipationRepository;
 import com.hits.language_school_back.repository.PeerReviewAssignmentRepository;
+import com.hits.language_school_back.repository.StudentsInCourseRepository;
 import com.hits.language_school_back.repository.TaskCriterionRepository;
 import com.hits.language_school_back.repository.TaskRepository;
 import com.hits.language_school_back.repository.TeamRepository;
@@ -30,6 +39,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -51,6 +61,12 @@ class PeerReviewServiceTest {
     private ParticipationRepository participationRepository;
     @Mock
     private TaskCriterionRepository taskCriterionRepository;
+    @Mock
+    private AssessmentRepository assessmentRepository;
+    @Mock
+    private AssessmentItemRepository assessmentItemRepository;
+    @Mock
+    private StudentsInCourseRepository studentsInCourseRepository;
     @Mock
     private PeerReviewAssignmentRepository peerReviewAssignmentRepository;
     @Mock
@@ -393,6 +409,109 @@ class PeerReviewServiceTest {
         verify(peerReviewAssignmentRepository, never()).findByTaskIdAndReviewerTeamId(any(), any());
     }
 
+    @Test
+    void getMyPeerReviewAssignment_whenAssessmentSubmitted_returnsReadOnlyAssessment() {
+        task.setPeerReviewEnabled(true);
+        PeerReviewAssignment assignment = assignment(reviewerTeam, reviewedTeam);
+        assignment.setStatus(PeerReviewAssignmentStatus.SUBMITTED);
+        Participation captainParticipation = participation(reviewerTeam, studentId, true);
+        TaskCriterion criterion = criterion("Architecture", 10);
+        Assessment assessment = peerAssessment(targetParticipation, captainParticipation.getStudent(), 8);
+        AssessmentItem item = assessmentItem(assessment, criterion, 8, "Strong structure");
+        assignment.setAssessment(assessment);
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(participationRepository.findAllByTeamTaskId(taskId)).thenReturn(List.of(captainParticipation));
+        when(peerReviewAssignmentRepository.findByTaskIdAndReviewerTeamId(taskId, reviewerTeamId)).thenReturn(Optional.of(assignment));
+        when(taskCriterionRepository.findAllByTaskIdAndActiveTrueOrderByOrderIndexAscTitleAsc(taskId)).thenReturn(List.of(criterion));
+        when(assessmentItemRepository.findAllByAssessmentId(assessment.getId())).thenReturn(List.of(item));
+
+        PeerReviewAccessDTO result = peerReviewService.getMyPeerReviewAssignment(taskId, studentId);
+
+        assertThat(result.getStatus()).isEqualTo(PeerReviewAssignmentStatus.SUBMITTED);
+        assertThat(result.getCanSubmit()).isFalse();
+        assertThat(result.getAssessment().getTotalPoints()).isEqualTo(8);
+        assertThat(result.getAssessment().getType()).isEqualTo(AssessmentType.PEER);
+        assertThat(result.getAssessment().getItems()).singleElement().satisfies(dto -> {
+            assertThat(dto.getPoints()).isEqualTo(8);
+            assertThat(dto.getComment()).isEqualTo("Strong structure");
+        });
+    }
+
+    @Test
+    void submitMyPeerReviewAssignment_whenCaptainSubmitsAssessment_savesPeerAssessmentAndLocksAssignment() {
+        task.setPeerReviewEnabled(true);
+        PeerReviewAssignment assignment = assignment(reviewerTeam, reviewedTeam);
+        Participation captainParticipation = participation(reviewerTeam, studentId, true);
+        TaskCriterion criterion = criterion("Architecture", 10);
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(participationRepository.findAllByTeamTaskId(taskId)).thenReturn(List.of(captainParticipation));
+        when(peerReviewAssignmentRepository.findByTaskIdAndReviewerTeamId(taskId, reviewerTeamId)).thenReturn(Optional.of(assignment));
+        when(assessmentRepository.findByParticipationIdAndType(targetParticipation.getId(), AssessmentType.PEER)).thenReturn(Optional.empty());
+        when(assessmentRepository.save(any(Assessment.class))).thenAnswer(invocation -> {
+            Assessment saved = invocation.getArgument(0);
+            if (saved.getId() == null) {
+                saved.setId(UUID.randomUUID());
+            }
+            return saved;
+        });
+        when(taskCriterionRepository.findAllByTaskIdAndActiveTrueOrderByOrderIndexAscTitleAsc(taskId)).thenReturn(List.of(criterion));
+        when(assessmentItemRepository.save(any(AssessmentItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(assessmentItemRepository.findAllByAssessmentId(any())).thenReturn(List.of());
+        when(peerReviewAssignmentRepository.save(any(PeerReviewAssignment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(participationRepository.findAllByTeamId(reviewedTeamId)).thenReturn(List.of(targetParticipation));
+
+        PeerReviewAccessDTO result = peerReviewService.submitMyPeerReviewAssignment(
+                taskId,
+                assessmentPayload(criterion.getId(), 8, "Strong structure"),
+                studentId
+        );
+
+        assertThat(result.getStatus()).isEqualTo(PeerReviewAssignmentStatus.SUBMITTED);
+        assertThat(result.getCanSubmit()).isFalse();
+        assertThat(result.getAssessment().getType()).isEqualTo(AssessmentType.PEER);
+        assertThat(result.getAssessment().getTotalPoints()).isEqualTo(8);
+        assertThat(result.getAssignment().getAssessmentId()).isEqualTo(result.getAssessment().getId());
+        assertThat(assignment.getStatus()).isEqualTo(PeerReviewAssignmentStatus.SUBMITTED);
+        assertThat(assignment.getSubmittedAt()).isNotNull();
+        assertThat(reviewedTeam.getCommandMark()).isEqualTo(8);
+        assertThat(targetParticipation.getAverageMark()).isEqualTo(8D);
+        assertThat(reviewedTeam.getAverageMark()).isEqualTo(8D);
+
+        ArgumentCaptor<AssessmentItem> itemCaptor = ArgumentCaptor.forClass(AssessmentItem.class);
+        verify(assessmentItemRepository).save(itemCaptor.capture());
+        assertThat(itemCaptor.getValue().getCriterion()).isEqualTo(criterion);
+        assertThat(itemCaptor.getValue().getPoints()).isEqualTo(8);
+        assertThat(itemCaptor.getValue().getComment()).isEqualTo("Strong structure");
+    }
+
+    @Test
+    void submitMyPeerReviewAssignment_whenAlreadySubmitted_rejectsRepeatedSubmit() {
+        task.setPeerReviewEnabled(true);
+        PeerReviewAssignment assignment = assignment(reviewerTeam, reviewedTeam);
+        Participation captainParticipation = participation(reviewerTeam, studentId, true);
+        TaskCriterion criterion = criterion("Architecture", 10);
+        assignment.setStatus(PeerReviewAssignmentStatus.SUBMITTED);
+        assignment.setAssessment(peerAssessment(targetParticipation, captainParticipation.getStudent(), 8));
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(participationRepository.findAllByTeamTaskId(taskId)).thenReturn(List.of(captainParticipation));
+        when(peerReviewAssignmentRepository.findByTaskIdAndReviewerTeamId(taskId, reviewerTeamId)).thenReturn(Optional.of(assignment));
+
+        assertThatThrownBy(() -> peerReviewService.submitMyPeerReviewAssignment(
+                taskId,
+                assessmentPayload(criterion.getId(), 9, "Changed"),
+                studentId
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Peer review assignment has already been submitted");
+
+        verify(assessmentRepository, never()).save(any(Assessment.class));
+        verify(assessmentItemRepository, never()).save(any(AssessmentItem.class));
+        verify(peerReviewAssignmentRepository, never()).save(any(PeerReviewAssignment.class));
+    }
+
     private PeerReviewEnableDTO enableDto(PeerReviewDistributionType distributionType, Boolean reviewerVisibleToTeams) {
         return PeerReviewEnableDTO.builder()
                 .peerReviewDistributionType(distributionType)
@@ -446,6 +565,40 @@ class PeerReviewServiceTest {
         criterion.setOrderIndex(1);
         criterion.setActive(true);
         return criterion;
+    }
+
+    private AssessmentSubmitDTO assessmentPayload(UUID criterionId, int points, String comment) {
+        return AssessmentSubmitDTO.builder()
+                .items(List.of(AssessmentItemRequestDTO.builder()
+                        .criterionId(criterionId)
+                        .points(points)
+                        .comment(comment)
+                        .build()))
+                .build();
+    }
+
+    private Assessment peerAssessment(Participation participation, User assessor, int totalPoints) {
+        Assessment assessment = new Assessment();
+        assessment.setId(UUID.randomUUID());
+        assessment.setTask(task);
+        assessment.setParticipation(participation);
+        assessment.setAssessor(assessor);
+        assessment.setType(AssessmentType.PEER);
+        assessment.setStatus(AssessmentStatus.SUBMITTED);
+        assessment.setTotalPoints(totalPoints);
+        assessment.setCreatedAt(LocalDateTime.now());
+        assessment.setUpdatedAt(LocalDateTime.now());
+        return assessment;
+    }
+
+    private AssessmentItem assessmentItem(Assessment assessment, TaskCriterion criterion, int points, String comment) {
+        AssessmentItem item = new AssessmentItem();
+        item.setId(UUID.randomUUID());
+        item.setAssessment(assessment);
+        item.setCriterion(criterion);
+        item.setPoints(points);
+        item.setComment(comment);
+        return item;
     }
 
     private PeerReviewAssignment assignment(Team reviewerTeam, Team reviewedTeam) {
