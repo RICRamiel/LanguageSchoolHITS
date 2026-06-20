@@ -8,6 +8,8 @@ import com.hits.language_school_back.dto.PeerReviewAccessDTO;
 import com.hits.language_school_back.dto.PeerReviewAssignmentDTO;
 import com.hits.language_school_back.dto.PeerReviewEnableDTO;
 import com.hits.language_school_back.dto.PeerReviewManualAssignmentDTO;
+import com.hits.language_school_back.dto.PeerReviewResultDTO;
+import com.hits.language_school_back.dto.PeerReviewResultsDTO;
 import com.hits.language_school_back.dto.PeerReviewSettingsDTO;
 import com.hits.language_school_back.dto.PeerReviewWithoutReviewerWarningDTO;
 import com.hits.language_school_back.dto.TaskCriterionDTO;
@@ -156,6 +158,28 @@ public class PeerReviewServiceImpl implements PeerReviewService {
 
     @Override
     @Transactional(readOnly = true)
+    public PeerReviewResultsDTO getPeerReviewResults(UUID taskId, UUID teacherId) {
+        Task task = getTask(taskId);
+        ensureTeacherCanManageCourse(teacherId, task.getCourse());
+        ensurePeerReviewEnabled(task);
+
+        List<TaskCriterion> activeCriteria = taskCriterionRepository.findAllByTaskIdAndActiveTrueOrderByOrderIndexAscTitleAsc(taskId);
+        Integer totalMaxPoints = calculateTotalMaxPoints(activeCriteria);
+
+        return PeerReviewResultsDTO.builder()
+                .taskId(task.getId())
+                .peerReviewEnabled(task.getPeerReviewEnabled())
+                .peerReviewDistributionType(task.getPeerReviewDistributionType())
+                .peerReviewerVisibleToTeams(task.getPeerReviewerVisibleToTeams())
+                .totalMaxPoints(totalMaxPoints)
+                .results(peerReviewAssignmentRepository.findAllByTaskId(taskId).stream()
+                        .map(assignment -> toResultDto(assignment, totalMaxPoints))
+                        .toList())
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public PeerReviewAccessDTO getMyPeerReviewAssignment(UUID taskId, UUID studentId) {
         Task task = getTask(taskId);
         ensurePeerReviewEnabled(task);
@@ -227,6 +251,26 @@ public class PeerReviewServiceImpl implements PeerReviewService {
                 .criteria(activeCriteria.stream()
                         .map(this::toCriterionDto)
                         .toList())
+                .build();
+    }
+
+    private PeerReviewResultDTO toResultDto(PeerReviewAssignment assignment, Integer totalMaxPoints) {
+        Team reviewerTeam = assignment.getReviewerTeam();
+        Team reviewedTeam = assignment.getReviewedTeam();
+        AssessmentDTO assessment = assignment.getAssessment() == null
+                ? null
+                : toAssessmentDto(assignment.getAssessment(), totalMaxPoints);
+
+        return PeerReviewResultDTO.builder()
+                .taskId(assignment.getTask() == null ? null : assignment.getTask().getId())
+                .assignment(toAssignmentDto(assignment))
+                .assessment(assessment)
+                .reviewerTeamId(reviewerTeam == null ? null : reviewerTeam.getId())
+                .reviewerTeamName(reviewerTeam == null ? null : reviewerTeam.getName())
+                .reviewedTeamId(reviewedTeam == null ? null : reviewedTeam.getId())
+                .reviewedTeamName(reviewedTeam == null ? null : reviewedTeam.getName())
+                .targetParticipationId(assignment.getTargetParticipation() == null ? null : assignment.getTargetParticipation().getId())
+                .status(assignment.getStatus())
                 .build();
     }
 

@@ -6,6 +6,7 @@ import com.hits.language_school_back.dto.PeerReviewAccessDTO;
 import com.hits.language_school_back.dto.PeerReviewAssignmentDTO;
 import com.hits.language_school_back.dto.PeerReviewEnableDTO;
 import com.hits.language_school_back.dto.PeerReviewManualAssignmentDTO;
+import com.hits.language_school_back.dto.PeerReviewResultsDTO;
 import com.hits.language_school_back.dto.PeerReviewSettingsDTO;
 import com.hits.language_school_back.enums.AssessmentStatus;
 import com.hits.language_school_back.enums.AssessmentType;
@@ -366,6 +367,54 @@ class PeerReviewServiceTest {
         assertThatThrownBy(() -> peerReviewService.getPeerReviewSettings(taskId, otherTeacherId))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Only the course teacher can manage this task");
+    }
+
+    @Test
+    void getPeerReviewResults_whenTeacherOwnsTask_returnsTeamsAndAssessmentDetails() {
+        task.setPeerReviewEnabled(true);
+        task.setPeerReviewDistributionType(PeerReviewDistributionType.PAIR);
+        PeerReviewAssignment assignment = assignment(reviewerTeam, reviewedTeam);
+        assignment.setStatus(PeerReviewAssignmentStatus.SUBMITTED);
+        TaskCriterion criterion = criterion("Architecture", 10);
+        Assessment assessment = peerAssessment(targetParticipation, User.builder().id(studentId).role(Role.STUDENT).build(), 8);
+        AssessmentItem item = assessmentItem(assessment, criterion, 8, "Strong structure");
+        assignment.setAssessment(assessment);
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(taskCriterionRepository.findAllByTaskIdAndActiveTrueOrderByOrderIndexAscTitleAsc(taskId)).thenReturn(List.of(criterion));
+        when(peerReviewAssignmentRepository.findAllByTaskId(taskId)).thenReturn(List.of(assignment));
+        when(assessmentItemRepository.findAllByAssessmentId(assessment.getId())).thenReturn(List.of(item));
+
+        PeerReviewResultsDTO result = peerReviewService.getPeerReviewResults(taskId, teacherId);
+
+        assertThat(result.getTaskId()).isEqualTo(taskId);
+        assertThat(result.getPeerReviewEnabled()).isTrue();
+        assertThat(result.getPeerReviewDistributionType()).isEqualTo(PeerReviewDistributionType.PAIR);
+        assertThat(result.getTotalMaxPoints()).isEqualTo(10);
+        assertThat(result.getResults()).singleElement().satisfies(review -> {
+            assertThat(review.getReviewerTeamId()).isEqualTo(reviewerTeamId);
+            assertThat(review.getReviewerTeamName()).isEqualTo("Reviewer");
+            assertThat(review.getReviewedTeamId()).isEqualTo(reviewedTeamId);
+            assertThat(review.getReviewedTeamName()).isEqualTo("Reviewed");
+            assertThat(review.getAssessment().getTotalPoints()).isEqualTo(8);
+            assertThat(review.getAssessment().getItems()).singleElement().satisfies(dto -> {
+                assertThat(dto.getTitle()).isEqualTo("Architecture");
+                assertThat(dto.getPoints()).isEqualTo(8);
+                assertThat(dto.getComment()).isEqualTo("Strong structure");
+            });
+        });
+    }
+
+    @Test
+    void getPeerReviewResults_whenActorIsNotCourseTeacher_rejectsRequest() {
+        task.setPeerReviewEnabled(true);
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+
+        assertThatThrownBy(() -> peerReviewService.getPeerReviewResults(taskId, otherTeacherId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Only the course teacher can manage this task");
+
+        verify(peerReviewAssignmentRepository, never()).findAllByTaskId(any());
     }
 
     @Test
