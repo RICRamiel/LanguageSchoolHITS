@@ -29,6 +29,7 @@ export type StudentPeerAssessment = {
   targetParticipationId: string;
   totalMaxPoints: number;
   peerTotal: number | null;
+  submitted: boolean;
   criteria: PeerAssessmentCriterion[];
 };
 

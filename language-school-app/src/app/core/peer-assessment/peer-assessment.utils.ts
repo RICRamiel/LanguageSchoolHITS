@@ -36,6 +36,7 @@ export function createMockPeerAssessment(
   taskId: string,
   targetTeam: PeerAssessmentTeamContext,
   criteria: PeerAssessmentCriterion[],
+  submitted = false,
 ): StudentPeerAssessment {
   const activeCriteria = sortPeerCriteria(criteria).filter((criterion) => criterion.active);
   const peerTotal = activeCriteria.every((criterion) => criterion.peerPoints !== null)
@@ -49,6 +50,7 @@ export function createMockPeerAssessment(
     targetParticipationId: `team:${targetTeam.id}`,
     totalMaxPoints: activeCriteria.reduce((total, criterion) => total + criterion.maxPoints, 0),
     peerTotal,
+    submitted,
     criteria: sortPeerCriteria(criteria),
   };
 }
@@ -79,6 +81,7 @@ export function mergePeerAssessmentDraft(
       captainId: null,
     },
     criteria,
+    assessment.submitted,
   );
 }
 

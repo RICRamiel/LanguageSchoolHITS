@@ -16,6 +16,7 @@ import {
 @Injectable({ providedIn: 'root' })
 export class MockPeerAssessmentApiService {
   private readonly savedDrafts = new Map<string, PeerAssessmentDraft>();
+  private readonly submittedKeys = new Set<string>();
 
   getAssignedPeerAssessment(
     task: PeerAssessmentTaskContext,
@@ -26,14 +27,17 @@ export class MockPeerAssessmentApiService {
       return of(null);
     }
 
-    const assessment = createMockPeerAssessment(
-      task.id,
-      targetTeam,
-      MOCK_PEER_CRITERIA,
-    );
-    const savedDraft = this.savedDrafts.get(this.getDraftKey(task.id, assessment.targetParticipationId));
+    const base = createMockPeerAssessment(task.id, targetTeam, MOCK_PEER_CRITERIA);
+    const key = this.getDraftKey(task.id, base.targetParticipationId);
+    const savedDraft = this.savedDrafts.get(key);
+    const submitted = this.submittedKeys.has(key);
 
-    return of(savedDraft ? mergePeerAssessmentDraft(assessment, savedDraft) : assessment);
+    if (savedDraft) {
+      const merged = mergePeerAssessmentDraft(base, savedDraft);
+      return of({ ...merged, submitted });
+    }
+
+    return of({ ...base, submitted });
   }
 
   submitPeerAssessment(
@@ -50,8 +54,11 @@ export class MockPeerAssessmentApiService {
       return accumulator;
     }, {});
 
-    this.savedDrafts.set(this.getDraftKey(taskId, targetParticipationId), draft);
-    return of(mergePeerAssessmentDraft(currentAssessment, draft));
+    const key = this.getDraftKey(taskId, targetParticipationId);
+    this.savedDrafts.set(key, draft);
+    this.submittedKeys.add(key);
+
+    return of({ ...mergePeerAssessmentDraft(currentAssessment, draft), submitted: true });
   }
 
   private getDraftKey(taskId: string, targetParticipationId: string): string {

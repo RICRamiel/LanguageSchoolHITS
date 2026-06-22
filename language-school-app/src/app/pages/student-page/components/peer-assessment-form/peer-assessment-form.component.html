@@ -16,66 +16,95 @@
       Итог: {{ peerAssessment.peerTotal ?? 0 }} / {{ peerAssessment.totalMaxPoints }}
     </p>
 
-    @if (activeCriteria().length) {
-      <div class="peer-assessment__criteria">
-        @for (criterion of activeCriteria(); track criterion.criterionId) {
-          <article class="peer-assessment__criterion">
-            <div class="peer-assessment__criterion-header">
-              <p class="peer-assessment__criterion-title">
-                {{ criterion.title }} (max {{ criterion.maxPoints }})
+    @if (peerAssessment.submitted) {
+      <p class="peer-assessment__submitted-badge">Оценка отправлена</p>
+      @if (activeCriteria().length) {
+        <div class="peer-assessment__criteria peer-assessment__criteria--readonly">
+          @for (criterion of activeCriteria(); track criterion.criterionId) {
+            <article class="peer-assessment__criterion">
+              <div class="peer-assessment__criterion-header">
+                <p class="peer-assessment__criterion-title">
+                  {{ criterion.title }} (max {{ criterion.maxPoints }})
+                </p>
+                @if (criterion.sectionName) {
+                  <span class="peer-assessment__section">{{ criterion.sectionName }}</span>
+                }
+              </div>
+              <p class="peer-assessment__description">{{ criterion.description }}</p>
+              <p class="peer-assessment__readonly-value">
+                Баллы: <strong>{{ criterion.peerPoints ?? '—' }}</strong>
               </p>
-              @if (criterion.sectionName) {
-                <span class="peer-assessment__section">{{ criterion.sectionName }}</span>
+              @if (criterion.peerComment) {
+                <p class="peer-assessment__readonly-value">
+                  Комментарий: {{ criterion.peerComment }}
+                </p>
               }
-            </div>
-            <p class="peer-assessment__description">{{ criterion.description }}</p>
-
-            <label class="peer-assessment__label" [for]="'peer-score-' + criterion.criterionId">
-              Баллы
-            </label>
-            <input
-              class="peer-assessment__input"
-              [id]="'peer-score-' + criterion.criterionId"
-              type="number"
-              min="0"
-              [max]="criterion.maxPoints"
-              [value]="getPeerScore(criterion.criterionId, criterion.peerPoints)"
-              [disabled]="saving()"
-              (input)="onPeerScoreInput(criterion.criterionId, $any($event.target).value)"
-            />
-
-            <label class="peer-assessment__label" [for]="'peer-comment-' + criterion.criterionId">
-              Комментарий
-            </label>
-            <textarea
-              class="peer-assessment__textarea"
-              [id]="'peer-comment-' + criterion.criterionId"
-              rows="2"
-              [value]="getPeerComment(criterion.criterionId, criterion.peerComment)"
-              [disabled]="saving()"
-              (input)="onPeerCommentInput(criterion.criterionId, $any($event.target).value)"
-            ></textarea>
-          </article>
-        }
-      </div>
+            </article>
+          }
+        </div>
+      }
     } @else {
-      <p class="peer-assessment__state">Критерии для peer-оценивания пока недоступны.</p>
-    }
+      @if (activeCriteria().length) {
+        <div class="peer-assessment__criteria">
+          @for (criterion of activeCriteria(); track criterion.criterionId) {
+            <article class="peer-assessment__criterion">
+              <div class="peer-assessment__criterion-header">
+                <p class="peer-assessment__criterion-title">
+                  {{ criterion.title }} (max {{ criterion.maxPoints }})
+                </p>
+                @if (criterion.sectionName) {
+                  <span class="peer-assessment__section">{{ criterion.sectionName }}</span>
+                }
+              </div>
+              <p class="peer-assessment__description">{{ criterion.description }}</p>
 
-    @if (localValidationError()) {
-      <p class="peer-assessment__error">{{ localValidationError() }}</p>
-    }
-    @if (error()) {
-      <p class="peer-assessment__error">{{ error() }}</p>
-    }
+              <label class="peer-assessment__label" [for]="'peer-score-' + criterion.criterionId">
+                Баллы
+              </label>
+              <input
+                class="peer-assessment__input"
+                [id]="'peer-score-' + criterion.criterionId"
+                type="number"
+                min="0"
+                [max]="criterion.maxPoints"
+                [value]="getPeerScore(criterion.criterionId, criterion.peerPoints)"
+                [disabled]="saving()"
+                (input)="onPeerScoreInput(criterion.criterionId, $any($event.target).value)"
+              />
 
-    <button
-      class="peer-assessment__button"
-      type="button"
-      [disabled]="saving() || !activeCriteria().length"
-      (click)="submitPeerAssessment()"
-    >
-      {{ saving() ? 'Сохранение...' : 'Сохранить peer-оценку' }}
-    </button>
+              <label class="peer-assessment__label" [for]="'peer-comment-' + criterion.criterionId">
+                Комментарий
+              </label>
+              <textarea
+                class="peer-assessment__textarea"
+                [id]="'peer-comment-' + criterion.criterionId"
+                rows="2"
+                [value]="getPeerComment(criterion.criterionId, criterion.peerComment)"
+                [disabled]="saving()"
+                (input)="onPeerCommentInput(criterion.criterionId, $any($event.target).value)"
+              ></textarea>
+            </article>
+          }
+        </div>
+      } @else {
+        <p class="peer-assessment__state">Критерии для peer-оценивания пока недоступны.</p>
+      }
+
+      @if (localValidationError()) {
+        <p class="peer-assessment__error">{{ localValidationError() }}</p>
+      }
+      @if (error()) {
+        <p class="peer-assessment__error">{{ error() }}</p>
+      }
+
+      <button
+        class="peer-assessment__button"
+        type="button"
+        [disabled]="saving() || !activeCriteria().length"
+        (click)="submitPeerAssessment()"
+      >
+        {{ saving() ? 'Сохранение...' : 'Отправить peer-оценку' }}
+      </button>
+    }
   </section>
 }

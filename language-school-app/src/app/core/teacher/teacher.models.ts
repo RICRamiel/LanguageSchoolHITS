@@ -153,8 +153,8 @@ export type PeerAssessmentResult = {
   id: string;
   reviewedTeamId: string;
   reviewedTeamName: string;
-  reviewerTeamId: string;
-  reviewerTeamName: string;
+  reviewerTeamId: string | null;
+  reviewerTeamName: string | null;
   status: string;
   submittedAt: string | null;
   totalPoints: number | null;

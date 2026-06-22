@@ -224,6 +224,16 @@
         }
       </div>
     } @else if (selectedSection() === 'peerReviews') {
+      @if (teamsWithoutReviewer().length) {
+        <div class="modal__peer-warning">
+          <p class="modal__peer-warning-title">Внимание: команды без оценщика</p>
+          <ul class="modal__peer-warning-list">
+            @for (teamName of teamsWithoutReviewer(); track teamName) {
+              <li>{{ teamName }}</li>
+            }
+          </ul>
+        </div>
+      }
       <div class="modal__list">
         @if (peerAssessmentResultsLoading()) {
           <p class="modal__empty">Загрузка результатов peer-оценивания...</p>
@@ -239,7 +249,7 @@
                   Оцениваемая команда: {{ result.reviewedTeamName }}
                 </p>
                 <p class="modal__item-meta">
-                  Команда-оценщик: {{ result.reviewerTeamName }}
+                  Команда-оценщик: {{ result.reviewerTeamName ?? 'не назначена' }}
                 </p>
                 <p class="modal__item-meta">
                   Статус: {{ result.status }}
