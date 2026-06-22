@@ -116,7 +116,15 @@ type TeacherMockState = {
   teacherCommentText: string;
 };
 
-export async function mockTeacherApi(page: Page): Promise<TeacherMockState> {
+type TeacherMockOptions = {
+  peerReviewResults?: boolean;
+};
+
+export async function mockTeacherApi(page: Page, options: TeacherMockOptions = {}): Promise<TeacherMockState> {
+  await page.addInitScript(() => {
+    localStorage.setItem('auth_token', 'teacher-test-token');
+  });
+
   const state: TeacherMockState = {
     notificationCreated: false,
     taskCreated: false,
@@ -127,6 +135,81 @@ export async function mockTeacherApi(page: Page): Promise<TeacherMockState> {
     77: [],
   };
   let nextCommentId = 100;
+  const peerTaskId = 'peer-task-1';
+  const peerCriteria = [
+    {
+      criterionId: 'content',
+      title: 'Содержание',
+      description: 'Полнота ответа',
+      maxPoints: 5,
+      sectionName: 'Peer review',
+      orderIndex: 1,
+      points: 4,
+      comment: 'Аргументация сильная',
+    },
+    {
+      criterionId: 'language',
+      title: 'Язык',
+      description: 'Качество языка',
+      maxPoints: 5,
+      sectionName: 'Peer review',
+      orderIndex: 2,
+      points: 5,
+      comment: 'Комментарий по языку',
+    },
+  ];
+  const peerReviewTask = {
+    id: peerTaskId,
+    name: 'Peer-проект',
+    description: 'Командное задание с peer-оцениванием',
+    deadline: '2026-03-20',
+    courseId: 10,
+    courseName: 'A1',
+    taskStatus: 'PENDING',
+    teamType: 'FREEROAM',
+    resolveType: 'LAST_SUBMITTED_SOLUTION',
+    minTeamSize: 2,
+    maxTeamSize: 4,
+    minTeamsAmount: 2,
+    maxTeamsAmount: 4,
+    peerReviewEnabled: true,
+    commentList: [],
+    attachmentDownloadInfos: [],
+    teacher: { firstName: 'Teacher', lastName: 'User' },
+    teams: [
+      {
+        id: 'team-alpha',
+        name: 'Alpha',
+        membersCount: 2,
+        captainId: 'student-alpha',
+        participations: [
+          {
+            id: 'participation-alpha',
+            studentId: 'student-alpha',
+            studentName: 'Alpha Captain',
+            mark: null,
+            attachments: [],
+          },
+        ],
+      },
+      {
+        id: 'team-beta',
+        name: 'Beta',
+        membersCount: 2,
+        captainId: 'student-beta',
+        participations: [
+          {
+            id: 'participation-beta',
+            studentId: 'student-beta',
+            studentName: 'Beta Captain',
+            mark: null,
+            attachments: [],
+          },
+        ],
+      },
+    ],
+  };
+  const tasks: unknown[] = options.peerReviewResults ? [peerReviewTask] : [];
 
   await page.route(`${API_BASE}/**`, async (route) => {
     const request = route.request();
@@ -149,11 +232,33 @@ export async function mockTeacherApi(page: Page): Promise<TeacherMockState> {
       return json(route, [{ id: 10, name: 'A1' }]);
     }
 
-    if (method === 'GET' && path === '/task/11/get_by_teacher') {
+    if (method === 'GET' && path === '/course') {
+      return json(route, [
+        {
+          id: 10,
+          name: 'A1',
+          teacher: { id: 11 },
+        },
+      ]);
+    }
+
+    if (method === 'GET' && path === '/api/users/students') {
+      const groupIdParam = url.searchParams.get('groupId');
+      if (groupIdParam) {
+        return json(route, []);
+      }
       return json(route, []);
     }
 
-    if (method === 'GET' && path === '/notification/by-group/10') {
+    if (method === 'GET' && path === '/task/11/get_by_teacher') {
+      return json(route, tasks);
+    }
+
+    if (method === 'GET' && path === '/task/course/10') {
+      return json(route, tasks);
+    }
+
+    if (method === 'GET' && (path === '/notification/by-group/10' || path === '/notification/by-course/10')) {
       return json(route, []);
     }
 
@@ -172,17 +277,99 @@ export async function mockTeacherApi(page: Page): Promise<TeacherMockState> {
     if (method === 'POST' && path === '/task/create') {
       const payload = request.postDataJSON() as { name?: string; description?: string; deadline?: string };
       state.taskCreated = true;
-      return json(route, {
+      const createdTask = {
         id: 77,
         name: payload.name ?? 'Новое задание',
         description: payload.description ?? '',
         deadline: payload.deadline ?? '2026-03-20',
+        courseId: 10,
+        courseName: 'A1',
         commentList: [],
-      });
+        attachmentDownloadInfos: [],
+        taskStatus: 'PENDING',
+        teamType: 'FREEROAM',
+        resolveType: 'LAST_SUBMITTED_SOLUTION',
+        peerReviewEnabled: false,
+        teams: [],
+      };
+      tasks.unshift(createdTask);
+      return json(route, createdTask);
     }
 
     if (method === 'GET' && path === '/comment/77/get') {
       return json(route, commentsByTask[77] ?? []);
+    }
+
+    if (method === 'GET' && path === `/comment/${peerTaskId}/get`) {
+      return json(route, []);
+    }
+
+    if (method === 'GET' && path === '/task/77/criteria') {
+      return json(route, []);
+    }
+
+    if (method === 'GET' && path === `/task/${peerTaskId}/criteria`) {
+      return json(route, peerCriteria.map(({ criterionId, points, comment, ...criterion }) => ({
+        ...criterion,
+        id: criterionId,
+        taskId: peerTaskId,
+        active: true,
+      })));
+    }
+
+    if (method === 'GET' && path === `/task/${peerTaskId}/peer-review/results`) {
+      return json(route, {
+        taskId: peerTaskId,
+        peerReviewEnabled: true,
+        peerReviewDistributionType: 'PAIR',
+        peerReviewerVisibleToTeams: true,
+        peerReviewConfirmedAt: '2026-03-21T10:00:00',
+        totalMaxPoints: 10,
+        results: [
+          {
+            taskId: peerTaskId,
+            assignment: {
+              id: 'peer-assignment-1',
+              taskId: peerTaskId,
+              reviewerTeamId: 'team-beta',
+              reviewedTeamId: 'team-alpha',
+              targetParticipationId: 'participation-alpha',
+              assessmentId: 'peer-assessment-1',
+              status: 'FINAL',
+              createdAt: '2026-03-21T09:00:00',
+              submittedAt: '2026-03-21T10:00:00',
+            },
+            assessment: {
+              id: 'peer-assessment-1',
+              taskId: peerTaskId,
+              participationId: 'participation-alpha',
+              assessorId: 'student-beta',
+              type: 'PEER',
+              status: 'SUBMITTED',
+              totalPoints: 9,
+              totalMaxPoints: 10,
+              updatedAt: '2026-03-21T10:00:00',
+              items: peerCriteria.map((criterion) => ({
+                criterionId: criterion.criterionId,
+                title: criterion.title,
+                description: criterion.description,
+                maxPoints: criterion.maxPoints,
+                sectionName: criterion.sectionName,
+                orderIndex: criterion.orderIndex,
+                active: true,
+                points: criterion.points,
+                comment: criterion.comment,
+              })),
+            },
+            reviewerTeamId: 'team-beta',
+            reviewerTeamName: 'Beta',
+            reviewedTeamId: 'team-alpha',
+            reviewedTeamName: 'Alpha',
+            targetParticipationId: 'participation-alpha',
+            status: 'FINAL',
+          },
+        ],
+      });
     }
 
     if (method === 'POST' && path === '/comment/create') {

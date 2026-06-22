@@ -2,6 +2,7 @@
 import {
   TaskCriterion,
   TaskCriterionPayload,
+  PeerAssessmentResult,
   TeacherTask,
   TeacherTaskDetailsSection,
   TeacherTaskSubmission,
@@ -32,6 +33,9 @@ export class TaskDetailsModalComponent implements OnInit {
   readonly criteriaLoading = input<boolean>(false);
   readonly criteriaSaving = input<boolean>(false);
   readonly criteriaError = input<string | null>(null);
+  readonly peerAssessmentResults = input<PeerAssessmentResult[]>([]);
+  readonly peerAssessmentResultsLoading = input<boolean>(false);
+  readonly peerAssessmentResultsError = input<string | null>(null);
   readonly createCriterion = output<TaskCriterionPayload>();
   readonly updateCriterion = output<{ criterionId: string; payload: TaskCriterionPayload }>();
   readonly deactivateCriterion = output<string>();

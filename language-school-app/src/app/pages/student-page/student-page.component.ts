@@ -565,6 +565,8 @@ export class StudentPageComponent implements OnInit {
               name: (group.name ?? '').trim(),
             }))
             .filter((group) => Boolean(group.id) && Boolean(group.name));
+          const allowedGroupIds = new Set(fallbackGroups.map((group) => group.id));
+          const allowedGroupNames = new Set(fallbackGroups.map((group) => group.name.trim().toLowerCase()));
 
           const groups$ = this.http
             .get<StudentGroupResponse[]>(
@@ -577,7 +579,17 @@ export class StudentPageComponent implements OnInit {
                     id: String(group.id ?? '').trim(),
                     name: (group.name ?? '').trim(),
                   }))
-                  .filter((group) => Boolean(group.id) && Boolean(group.name)),
+                  .filter((group) => Boolean(group.id) && Boolean(group.name))
+                  .filter((group) => {
+                    if (!allowedGroupIds.size && !allowedGroupNames.size) {
+                      return false;
+                    }
+
+                    return (
+                      allowedGroupIds.has(group.id) ||
+                      allowedGroupNames.has(group.name.trim().toLowerCase())
+                    );
+                  }),
               ),
               map((groups) =>
                 groups.length ? groups.sort((a, b) => a.name.localeCompare(b.name, 'ru')) : fallbackGroups,
