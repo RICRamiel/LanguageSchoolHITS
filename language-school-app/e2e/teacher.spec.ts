@@ -34,3 +34,37 @@ test('Teacher: create notification, create task, leave comment', async ({ page }
 
   await expect.poll(() => state.teacherCommentText).toBe('Комментарий от учителя');
 });
+
+test('Scenario: преподаватель видит результаты peer-оценивания', async ({ page }) => {
+  await test.step('Given команды отправили peer-оценки', async () => {
+    await mockTeacherApi(page, { peerReviewResults: true });
+    await page.goto('/teacher');
+    await expect(page.getByText('Peer-проект')).toBeVisible();
+  });
+
+  await test.step('When преподаватель открывает результаты задания', async () => {
+    const taskCard = page.locator('.task-card').filter({ hasText: 'Peer-проект' });
+    await taskCard.getByRole('button', { name: /Подробнее/ }).click();
+    await page.getByRole('button', { name: 'Peer-оценки' }).click();
+  });
+
+  await test.step('Then он видит оцениваемую команду', async () => {
+    await expect(page.getByText('Оцениваемая команда: Alpha')).toBeVisible();
+  });
+
+  await test.step('And видит команду-оценщика', async () => {
+    await expect(page.getByText('Команда-оценщик: Beta')).toBeVisible();
+  });
+
+  await test.step('And видит оценки по критериям', async () => {
+    await expect(page.getByText('Содержание')).toBeVisible();
+    await expect(page.getByText('4 / 5')).toBeVisible();
+    await expect(page.getByText('Язык', { exact: true })).toBeVisible();
+    await expect(page.getByText('5 / 5')).toBeVisible();
+  });
+
+  await test.step('And видит комментарии', async () => {
+    await expect(page.getByText('Аргументация сильная')).toBeVisible();
+    await expect(page.getByText('Комментарий по языку')).toBeVisible();
+  });
+});

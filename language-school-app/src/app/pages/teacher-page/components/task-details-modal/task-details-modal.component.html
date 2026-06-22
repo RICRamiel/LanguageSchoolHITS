@@ -29,6 +29,16 @@
       >
         Критерии
       </button>
+      @if (task().peerReviewEnabled) {
+        <button
+          class="modal__tab"
+          type="button"
+          [class.modal__tab--active]="selectedSection() === 'peerReviews'"
+          (click)="setSection('peerReviews')"
+        >
+          Peer-оценки
+        </button>
+      }
       <button
         class="modal__tab"
         type="button"
@@ -208,6 +218,51 @@
                 >
                   Деактивировать
                 </button>
+              </div>
+            </article>
+          }
+        }
+      </div>
+    } @else if (selectedSection() === 'peerReviews') {
+      <div class="modal__list">
+        @if (peerAssessmentResultsLoading()) {
+          <p class="modal__empty">Загрузка результатов peer-оценивания...</p>
+        } @else if (peerAssessmentResultsError()) {
+          <p class="modal__empty">{{ peerAssessmentResultsError() }}</p>
+        } @else if (!peerAssessmentResults().length) {
+          <p class="modal__empty">Результаты peer-оценивания пока не отправлены.</p>
+        } @else {
+          @for (result of peerAssessmentResults(); track result.id) {
+            <article class="modal__item modal__peer-result">
+              <div class="modal__peer-teams">
+                <p class="modal__item-title">
+                  Оцениваемая команда: {{ result.reviewedTeamName }}
+                </p>
+                <p class="modal__item-meta">
+                  Команда-оценщик: {{ result.reviewerTeamName }}
+                </p>
+              </div>
+              <p class="modal__item-meta">
+                Итог: {{ result.totalPoints ?? 0 }} / {{ result.totalMaxPoints }}
+              </p>
+
+              <div class="modal__peer-criteria">
+                @for (criterion of result.criteria; track criterion.criterionId) {
+                  <div class="modal__peer-criterion">
+                    <div>
+                      <p class="modal__item-title">{{ criterion.title }}</p>
+                      @if (criterion.sectionName) {
+                        <p class="modal__item-meta">{{ criterion.sectionName }}</p>
+                      }
+                    </div>
+                    <p class="modal__peer-score">
+                      {{ criterion.points ?? '-' }} / {{ criterion.maxPoints }}
+                    </p>
+                    @if (criterion.comment) {
+                      <p class="modal__item-text modal__peer-comment">{{ criterion.comment }}</p>
+                    }
+                  </div>
+                }
               </div>
             </article>
           }

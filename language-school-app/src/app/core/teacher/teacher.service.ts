@@ -11,6 +11,9 @@ import {
   NotificationAttachment,
   ParticipationAssessment,
   ParticipationAssessmentItem,
+  AssessmentType,
+  PeerAssessmentCriterionResult,
+  PeerAssessmentResult,
   TaskCriterion,
   TaskCriterionPayload,
   TaskAssignmentType,
@@ -60,6 +63,10 @@ type TeacherTaskResponse = {
   commentList?: TeacherComment[];
   attachmentDownloadInfos?: TeacherAttachmentResponse[] | null;
   taskStatus?: 'COMPLETE' | 'OVERDUE' | 'PENDING';
+  peerReviewEnabled?: boolean | null;
+  peerReviewDistributionType?: string | null;
+  peerReviewerVisibleToTeams?: boolean | null;
+  peerReviewConfirmedAt?: string | null;
   groupName?: string;
   teams?: TeacherTeamResponse[] | null;
   teacher?: {
@@ -75,9 +82,12 @@ type TeacherTaskResponse = {
   };
 };
 
-type TeacherGroupResponse = {
+type TeacherCourseResponse = {
   id?: number | string;
   name?: string;
+  teacher?: {
+    id?: number | string;
+  } | null;
 };
 
 type TeacherStudentResponse = {
@@ -124,9 +134,10 @@ type TaskCriterionResponse = {
 
 type AssessmentDetailsResponse = {
   id?: string;
-  type?: 'SELF' | 'TEACHER';
+  type?: AssessmentType;
   totalPoints?: number;
   totalMaxPoints?: number;
+  updatedAt?: string | null;
   items?: ParticipationAssessmentItemResponse[] | null;
 };
 
@@ -155,6 +166,42 @@ type ParticipationAssessmentResponse = {
   criteria?: ParticipationAssessmentItemResponse[] | null;
   teacherAssessment?: AssessmentDetailsResponse | null;
   selfAssessment?: AssessmentDetailsResponse | null;
+};
+
+type PeerReviewAssignmentResponse = {
+  id?: string;
+  taskId?: string;
+  reviewerTeamId?: string;
+  reviewedTeamId?: string;
+  targetParticipationId?: string;
+  assessmentId?: string;
+  status?: string;
+  createdAt?: string | null;
+  submittedAt?: string | null;
+  teacherEditorId?: string | null;
+  teacherEditedAt?: string | null;
+};
+
+type PeerAssessmentResultResponse = {
+  taskId?: string;
+  assignment?: PeerReviewAssignmentResponse | null;
+  assessment?: AssessmentDetailsResponse | null;
+  reviewerTeamId?: string;
+  reviewerTeamName?: string;
+  reviewedTeamId?: string;
+  reviewedTeamName?: string;
+  targetParticipationId?: string;
+  status?: string;
+};
+
+type PeerReviewResultsResponse = {
+  taskId?: string;
+  peerReviewEnabled?: boolean;
+  peerReviewDistributionType?: string;
+  peerReviewerVisibleToTeams?: boolean;
+  peerReviewConfirmedAt?: string | null;
+  totalMaxPoints?: number | null;
+  results?: PeerAssessmentResultResponse[] | null;
 };
 
 @Injectable({ providedIn: 'root' })
@@ -266,6 +313,21 @@ export class TeacherService {
       .pipe(map((assessment) => this.mapAssessmentDetails(assessment)));
   }
 
+  getPeerAssessmentResults(taskId: string): Observable<PeerAssessmentResult[]> {
+    const normalizedTaskId = taskId.trim();
+    if (!normalizedTaskId) {
+      return of([]);
+    }
+
+    return this.http
+      .get<unknown>(
+        withOpenApiBase(OPENAPI_PATHS.tasks.peerReviewResults(normalizedTaskId)),
+      )
+      .pipe(
+        map((response) => this.normalizePeerReviewResults(response)),
+      );
+  }
+
   updateStudentGrade(student: TeacherStudentGrade): Observable<void> {
     const normalizedGrade = student.grade.trim();
 
@@ -282,10 +344,20 @@ export class TeacherService {
   }
 
   getGroupsByTeacher(teacherId: string | number): Observable<TeacherGroup[]> {
+    const normalizedTeacherId = this.toId(teacherId);
     return this.http
-      .get<TeacherGroupResponse[]>(withOpenApiBase(OPENAPI_PATHS.courses.list))
+      .get<TeacherCourseResponse[]>(withOpenApiBase(OPENAPI_PATHS.courses.list))
       .pipe(
-        map((groups) => this.normalizeGroups(groups)),
+        map((courses) =>
+          this.normalizeGroups(
+            (courses ?? []).filter((course) => {
+              if (!normalizedTeacherId) {
+                return true;
+              }
+              return this.toId(course?.teacher?.id) === normalizedTeacherId;
+            }),
+          ),
+        ),
         map((groups) => this.sortGroups(groups)),
         catchError(() => of([] as TeacherGroup[])),
       );
@@ -535,6 +607,17 @@ export class TeacherService {
     return typeof value === 'string' ? value.trim() : '';
   }
 
+  private toId(value: unknown): string {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return String(value);
+    }
+    return this.asTrimmedString(value);
+  }
+
+  private resolveFiniteNumber(value: unknown): number | null {
+    return typeof value === 'number' && Number.isFinite(value) ? value : null;
+  }
+
   private mapNotificationAttachment(
     notification: TeacherNotificationResponse | null | undefined,
   ): NotificationAttachment | null {
@@ -632,11 +715,80 @@ export class TeacherService {
   private mapAssessmentDetails(item: AssessmentDetailsResponse | null | undefined): AssessmentDetails {
     return {
       id: (item?.id ?? '').trim(),
-      type: item?.type === 'SELF' ? 'SELF' : 'TEACHER',
+      type: item?.type === 'SELF' ? 'SELF' : item?.type === 'PEER' ? 'PEER' : 'TEACHER',
       totalPoints: typeof item?.totalPoints === 'number' && Number.isFinite(item.totalPoints) ? item.totalPoints : 0,
       totalMaxPoints:
         typeof item?.totalMaxPoints === 'number' && Number.isFinite(item.totalMaxPoints) ? item.totalMaxPoints : 0,
       items: (item?.items ?? []).map((entry) => this.mapParticipationAssessmentItem(entry)),
+    };
+  }
+
+  private mapPeerAssessmentResult(
+    result: PeerAssessmentResultResponse | null | undefined,
+  ): PeerAssessmentResult {
+    const assessment = result?.assessment ?? null;
+    const assignment = result?.assignment ?? null;
+    const criteria = (assessment?.items ?? [])
+      .map((item) => this.mapPeerAssessmentCriterionResult(item))
+      .sort((a, b) => a.orderIndex - b.orderIndex);
+    const totalMaxPoints = this.resolveFiniteNumber(assessment?.totalMaxPoints)
+      ?? criteria.reduce((total, criterion) => total + criterion.maxPoints, 0);
+    const totalPoints = this.resolveFiniteNumber(assessment?.totalPoints)
+      ?? (criteria.every((criterion) => criterion.points !== null)
+        ? criteria.reduce((total, criterion) => total + (criterion.points ?? 0), 0)
+        : null);
+
+    return {
+      id: this.toId(assignment?.id) || this.toId(assessment?.id) || `peer-result-${Math.random()}`,
+      reviewedTeamId: this.toId(assignment?.reviewedTeamId ?? result?.reviewedTeamId),
+      reviewedTeamName:
+        this.asTrimmedString(result?.reviewedTeamName)
+        || 'Команда не указана',
+      reviewerTeamId: this.toId(assignment?.reviewerTeamId ?? result?.reviewerTeamId),
+      reviewerTeamName:
+        this.asTrimmedString(result?.reviewerTeamName)
+        || 'Команда-оценщик не указана',
+      status: this.asTrimmedString(assignment?.status ?? result?.status) || 'SUBMITTED',
+      submittedAt: this.asTrimmedString(assignment?.submittedAt) || this.asTrimmedString(assessment?.updatedAt) || null,
+      totalPoints,
+      totalMaxPoints,
+      criteria,
+    };
+  }
+
+  private normalizePeerReviewResults(payload: unknown): PeerAssessmentResult[] {
+    if (Array.isArray(payload)) {
+      return payload.map((item) => this.mapPeerAssessmentResult(item as PeerAssessmentResultResponse));
+    }
+
+    if (!payload || typeof payload !== 'object') {
+      return [];
+    }
+
+    const record = payload as PeerReviewResultsResponse & Record<string, unknown>;
+    const results = Array.isArray(record.results)
+      ? record.results
+      : Array.isArray(record['result'])
+        ? (record['result'] as PeerAssessmentResultResponse[])
+        : Array.isArray(record['data'])
+          ? (record['data'] as PeerAssessmentResultResponse[])
+          : [];
+
+    return results.map((item) => this.mapPeerAssessmentResult(item));
+  }
+
+  private mapPeerAssessmentCriterionResult(
+    item: ParticipationAssessmentItemResponse | null | undefined,
+  ): PeerAssessmentCriterionResult {
+    return {
+      criterionId: this.asTrimmedString(item?.criterionId),
+      title: this.asTrimmedString(item?.title) || 'Критерий',
+      description: this.asTrimmedString(item?.description),
+      maxPoints: this.resolveFiniteNumber(item?.maxPoints) ?? 0,
+      sectionName: this.asTrimmedString(item?.sectionName),
+      orderIndex: this.resolveFiniteNumber(item?.orderIndex) ?? 0,
+      points: this.resolveFiniteNumber(item?.points),
+      comment: typeof item?.comment === 'string' ? item.comment.trim() || null : null,
     };
   }
 
@@ -661,7 +813,7 @@ export class TeacherService {
     };
   }
 
-  private normalizeGroups(groups: TeacherGroupResponse[] | null | undefined): TeacherGroup[] {
+  private normalizeGroups(groups: TeacherCourseResponse[] | null | undefined): TeacherGroup[] {
     return (groups ?? [])
       .map((group) => ({
         id: String(group.id ?? '').trim(),
@@ -789,6 +941,7 @@ export class TeacherService {
       minTeamsAmount,
       maxTeamsAmount,
       votesThreshold,
+      peerReviewEnabled: Boolean(task?.peerReviewEnabled),
       teams: (task?.teams ?? []).map((t) => this.mapTeam(t)),
     };
   }

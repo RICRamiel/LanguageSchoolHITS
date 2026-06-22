@@ -45,6 +45,8 @@ export const OPENAPI_PATHS = {
       `/task/${encodeURIComponent(taskId)}/participations/${encodeURIComponent(participationId)}/teacher-assessment`,
     selfAssessment: (taskId: string, participationId: string) =>
       `/task/${encodeURIComponent(taskId)}/participations/${encodeURIComponent(participationId)}/self-assessment`,
+    peerReviewResults: (taskId: string) =>
+      `/task/${encodeURIComponent(taskId)}/peer-review/results`,
   },
   teacher: {
     tasksByTeacher: (teacherId: string | number) => `/task/${encodeURIComponent(String(teacherId))}/get_by_teacher`,
