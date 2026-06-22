@@ -11,6 +11,7 @@ import {
   CreateTaskPayload,
   NotificationAttachment,
   ParticipationAssessment,
+  PeerAssessmentResult,
   AssessmentSubmitItem,
   TaskCriterion,
   TaskCriterionPayload,
@@ -139,6 +140,9 @@ export class TeacherPageComponent implements OnInit {
   taskCriteriaLoading = false;
   taskCriteriaSaving = false;
   taskCriteriaError: string | null = null;
+  peerAssessmentResults: PeerAssessmentResult[] = [];
+  peerAssessmentResultsLoading = false;
+  peerAssessmentResultsError: string | null = null;
   selectedAssessmentStudent: TeacherStudentGrade | null = null;
   selectedAssessmentParticipationId: string | null = null;
   teacherAssessment: ParticipationAssessment | null = null;
@@ -216,6 +220,7 @@ export class TeacherPageComponent implements OnInit {
     this.selectedTaskSection = payload.section;
     this.isTaskDetailsModalOpen = true;
     this.loadTaskCriteria(task.id);
+    this.loadPeerAssessmentResults(task);
 
     if (task.id) {
       this.teacherService.getTaskComments(task.id).pipe(
@@ -325,6 +330,9 @@ export class TeacherPageComponent implements OnInit {
     this.taskCriteriaLoading = false;
     this.taskCriteriaSaving = false;
     this.taskCriteriaError = null;
+    this.peerAssessmentResults = [];
+    this.peerAssessmentResultsLoading = false;
+    this.peerAssessmentResultsError = null;
   }
 
   onCreateCriterion(payload: TaskCriterionPayload): void {
@@ -839,6 +847,33 @@ export class TeacherPageComponent implements OnInit {
     ).subscribe({
       next: (criteria) => {
         this.taskCriteria = criteria;
+      },
+    });
+  }
+
+  private loadPeerAssessmentResults(task: TeacherTask): void {
+    this.peerAssessmentResults = [];
+    this.peerAssessmentResultsError = null;
+
+    if (!task.peerReviewEnabled) {
+      this.peerAssessmentResultsLoading = false;
+      return;
+    }
+
+    this.peerAssessmentResultsLoading = true;
+
+    this.teacherService.getPeerAssessmentResults(task.id).pipe(
+      finalize(() => {
+        this.peerAssessmentResultsLoading = false;
+      }),
+      catchError(() => {
+        this.peerAssessmentResultsError = 'Не удалось загрузить результаты peer-оценивания';
+        return of([] as PeerAssessmentResult[]);
+      }),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: (results) => {
+        this.peerAssessmentResults = results;
       },
     });
   }

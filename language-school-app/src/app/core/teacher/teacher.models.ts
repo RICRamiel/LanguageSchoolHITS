@@ -1,4 +1,10 @@
-export type TeacherTaskDetailsSection = 'overview' | 'submissions' | 'comments' | 'teams' | 'criteria';
+export type TeacherTaskDetailsSection =
+  | 'overview'
+  | 'submissions'
+  | 'comments'
+  | 'teams'
+  | 'criteria'
+  | 'peerReviews';
 export type TaskAssignmentType = 'INDIVIDUAL' | 'TEAM';
 export type TaskTeamType = 'RANDOM' | 'FREEROAM' | 'DRAFT' | 'CUSTOM';
 export type TaskResolveType =
@@ -66,6 +72,7 @@ export type TeacherTask = {
   minTeamsAmount: number | null;
   maxTeamsAmount: number | null;
   votesThreshold: number | null;
+  peerReviewEnabled: boolean;
   teams: TaskTeam[];
 };
 
@@ -88,7 +95,7 @@ export type TaskCriterionPayload = {
   orderIndex: number;
 };
 
-export type AssessmentType = 'SELF' | 'TEACHER';
+export type AssessmentType = 'SELF' | 'TEACHER' | 'PEER';
 
 export type AssessmentSubmitItem = {
   criterionId: string;
@@ -129,6 +136,30 @@ export type ParticipationAssessment = {
   criteria: ParticipationAssessmentItem[];
   teacherAssessment: AssessmentDetails | null;
   selfAssessment: AssessmentDetails | null;
+};
+
+export type PeerAssessmentCriterionResult = {
+  criterionId: string;
+  title: string;
+  description: string;
+  maxPoints: number;
+  sectionName: string;
+  orderIndex: number;
+  points: number | null;
+  comment: string | null;
+};
+
+export type PeerAssessmentResult = {
+  id: string;
+  reviewedTeamId: string;
+  reviewedTeamName: string;
+  reviewerTeamId: string;
+  reviewerTeamName: string;
+  status: string;
+  submittedAt: string | null;
+  totalPoints: number | null;
+  totalMaxPoints: number;
+  criteria: PeerAssessmentCriterionResult[];
 };
 
 export type TeacherNotification = {

@@ -3,6 +3,8 @@ export type {
   NotificationAttachment,
   ParticipationAssessment,
   ParticipationAssessmentItem,
+  PeerAssessmentResult,
+  PeerAssessmentCriterionResult,
   CreateTaskPayload,
   TaskCriterion,
   TaskCriterionPayload,
