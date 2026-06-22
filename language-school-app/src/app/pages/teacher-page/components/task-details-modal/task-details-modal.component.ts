@@ -2,6 +2,7 @@
 import {
   TaskCriterion,
   TaskCriterionPayload,
+  PeerAssessmentEditItem,
   PeerAssessmentResult,
   TeacherTask,
   TeacherTaskDetailsSection,
@@ -36,7 +37,10 @@ export class TaskDetailsModalComponent implements OnInit {
   readonly peerAssessmentResults = input<PeerAssessmentResult[]>([]);
   readonly peerAssessmentResultsLoading = input<boolean>(false);
   readonly peerAssessmentResultsError = input<string | null>(null);
+  readonly peerAssessmentEditSaving = input<boolean>(false);
+  readonly peerAssessmentEditError = input<string | null>(null);
   readonly createCriterion = output<TaskCriterionPayload>();
+  readonly editPeerAssessment = output<{ assignmentId: string; items: PeerAssessmentEditItem[] }>();
   readonly updateCriterion = output<{ criterionId: string; payload: TaskCriterionPayload }>();
   readonly deactivateCriterion = output<string>();
   readonly selectedSection = signal<TeacherTaskDetailsSection>('overview');
@@ -49,6 +53,8 @@ export class TaskDetailsModalComponent implements OnInit {
   readonly criterionMaxPoints = signal('0');
   readonly criterionOrderIndex = signal('0');
   readonly editingCriterionId = signal<string | null>(null);
+  readonly editingPeerResultId = signal<string | null>(null);
+  readonly peerEditDraft = signal<Record<string, { points: string; comment: string }>>({});
 
   ngOnInit(): void {
     this.selectedSection.set(this.activeSection());
@@ -233,6 +239,44 @@ export class TaskDetailsModalComponent implements OnInit {
 
   isCriterionFormValid(): boolean {
     return this.buildCriterionPayload() !== null;
+  }
+
+  startEditPeerResult(result: PeerAssessmentResult): void {
+    const draft: Record<string, { points: string; comment: string }> = {};
+    for (const c of result.criteria) {
+      draft[c.criterionId] = { points: c.points !== null ? String(c.points) : '', comment: c.comment ?? '' };
+    }
+    this.peerEditDraft.set(draft);
+    this.editingPeerResultId.set(result.id);
+  }
+
+  cancelEditPeerResult(): void {
+    this.editingPeerResultId.set(null);
+    this.peerEditDraft.set({});
+  }
+
+  onPeerEditPointsInput(criterionId: string, event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.peerEditDraft.update((d) => ({ ...d, [criterionId]: { ...d[criterionId], points: value } }));
+  }
+
+  onPeerEditCommentInput(criterionId: string, event: Event): void {
+    const value = (event.target as HTMLTextAreaElement).value;
+    this.peerEditDraft.update((d) => ({ ...d, [criterionId]: { ...d[criterionId], comment: value } }));
+  }
+
+  submitPeerEdit(assignmentId: string): void {
+    if (this.peerAssessmentEditSaving()) {
+      return;
+    }
+    const draft = this.peerEditDraft();
+    const items: PeerAssessmentEditItem[] = Object.entries(draft)
+      .filter(([, v]) => v.points !== '' && Number.isFinite(Number(v.points)))
+      .map(([criterionId, v]) => ({ criterionId, points: Number(v.points), comment: v.comment }));
+    if (!items.length) {
+      return;
+    }
+    this.editPeerAssessment.emit({ assignmentId, items });
   }
 
   private buildCriterionPayload(): TaskCriterionPayload | null {

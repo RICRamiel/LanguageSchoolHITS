@@ -13,6 +13,7 @@ import {
   ParticipationAssessmentItem,
   AssessmentType,
   PeerAssessmentCriterionResult,
+  PeerAssessmentEditItem,
   PeerAssessmentResult,
   TaskCriterion,
   TaskCriterionPayload,
@@ -326,6 +327,15 @@ export class TeacherService {
       .pipe(
         map((response) => this.normalizePeerReviewResults(response)),
       );
+  }
+
+  editPeerAssessment(taskId: string, assignmentId: string, items: PeerAssessmentEditItem[]): Observable<void> {
+    return this.http
+      .put<void>(
+        withOpenApiBase(OPENAPI_PATHS.tasks.peerReviewAssessment(taskId.trim(), assignmentId.trim())),
+        { items },
+      )
+      .pipe(map(() => void 0));
   }
 
   updateStudentGrade(student: TeacherStudentGrade): Observable<void> {

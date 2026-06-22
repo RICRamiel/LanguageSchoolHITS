@@ -162,6 +162,12 @@ export type PeerAssessmentResult = {
   criteria: PeerAssessmentCriterionResult[];
 };
 
+export type PeerAssessmentEditItem = {
+  criterionId: string;
+  points: number;
+  comment: string;
+};
+
 export type TeacherNotification = {
   id: string;
   title: string;

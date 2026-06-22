@@ -5,6 +5,7 @@ export type {
   ParticipationAssessmentItem,
   PeerAssessmentResult,
   PeerAssessmentCriterionResult,
+  PeerAssessmentEditItem,
   CreateTaskPayload,
   TaskCriterion,
   TaskCriterionPayload,

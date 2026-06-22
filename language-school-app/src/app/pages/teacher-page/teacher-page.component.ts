@@ -12,6 +12,7 @@ import {
   NotificationAttachment,
   ParticipationAssessment,
   PeerAssessmentResult,
+  PeerAssessmentEditItem,
   AssessmentSubmitItem,
   TaskCriterion,
   TaskCriterionPayload,
@@ -143,6 +144,8 @@ export class TeacherPageComponent implements OnInit {
   peerAssessmentResults: PeerAssessmentResult[] = [];
   peerAssessmentResultsLoading = false;
   peerAssessmentResultsError: string | null = null;
+  peerAssessmentEditSaving = false;
+  peerAssessmentEditError: string | null = null;
   selectedAssessmentStudent: TeacherStudentGrade | null = null;
   selectedAssessmentParticipationId: string | null = null;
   teacherAssessment: ParticipationAssessment | null = null;
@@ -333,6 +336,8 @@ export class TeacherPageComponent implements OnInit {
     this.peerAssessmentResults = [];
     this.peerAssessmentResultsLoading = false;
     this.peerAssessmentResultsError = null;
+    this.peerAssessmentEditSaving = false;
+    this.peerAssessmentEditError = null;
   }
 
   onCreateCriterion(payload: TaskCriterionPayload): void {
@@ -847,6 +852,33 @@ export class TeacherPageComponent implements OnInit {
     ).subscribe({
       next: (criteria) => {
         this.taskCriteria = criteria;
+      },
+    });
+  }
+
+  onEditPeerAssessment(payload: { assignmentId: string; items: PeerAssessmentEditItem[] }): void {
+    const taskId = this.selectedTask?.id;
+    if (!taskId || this.peerAssessmentEditSaving) {
+      return;
+    }
+
+    this.peerAssessmentEditSaving = true;
+    this.peerAssessmentEditError = null;
+
+    this.teacherService.editPeerAssessment(taskId, payload.assignmentId, payload.items).pipe(
+      finalize(() => {
+        this.peerAssessmentEditSaving = false;
+      }),
+      catchError(() => {
+        this.peerAssessmentEditError = 'Не удалось сохранить изменения';
+        return of(void 0);
+      }),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: () => {
+        if (this.selectedTask) {
+          this.loadPeerAssessmentResults(this.selectedTask);
+        }
       },
     });
   }
