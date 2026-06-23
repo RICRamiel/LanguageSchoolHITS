@@ -156,6 +156,29 @@ export class TaskDetailsModalComponent implements OnInit {
     }
   }
 
+  canEditPeerResult(result: PeerAssessmentResult): boolean {
+    return Boolean(result.assignmentId)
+      && result.criteria.length > 0
+      && (result.status === 'SUBMITTED' || result.status === 'TEACHER_EDITED');
+  }
+
+  getPeerResultStatusLabel(status: string): string {
+    switch (status) {
+      case 'ASSIGNED':
+        return 'Назначено';
+      case 'SUBMITTED':
+        return 'Отправлено';
+      case 'TEACHER_EDITED':
+        return 'Изменено преподавателем';
+      case 'FINAL':
+        return 'Подтверждено';
+      case 'WITHOUT_REVIEWER':
+        return 'Без оценщика';
+      default:
+        return status;
+    }
+  }
+
   formatRange(min: number | null, max: number | null): string {
     if (min !== null && max !== null) {
       return min === max ? String(min) : `${min} - ${max}`;

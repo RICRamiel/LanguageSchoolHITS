@@ -10,6 +10,8 @@ import {
 function makeResult(overrides: Partial<PeerAssessmentResult> = {}): PeerAssessmentResult {
   return {
     id: 'assign-1',
+    assignmentId: 'assign-1',
+    assessmentId: 'assessment-1',
     reviewedTeamId: 'team-reviewed',
     reviewedTeamName: 'Team A',
     reviewerTeamId: 'team-reviewer',

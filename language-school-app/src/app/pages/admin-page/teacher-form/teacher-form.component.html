@@ -1,4 +1,4 @@
-﻿<app-card class="admin-form-card">
+<app-card class="admin-form-card">
   <app-card-header>
     <app-card-title>{{ title }}</app-card-title>
   </app-card-header>
@@ -26,22 +26,13 @@
         }
       </div>
       @if (!isEdit) {
-      <div class="form-row">
-        <app-label for="teacher-password">Пароль</app-label>
-        <app-input id="teacher-password" name="new-password" type="password" autocomplete="new-password" formControlName="password" placeholder="Пароль (8-64 символа)" />
-        @if (form.get('password')?.invalid && form.get('password')?.touched) {
-          <span class="form-error">{{ getErrorMessage('password') }}</span>
-        }
-      </div>
-      <div class="form-row">
-        <app-label for="teacher-group">Курс</app-label>
-        <select id="teacher-group" formControlName="groupId" class="form-select">
-          <option [ngValue]="null">Выберите курс</option>
-          @for (g of groups(); track g.id) {
-            <option [ngValue]="g.id">{{ g.name }}</option>
+        <div class="form-row">
+          <app-label for="teacher-password">Пароль</app-label>
+          <app-input id="teacher-password" name="new-password" type="password" autocomplete="new-password" formControlName="password" placeholder="Пароль (8-64 символа)" />
+          @if (form.get('password')?.invalid && form.get('password')?.touched) {
+            <span class="form-error">{{ getErrorMessage('password') }}</span>
           }
-        </select>
-      </div>
+        </div>
       }
       <div class="form-actions">
         <app-button type="submit" class="small">Сохранить</app-button>

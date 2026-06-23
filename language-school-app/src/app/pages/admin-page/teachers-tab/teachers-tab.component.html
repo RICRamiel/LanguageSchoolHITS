@@ -6,10 +6,10 @@
   @if (error) {
     <p class="admin-error">{{ error }}</p>
   }
+  <p class="admin-loading">Привязка преподавателя к курсу выполняется на вкладке «Курсы».</p>
   @if (showForm) {
     <app-teacher-form
       [initialValue]="editingTeacher"
-      [groups]="groups"
       (save)="onSave($event)"
       (cancel)="onCancel()"
     />
@@ -17,39 +17,28 @@
   @if (loading) {
     <p class="admin-loading">Загрузка...</p>
   } @else {
-  <div class="admin-table-wrap">
-    <table class="admin-table">
-      <thead>
-        <tr>
-          <th>ФИО</th>
-          <th>Почта</th>
-          <th>Языки</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (t of teachers; track t.id) {
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
           <tr>
-            <td>{{ t.fullName }}</td>
-            <td>{{ t.email }}</td>
-            <td>{{ t.languages }}</td>
-            <td class="admin-table__actions">
-              <app-button type="button" class="outline small" (click)="openAssignModal(t)">Привязать к курсу</app-button>
-              <app-button type="button" class="outline small" (click)="openEdit(t)">Изменить</app-button>
-              <app-button type="button" class="outline small" (click)="deleteTeacher(t.id)">Удалить</app-button>
-            </td>
+            <th>ФИО</th>
+            <th>Почта</th>
+            <th></th>
           </tr>
-        }
-      </tbody>
-    </table>
-  </div>
-  }
-  @if (showAssignModal) {
-    <app-assign-group-modal
-      [groups]="groups"
-      [currentGroupId]="assignCurrentGroupId"
-      (save)="onAssignSave($event)"
-      (close)="closeAssignModal()"
-    />
+        </thead>
+        <tbody>
+          @for (t of teachers; track t.id) {
+            <tr>
+              <td>{{ t.fullName }}</td>
+              <td>{{ t.email }}</td>
+              <td class="admin-table__actions">
+                <app-button type="button" class="outline small" (click)="openEdit(t)">Изменить</app-button>
+                <app-button type="button" class="outline small" (click)="deleteTeacher(t.id)">Удалить</app-button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
   }
 </section>

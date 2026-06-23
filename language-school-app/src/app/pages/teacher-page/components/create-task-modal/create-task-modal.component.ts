@@ -79,7 +79,7 @@ export class CreateTaskModalComponent {
     }
 
     const isTeamTask = this.assignmentType === 'TEAM';
-    const needsVotesThreshold = this.resolveType === 'AT_LEAST_VOTES_SOLUTION';
+    const needsVotesThreshold = this.requiresVotesThreshold();
     const teamsCreationTimeout =
       isTeamTask && this.teamType === 'DRAFT' && this.draftTeamsCreationHours
         ? `PT${this.draftTeamsCreationHours}H`
@@ -142,7 +142,7 @@ export class CreateTaskModalComponent {
     this.resolveType = this.resolveTypes.some((item) => item.value === value)
       ? (value as CreateTaskPayload['resolveType'])
       : 'LAST_SUBMITTED_SOLUTION';
-    if (this.resolveType !== 'AT_LEAST_VOTES_SOLUTION') {
+    if (!this.requiresVotesThreshold()) {
       this.votesThreshold = null;
     } else {
       this.votesThreshold ??= 1;
@@ -246,11 +246,8 @@ export class CreateTaskModalComponent {
       }
     }
 
-    if (
-      this.resolveType === 'AT_LEAST_VOTES_SOLUTION' &&
-      !this.isPositiveNumber(this.votesThreshold)
-    ) {
-      this.validationError = 'Для квалифицированного большинства задайте порог голосов.';
+    if (this.requiresVotesThreshold() && !this.isPositiveNumber(this.votesThreshold)) {
+      this.validationError = 'Для голосования задайте порог голосов.';
       return false;
     }
 
@@ -260,5 +257,9 @@ export class CreateTaskModalComponent {
 
   private isPositiveNumber(value: number | null): value is number {
     return Number.isFinite(value) && (value as number) > 0;
+  }
+
+  requiresVotesThreshold(): boolean {
+    return this.resolveType === 'AT_LEAST_VOTES_SOLUTION' || this.resolveType === 'MOST_VOTES_SOLUTION';
   }
 }

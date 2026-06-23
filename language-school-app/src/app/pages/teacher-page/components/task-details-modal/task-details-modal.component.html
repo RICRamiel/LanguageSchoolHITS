@@ -88,7 +88,7 @@
             <dd>{{ getTeamsAmountLabel(task()) }}</dd>
           </div>
         }
-        @if (task().resolveType === 'AT_LEAST_VOTES_SOLUTION') {
+        @if (task().votesThreshold !== null && (task().resolveType === 'AT_LEAST_VOTES_SOLUTION' || task().resolveType === 'MOST_VOTES_SOLUTION')) {
           <div class="modal__meta-row">
             <dt>Порог голосов:</dt>
             <dd>{{ task().votesThreshold ?? '-' }}</dd>
@@ -249,11 +249,10 @@
                   Оцениваемая команда: {{ result.reviewedTeamName }}
                 </p>
                 <p class="modal__item-meta">
-                  Команда-оценщик: {{ result.reviewerTeamName ?? 'не назначена' }}
+                  Команда-оценщик: {{ result.reviewerTeamId ? result.reviewerTeamName : 'не назначена' }}
                 </p>
                 <p class="modal__item-meta">
-                  Статус: {{ result.status }}
-                  @if (result.status === 'TEACHER_EDITED') { · (изменено преподавателем) }
+                  Статус: {{ getPeerResultStatusLabel(result.status) }}
                 </p>
               </div>
               <p class="modal__item-meta">
@@ -291,7 +290,7 @@
                     class="modal__action-btn"
                     type="button"
                     [disabled]="peerAssessmentEditSaving()"
-                    (click)="submitPeerEdit(result.id)"
+                    (click)="submitPeerEdit(result.assignmentId ?? result.id)"
                   >
                     {{ peerAssessmentEditSaving() ? 'Сохранение...' : 'Сохранить' }}
                   </button>
@@ -304,34 +303,40 @@
                   </button>
                 </div>
               } @else {
-                <div class="modal__peer-criteria">
-                  @for (criterion of result.criteria; track criterion.criterionId) {
-                    <div class="modal__peer-criterion">
-                      <div>
-                        <p class="modal__item-title">{{ criterion.title }}</p>
-                        @if (criterion.sectionName) {
-                          <p class="modal__item-meta">{{ criterion.sectionName }}</p>
+                @if (result.criteria.length) {
+                  <div class="modal__peer-criteria">
+                    @for (criterion of result.criteria; track criterion.criterionId) {
+                      <div class="modal__peer-criterion">
+                        <div>
+                          <p class="modal__item-title">{{ criterion.title }}</p>
+                          @if (criterion.sectionName) {
+                            <p class="modal__item-meta">{{ criterion.sectionName }}</p>
+                          }
+                        </div>
+                        <p class="modal__peer-score">
+                          {{ criterion.points ?? '-' }} / {{ criterion.maxPoints }}
+                        </p>
+                        @if (criterion.comment) {
+                          <p class="modal__item-text modal__peer-comment">{{ criterion.comment }}</p>
                         }
                       </div>
-                      <p class="modal__peer-score">
-                        {{ criterion.points ?? '-' }} / {{ criterion.maxPoints }}
-                      </p>
-                      @if (criterion.comment) {
-                        <p class="modal__item-text modal__peer-comment">{{ criterion.comment }}</p>
-                      }
-                    </div>
-                  }
-                </div>
-                <div class="modal__criteria-actions">
-                  <button
-                    class="modal__download modal__download--small"
-                    type="button"
-                    [disabled]="peerAssessmentEditSaving()"
-                    (click)="startEditPeerResult(result)"
-                  >
-                    Редактировать
-                  </button>
-                </div>
+                    }
+                  </div>
+                } @else {
+                  <p class="modal__empty">Детали оценки пока недоступны.</p>
+                }
+                @if (canEditPeerResult(result)) {
+                  <div class="modal__criteria-actions">
+                    <button
+                      class="modal__download modal__download--small"
+                      type="button"
+                      [disabled]="peerAssessmentEditSaving()"
+                      (click)="startEditPeerResult(result)"
+                    >
+                      Редактировать
+                    </button>
+                  </div>
+                }
               }
             </article>
           }

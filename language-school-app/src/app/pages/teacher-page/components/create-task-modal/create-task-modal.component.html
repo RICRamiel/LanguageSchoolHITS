@@ -140,7 +140,7 @@
       </select>
     </div>
 
-    @if (resolveType === 'AT_LEAST_VOTES_SOLUTION') {
+    @if (requiresVotesThreshold()) {
       <label class="modal__label" for="task-votes-threshold">Порог голосов</label>
       <input
         id="task-votes-threshold"

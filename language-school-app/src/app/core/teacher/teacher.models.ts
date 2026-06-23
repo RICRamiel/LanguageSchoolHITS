@@ -151,6 +151,8 @@ export type PeerAssessmentCriterionResult = {
 
 export type PeerAssessmentResult = {
   id: string;
+  assignmentId: string | null;
+  assessmentId: string | null;
   reviewedTeamId: string;
   reviewedTeamName: string;
   reviewerTeamId: string | null;

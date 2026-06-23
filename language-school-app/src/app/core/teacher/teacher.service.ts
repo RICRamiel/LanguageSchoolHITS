@@ -477,7 +477,10 @@ export class TeacherService {
         minTeamSize: isTeamTask ? payload.minTeamSize : null,
         maxTeamsAmount: isTeamTask ? payload.maxTeamsAmount : null,
         minTeamsAmount: isTeamTask ? payload.minTeamsAmount : null,
-        votesThreshold: payload.resolveType === 'AT_LEAST_VOTES_SOLUTION' ? payload.votesThreshold : null,
+        votesThreshold:
+          payload.resolveType === 'AT_LEAST_VOTES_SOLUTION' || payload.resolveType === 'MOST_VOTES_SOLUTION'
+            ? payload.votesThreshold
+            : null,
         teamsCreationTimeout: isTeamTask && teamType === 'DRAFT' ? payload.teamsCreationTimeout : null,
       })
       .pipe(
@@ -735,6 +738,7 @@ export class TeacherService {
 
   private mapPeerAssessmentResult(
     result: PeerAssessmentResultResponse | null | undefined,
+    fallbackTotalMaxPoints: number | null = null,
   ): PeerAssessmentResult {
     const assessment = result?.assessment ?? null;
     const assignment = result?.assignment ?? null;
@@ -742,6 +746,7 @@ export class TeacherService {
       .map((item) => this.mapPeerAssessmentCriterionResult(item))
       .sort((a, b) => a.orderIndex - b.orderIndex);
     const totalMaxPoints = this.resolveFiniteNumber(assessment?.totalMaxPoints)
+      ?? fallbackTotalMaxPoints
       ?? criteria.reduce((total, criterion) => total + criterion.maxPoints, 0);
     const totalPoints = this.resolveFiniteNumber(assessment?.totalPoints)
       ?? (criteria.every((criterion) => criterion.points !== null)
@@ -750,6 +755,8 @@ export class TeacherService {
 
     return {
       id: this.toId(assignment?.id) || this.toId(assessment?.id) || `peer-result-${Math.random()}`,
+      assignmentId: this.toId(assignment?.id) || null,
+      assessmentId: this.toId(assessment?.id) || null,
       reviewedTeamId: this.toId(assignment?.reviewedTeamId ?? result?.reviewedTeamId),
       reviewedTeamName:
         this.asTrimmedString(result?.reviewedTeamName)
@@ -776,6 +783,7 @@ export class TeacherService {
     }
 
     const record = payload as PeerReviewResultsResponse & Record<string, unknown>;
+    const totalMaxPoints = this.resolveFiniteNumber(record.totalMaxPoints);
     const results = Array.isArray(record.results)
       ? record.results
       : Array.isArray(record['result'])
@@ -784,7 +792,7 @@ export class TeacherService {
           ? (record['data'] as PeerAssessmentResultResponse[])
           : [];
 
-    return results.map((item) => this.mapPeerAssessmentResult(item));
+    return results.map((item) => this.mapPeerAssessmentResult(item, totalMaxPoints));
   }
 
   private mapPeerAssessmentCriterionResult(
