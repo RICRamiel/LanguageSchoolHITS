@@ -20,8 +20,6 @@ export interface Teacher {
   fullName: string;
   email: string;
   languages: string;
-  groupId?: string | null;
-  groupName?: string;
 }
 
 export interface Language {

@@ -10,6 +10,8 @@ function teamsWithoutReviewer(results: PeerAssessmentResult[]): string[] {
 function makeResult(overrides: Partial<PeerAssessmentResult> = {}): PeerAssessmentResult {
   return {
     id: 'assign-1',
+    assignmentId: 'assign-1',
+    assessmentId: 'assessment-1',
     reviewedTeamId: 'team-a',
     reviewedTeamName: 'Team A',
     reviewerTeamId: 'team-b',
@@ -26,6 +28,8 @@ function makeResult(overrides: Partial<PeerAssessmentResult> = {}): PeerAssessme
 function makeWithoutReviewerResult(reviewedTeamName: string): PeerAssessmentResult {
   return makeResult({
     id: `assign-${reviewedTeamName}`,
+    assignmentId: `assign-${reviewedTeamName}`,
+    assessmentId: null,
     reviewedTeamId: 'team-no-reviewer',
     reviewedTeamName,
     reviewerTeamId: null,
