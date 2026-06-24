@@ -19,7 +19,13 @@ import { CustomHttpParameterCodec }                          from '../encoder';
 import { Observable }                                        from 'rxjs';
 
 // @ts-ignore
-import { CommentDTO } from '../model/commentDTO';
+import { CourseCreateDTO } from '../model/courseCreateDTO';
+// @ts-ignore
+import { CourseDTO } from '../model/courseDTO';
+// @ts-ignore
+import { CourseEditDTO } from '../model/courseEditDTO';
+// @ts-ignore
+import { CourseStudentAddDTO } from '../model/courseStudentAddDTO';
 
 // @ts-ignore
 import { BASE_PATH, COLLECTION_FORMATS }                     from '../variables';
@@ -30,7 +36,7 @@ import { Configuration }                                     from '../configurat
 @Injectable({
   providedIn: 'root'
 })
-export class CommentControllerService {
+export class CourseControllerService {
 
     protected basePath = 'http://api.thallassianangel.su:5461';
     public defaultHeaders = new HttpHeaders();
@@ -92,16 +98,16 @@ export class CommentControllerService {
     }
 
     /**
-     * @param commentDTO 
+     * @param courseStudentAddDTO 
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public createComment(commentDTO: CommentDTO, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<CommentDTO>;
-    public createComment(commentDTO: CommentDTO, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpResponse<CommentDTO>>;
-    public createComment(commentDTO: CommentDTO, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpEvent<CommentDTO>>;
-    public createComment(commentDTO: CommentDTO, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<any> {
-        if (commentDTO === null || commentDTO === undefined) {
-            throw new Error('Required parameter commentDTO was null or undefined when calling createComment.');
+    public addStudents(courseStudentAddDTO: CourseStudentAddDTO, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<boolean>;
+    public addStudents(courseStudentAddDTO: CourseStudentAddDTO, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpResponse<boolean>>;
+    public addStudents(courseStudentAddDTO: CourseStudentAddDTO, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpEvent<boolean>>;
+    public addStudents(courseStudentAddDTO: CourseStudentAddDTO, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<any> {
+        if (courseStudentAddDTO === null || courseStudentAddDTO === undefined) {
+            throw new Error('Required parameter courseStudentAddDTO was null or undefined when calling addStudents.');
         }
 
         let localVarHeaders = this.defaultHeaders;
@@ -151,11 +157,11 @@ export class CommentControllerService {
             }
         }
 
-        let localVarPath = `/comment/create`;
-        return this.httpClient.request<CommentDTO>('post', `${this.configuration.basePath}${localVarPath}`,
+        let localVarPath = `/course/addStudents`;
+        return this.httpClient.request<boolean>('post', `${this.configuration.basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
-                body: commentDTO,
+                body: courseStudentAddDTO,
                 responseType: <any>responseType_,
                 withCredentials: this.configuration.withCredentials,
                 headers: localVarHeaders,
@@ -166,16 +172,96 @@ export class CommentControllerService {
     }
 
     /**
-     * @param commentId 
+     * @param courseCreateDTO 
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public deleteComment(commentId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext}): Observable<any>;
-    public deleteComment(commentId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext}): Observable<HttpResponse<any>>;
-    public deleteComment(commentId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext}): Observable<HttpEvent<any>>;
-    public deleteComment(commentId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: undefined, context?: HttpContext}): Observable<any> {
-        if (commentId === null || commentId === undefined) {
-            throw new Error('Required parameter commentId was null or undefined when calling deleteComment.');
+    public createCourse(courseCreateDTO: CourseCreateDTO, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<CourseDTO>;
+    public createCourse(courseCreateDTO: CourseCreateDTO, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpResponse<CourseDTO>>;
+    public createCourse(courseCreateDTO: CourseCreateDTO, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpEvent<CourseDTO>>;
+    public createCourse(courseCreateDTO: CourseCreateDTO, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<any> {
+        if (courseCreateDTO === null || courseCreateDTO === undefined) {
+            throw new Error('Required parameter courseCreateDTO was null or undefined when calling createCourse.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+
+        let localVarCredential: string | undefined;
+        // authentication (JWT) required
+        localVarCredential = this.configuration.lookupCredential('JWT');
+        if (localVarCredential) {
+            localVarHeaders = localVarHeaders.set('Authorization', 'Bearer ' + localVarCredential);
+        }
+
+        let localVarHttpHeaderAcceptSelected: string | undefined = options && options.httpHeaderAccept;
+        if (localVarHttpHeaderAcceptSelected === undefined) {
+            // to determine the Accept header
+            const httpHeaderAccepts: string[] = [
+                '*/*'
+            ];
+            localVarHttpHeaderAcceptSelected = this.configuration.selectHeaderAccept(httpHeaderAccepts);
+        }
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        let localVarHttpContext: HttpContext | undefined = options && options.context;
+        if (localVarHttpContext === undefined) {
+            localVarHttpContext = new HttpContext();
+        }
+
+
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/course/create`;
+        return this.httpClient.request<CourseDTO>('post', `${this.configuration.basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                body: courseCreateDTO,
+                responseType: <any>responseType_,
+                withCredentials: this.configuration.withCredentials,
+                headers: localVarHeaders,
+                observe: observe,
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * @param courseId 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     */
+    public deleteCourse(courseId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext}): Observable<any>;
+    public deleteCourse(courseId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext}): Observable<HttpResponse<any>>;
+    public deleteCourse(courseId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: undefined, context?: HttpContext}): Observable<HttpEvent<any>>;
+    public deleteCourse(courseId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: undefined, context?: HttpContext}): Observable<any> {
+        if (courseId === null || courseId === undefined) {
+            throw new Error('Required parameter courseId was null or undefined when calling deleteCourse.');
+        }
+
+        let localVarQueryParameters = new HttpParams({encoder: this.encoder});
+        if (courseId !== undefined && courseId !== null) {
+          localVarQueryParameters = this.addToHttpParams(localVarQueryParameters,
+            <any>courseId, 'courseId');
         }
 
         let localVarHeaders = this.defaultHeaders;
@@ -215,10 +301,11 @@ export class CommentControllerService {
             }
         }
 
-        let localVarPath = `/comment/${this.configuration.encodeParam({name: "commentId", value: commentId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/delete`;
+        let localVarPath = `/course/delete`;
         return this.httpClient.request<any>('delete', `${this.configuration.basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
+                params: localVarQueryParameters,
                 responseType: <any>responseType_,
                 withCredentials: this.configuration.withCredentials,
                 headers: localVarHeaders,
@@ -229,20 +316,20 @@ export class CommentControllerService {
     }
 
     /**
-     * @param commentId 
-     * @param commentDTO 
+     * @param courseId 
+     * @param courseEditDTO 
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public editComment(commentId: string, commentDTO: CommentDTO, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<CommentDTO>;
-    public editComment(commentId: string, commentDTO: CommentDTO, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpResponse<CommentDTO>>;
-    public editComment(commentId: string, commentDTO: CommentDTO, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpEvent<CommentDTO>>;
-    public editComment(commentId: string, commentDTO: CommentDTO, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<any> {
-        if (commentId === null || commentId === undefined) {
-            throw new Error('Required parameter commentId was null or undefined when calling editComment.');
+    public editCourse(courseId: string, courseEditDTO: CourseEditDTO, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<CourseDTO>;
+    public editCourse(courseId: string, courseEditDTO: CourseEditDTO, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpResponse<CourseDTO>>;
+    public editCourse(courseId: string, courseEditDTO: CourseEditDTO, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpEvent<CourseDTO>>;
+    public editCourse(courseId: string, courseEditDTO: CourseEditDTO, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<any> {
+        if (courseId === null || courseId === undefined) {
+            throw new Error('Required parameter courseId was null or undefined when calling editCourse.');
         }
-        if (commentDTO === null || commentDTO === undefined) {
-            throw new Error('Required parameter commentDTO was null or undefined when calling editComment.');
+        if (courseEditDTO === null || courseEditDTO === undefined) {
+            throw new Error('Required parameter courseEditDTO was null or undefined when calling editCourse.');
         }
 
         let localVarHeaders = this.defaultHeaders;
@@ -292,11 +379,11 @@ export class CommentControllerService {
             }
         }
 
-        let localVarPath = `/comment/${this.configuration.encodeParam({name: "commentId", value: commentId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/edit`;
-        return this.httpClient.request<CommentDTO>('put', `${this.configuration.basePath}${localVarPath}`,
+        let localVarPath = `/course/${this.configuration.encodeParam({name: "courseId", value: courseId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/edit`;
+        return this.httpClient.request<CourseDTO>('put', `${this.configuration.basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
-                body: commentDTO,
+                body: courseEditDTO,
                 responseType: <any>responseType_,
                 withCredentials: this.configuration.withCredentials,
                 headers: localVarHeaders,
@@ -307,17 +394,13 @@ export class CommentControllerService {
     }
 
     /**
-     * @param taskId 
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      */
-    public getCommentsByTaskId(taskId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<Array<CommentDTO>>;
-    public getCommentsByTaskId(taskId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpResponse<Array<CommentDTO>>>;
-    public getCommentsByTaskId(taskId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpEvent<Array<CommentDTO>>>;
-    public getCommentsByTaskId(taskId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<any> {
-        if (taskId === null || taskId === undefined) {
-            throw new Error('Required parameter taskId was null or undefined when calling getCommentsByTaskId.');
-        }
+    public getAllCourse(observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<Array<CourseDTO>>;
+    public getAllCourse(observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpResponse<Array<CourseDTO>>>;
+    public getAllCourse(observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<HttpEvent<Array<CourseDTO>>>;
+    public getAllCourse(observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: '*/*', context?: HttpContext}): Observable<any> {
 
         let localVarHeaders = this.defaultHeaders;
 
@@ -357,8 +440,8 @@ export class CommentControllerService {
             }
         }
 
-        let localVarPath = `/comment/${this.configuration.encodeParam({name: "taskId", value: taskId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/get`;
-        return this.httpClient.request<Array<CommentDTO>>('get', `${this.configuration.basePath}${localVarPath}`,
+        let localVarPath = `/course`;
+        return this.httpClient.request<Array<CourseDTO>>('get', `${this.configuration.basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
                 responseType: <any>responseType_,

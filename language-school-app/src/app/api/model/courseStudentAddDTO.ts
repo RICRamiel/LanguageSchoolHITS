@@ -9,15 +9,10 @@
  * https://openapi-generator.tech
  * Do not edit the class manually.
  */
-import { AttachmentDownloadInfo } from './attachmentDownloadInfo';
 
 
-export interface NotificationDto { 
-    id?: string;
-    text?: string;
+export interface CourseStudentAddDTO { 
     courseId?: string;
-    creationDate?: string;
-    createdByTeacherWithId?: string;
-    attachments?: Array<AttachmentDownloadInfo>;
+    studentIds?: Array<string>;
 }
 

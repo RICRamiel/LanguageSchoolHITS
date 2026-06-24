@@ -17,6 +17,5 @@ export interface StudentCreateDTO {
     lastName?: string;
     password?: string;
     grade?: string;
-    groupIds?: Array<number>;
 }
 

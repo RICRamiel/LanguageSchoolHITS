@@ -13,6 +13,7 @@
 
 export interface NotificationCreationModel { 
     text?: string;
-    groupId?: number;
+    courseId?: string;
+    files?: Array<Blob>;
 }
 

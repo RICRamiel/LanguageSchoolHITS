@@ -9,23 +9,65 @@
  * https://openapi-generator.tech
  * Do not edit the class manually.
  */
+import { TaskTeamDTO } from './taskTeamDTO';
 import { UserDTO } from './userDTO';
 
 
 export interface TaskStudentDTO { 
-    id?: number;
+    id?: string;
     name?: string;
     description?: string;
     deadline?: string;
+    courseId?: string;
+    courseName?: string;
+    totalPoints?: number;
+    maxTeamSize?: number;
+    minTeamSize?: number;
+    maxTeamsAmount?: number;
+    minTeamsAmount?: number;
+    votesThreshold?: number;
+    teamType?: TaskStudentDTO.TeamTypeEnum;
+    resolveType?: TaskStudentDTO.ResolveTypeEnum;
+    submissionClosed?: boolean;
     taskStatus?: TaskStudentDTO.TaskStatusEnum;
     teacher?: UserDTO;
+    participationId?: string;
+    currentTeamId?: string;
+    finalizedAt?: string;
+    peerReviewEnabled?: boolean;
+    peerReviewDistributionType?: TaskStudentDTO.PeerReviewDistributionTypeEnum;
+    peerReviewerVisibleToTeams?: boolean;
+    peerReviewConfirmedAt?: string;
+    teams?: Array<TaskTeamDTO>;
 }
 export namespace TaskStudentDTO {
+    export type TeamTypeEnum = 'RANDOM' | 'FREEROAM' | 'DRAFT';
+    export const TeamTypeEnum = {
+        Random: 'RANDOM' as TeamTypeEnum,
+        Freeroam: 'FREEROAM' as TeamTypeEnum,
+        Draft: 'DRAFT' as TeamTypeEnum
+    };
+    export type ResolveTypeEnum = 'FIRST_SUBMITTED_SOLUTION' | 'LAST_SUBMITTED_SOLUTION' | 'CAPTAINS_SOLUTION' | 'MOST_VOTES_SOLUTION' | 'AT_LEAST_VOTES_SOLUTION';
+    export const ResolveTypeEnum = {
+        FirstSubmittedSolution: 'FIRST_SUBMITTED_SOLUTION' as ResolveTypeEnum,
+        LastSubmittedSolution: 'LAST_SUBMITTED_SOLUTION' as ResolveTypeEnum,
+        CaptainsSolution: 'CAPTAINS_SOLUTION' as ResolveTypeEnum,
+        MostVotesSolution: 'MOST_VOTES_SOLUTION' as ResolveTypeEnum,
+        AtLeastVotesSolution: 'AT_LEAST_VOTES_SOLUTION' as ResolveTypeEnum
+    };
     export type TaskStatusEnum = 'COMPLETE' | 'OVERDUE' | 'PENDING';
     export const TaskStatusEnum = {
         Complete: 'COMPLETE' as TaskStatusEnum,
         Overdue: 'OVERDUE' as TaskStatusEnum,
         Pending: 'PENDING' as TaskStatusEnum
+    };
+    export type PeerReviewDistributionTypeEnum = 'MANUAL' | 'PAIR' | 'CIRCLE' | 'RANDOM_PAIR' | 'RANDOM_CIRCLE';
+    export const PeerReviewDistributionTypeEnum = {
+        Manual: 'MANUAL' as PeerReviewDistributionTypeEnum,
+        Pair: 'PAIR' as PeerReviewDistributionTypeEnum,
+        Circle: 'CIRCLE' as PeerReviewDistributionTypeEnum,
+        RandomPair: 'RANDOM_PAIR' as PeerReviewDistributionTypeEnum,
+        RandomCircle: 'RANDOM_CIRCLE' as PeerReviewDistributionTypeEnum
     };
 }
 

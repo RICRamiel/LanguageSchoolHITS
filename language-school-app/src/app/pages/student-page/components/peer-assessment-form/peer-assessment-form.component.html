@@ -107,4 +107,9 @@
       </button>
     }
   </section>
+} @else if (error()) {
+  <section class="peer-assessment" aria-live="polite">
+    <h4 class="peer-assessment__title">Peer-оценивание</h4>
+    <p class="peer-assessment__error">{{ error() }}</p>
+  </section>
 }

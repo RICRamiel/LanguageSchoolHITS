@@ -13,11 +13,11 @@ import { LanguageDTO } from './languageDTO';
 
 
 export interface GroupAnswerDTO { 
+    id?: string;
     name: string;
     description?: string;
     difficulty?: GroupAnswerDTO.DifficultyEnum;
     language?: LanguageDTO;
-    id?: number;
 }
 export namespace GroupAnswerDTO {
     export type DifficultyEnum = 'BEGINNER' | 'ELEMENTARY' | 'UPPER_INTERMEDIATE' | 'ADVANCED' | 'PROFICIENCY';

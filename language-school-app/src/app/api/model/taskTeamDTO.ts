@@ -9,15 +9,17 @@
  * https://openapi-generator.tech
  * Do not edit the class manually.
  */
-import { AttachmentDownloadInfo } from './attachmentDownloadInfo';
+import { TaskParticipationDTO } from './taskParticipationDTO';
 
 
-export interface NotificationDto { 
+export interface TaskTeamDTO { 
     id?: string;
-    text?: string;
-    courseId?: string;
-    creationDate?: string;
-    createdByTeacherWithId?: string;
-    attachments?: Array<AttachmentDownloadInfo>;
+    name?: string;
+    commandMark?: number;
+    averageMark?: number;
+    membersCount?: number;
+    captainId?: string;
+    solutionParticipationId?: string;
+    participations?: Array<TaskParticipationDTO>;
 }
 

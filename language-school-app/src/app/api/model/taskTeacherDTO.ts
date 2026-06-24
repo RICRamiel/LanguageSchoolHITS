@@ -9,14 +9,59 @@
  * https://openapi-generator.tech
  * Do not edit the class manually.
  */
+import { AttachmentDownloadInfo } from './attachmentDownloadInfo';
+import { TaskTeamDTO } from './taskTeamDTO';
 import { CommentDTO } from './commentDTO';
 
 
 export interface TaskTeacherDTO { 
-    id?: number;
+    id?: string;
     name?: string;
     description?: string;
     deadline?: string;
+    courseId?: string;
+    courseName?: string;
+    totalPoints?: number;
+    maxTeamSize?: number;
+    minTeamSize?: number;
+    maxTeamsAmount?: number;
+    minTeamsAmount?: number;
+    votesThreshold?: number;
+    teamType?: TaskTeacherDTO.TeamTypeEnum;
+    resolveType?: TaskTeacherDTO.ResolveTypeEnum;
+    submissionClosed?: boolean;
+    finalizedAt?: string;
+    peerReviewEnabled?: boolean;
+    peerReviewDistributionType?: TaskTeacherDTO.PeerReviewDistributionTypeEnum;
+    peerReviewerVisibleToTeams?: boolean;
+    peerReviewConfirmedAt?: string;
     commentList?: Array<CommentDTO>;
+    attachmentDownloadInfos?: Array<AttachmentDownloadInfo>;
+    teams?: Array<TaskTeamDTO>;
 }
+export namespace TaskTeacherDTO {
+    export type TeamTypeEnum = 'RANDOM' | 'FREEROAM' | 'DRAFT';
+    export const TeamTypeEnum = {
+        Random: 'RANDOM' as TeamTypeEnum,
+        Freeroam: 'FREEROAM' as TeamTypeEnum,
+        Draft: 'DRAFT' as TeamTypeEnum
+    };
+    export type ResolveTypeEnum = 'FIRST_SUBMITTED_SOLUTION' | 'LAST_SUBMITTED_SOLUTION' | 'CAPTAINS_SOLUTION' | 'MOST_VOTES_SOLUTION' | 'AT_LEAST_VOTES_SOLUTION';
+    export const ResolveTypeEnum = {
+        FirstSubmittedSolution: 'FIRST_SUBMITTED_SOLUTION' as ResolveTypeEnum,
+        LastSubmittedSolution: 'LAST_SUBMITTED_SOLUTION' as ResolveTypeEnum,
+        CaptainsSolution: 'CAPTAINS_SOLUTION' as ResolveTypeEnum,
+        MostVotesSolution: 'MOST_VOTES_SOLUTION' as ResolveTypeEnum,
+        AtLeastVotesSolution: 'AT_LEAST_VOTES_SOLUTION' as ResolveTypeEnum
+    };
+    export type PeerReviewDistributionTypeEnum = 'MANUAL' | 'PAIR' | 'CIRCLE' | 'RANDOM_PAIR' | 'RANDOM_CIRCLE';
+    export const PeerReviewDistributionTypeEnum = {
+        Manual: 'MANUAL' as PeerReviewDistributionTypeEnum,
+        Pair: 'PAIR' as PeerReviewDistributionTypeEnum,
+        Circle: 'CIRCLE' as PeerReviewDistributionTypeEnum,
+        RandomPair: 'RANDOM_PAIR' as PeerReviewDistributionTypeEnum,
+        RandomCircle: 'RANDOM_CIRCLE' as PeerReviewDistributionTypeEnum
+    };
+}
+
 

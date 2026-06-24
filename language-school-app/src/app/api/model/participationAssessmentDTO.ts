@@ -9,13 +9,18 @@
  * https://openapi-generator.tech
  * Do not edit the class manually.
  */
+import { AssessmentDTO } from './assessmentDTO';
+import { AssessmentItemDTO } from './assessmentItemDTO';
 
 
-export interface CommentDTO { 
-    id?: string;
-    text?: string;
-    userId?: string;
+export interface ParticipationAssessmentDTO { 
     taskId?: string;
-    privateStatus?: boolean;
+    participationId?: string;
+    totalMaxPoints?: number;
+    teacherTotal?: number;
+    selfTotal?: number;
+    criteria?: Array<AssessmentItemDTO>;
+    teacherAssessment?: AssessmentDTO;
+    selfAssessment?: AssessmentDTO;
 }
 

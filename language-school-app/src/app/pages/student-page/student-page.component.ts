@@ -24,7 +24,7 @@ import { OPENAPI_PATHS, withOpenApiBase } from '../../core/api/openapi.config';
 import { CommentDTO } from '../../api/model/commentDTO';
 import { NotificationAttachment } from '../../core/teacher/teacher.models';
 import { PeerAssessmentSubmitItem } from '../../core/peer-assessment/peer-assessment.contracts';
-import { MockPeerAssessmentApiService } from '../../core/peer-assessment/mock-peer-assessment-api.service';
+import { PeerAssessmentApiService } from '../../core/peer-assessment/peer-assessment-api.service';
 import { ErrorToastService } from '../../core/errors/error-toast.service';
 
 type StudentNotificationResponse = {
@@ -129,7 +129,7 @@ export class StudentPageComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly userService = inject(UserService);
   private readonly teacherService = inject(TeacherService);
-  private readonly peerAssessmentApi = inject(MockPeerAssessmentApiService);
+  private readonly peerAssessmentApi = inject(PeerAssessmentApiService);
   private readonly errorToastService = inject(ErrorToastService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
@@ -267,7 +267,7 @@ export class StudentPageComponent implements OnInit {
     this.cdr.detectChanges();
 
     this.peerAssessmentApi
-      .submitPeerAssessment(task.id, assessment.targetParticipationId, items, assessment)
+      .submitPeerAssessment(task.id, items)
       .pipe(
         catchError(() => {
           this.taskPeerAssessmentError = 'Не удалось сохранить peer-оценку';
@@ -1231,10 +1231,10 @@ export class StudentPageComponent implements OnInit {
     this.cdr.detectChanges();
 
     this.peerAssessmentApi
-      .getAssignedPeerAssessment(task, this.studentId)
+      .getAssignedPeerAssessment(task.id)
       .pipe(
         catchError(() => {
-          this.taskPeerAssessmentError = 'Не удалось загрузить peer-оценивание';
+          this.taskPeerAssessmentError = 'Peer-оценивание недоступно: вы не назначены оценщиком или не являетесь капитаном команды';
           return of(null);
         }),
         finalize(() => {
