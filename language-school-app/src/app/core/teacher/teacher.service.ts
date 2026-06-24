@@ -360,7 +360,7 @@ export class TeacherService {
     }
 
     return this.http
-      .get<PeerReviewSettingsResponse>(withOpenApiBase(OPENAPI_PATHS.tasks.peerReviewSettings(normalizedTaskId)))
+      .get<PeerReviewSettingsResponse>(withOpenApiBase(this.peerReviewSettingsPath(normalizedTaskId)))
       .pipe(map((settings) => this.mapPeerReviewSettings(settings, normalizedTaskId)));
   }
 
@@ -368,7 +368,7 @@ export class TeacherService {
     const normalizedTaskId = taskId.trim();
     return this.http
       .post<TeacherTaskResponse>(
-        withOpenApiBase(OPENAPI_PATHS.tasks.enablePeerReview(normalizedTaskId)),
+        withOpenApiBase(this.enablePeerReviewPath(normalizedTaskId)),
         payload,
       )
       .pipe(map((task) => task ? this.mapTask(task, task.courseName ?? task.groupName ?? '', normalizedTaskId) : null));
@@ -381,7 +381,7 @@ export class TeacherService {
     const normalizedTaskId = taskId.trim();
     return this.http
       .post<PeerReviewAssignmentResponse>(
-        withOpenApiBase(OPENAPI_PATHS.tasks.manualPeerReviewAssignments(normalizedTaskId)),
+        withOpenApiBase(this.manualPeerReviewAssignmentsPath(normalizedTaskId)),
         payload,
       )
       .pipe(map((assignment) => this.mapPeerReviewAssignment(assignment, normalizedTaskId)));
@@ -390,7 +390,7 @@ export class TeacherService {
   confirmPeerReview(taskId: string): Observable<PeerAssessmentResult[]> {
     const normalizedTaskId = taskId.trim();
     return this.http
-      .post<PeerReviewResultsResponse>(withOpenApiBase(OPENAPI_PATHS.tasks.confirmPeerReview(normalizedTaskId)), null)
+      .post<PeerReviewResultsResponse>(withOpenApiBase(this.confirmPeerReviewPath(normalizedTaskId)), null)
       .pipe(map((response) => this.normalizePeerReviewResults(response)));
   }
 
@@ -694,6 +694,22 @@ export class TeacherService {
 
   private resolveFiniteNumber(value: unknown): number | null {
     return typeof value === 'number' && Number.isFinite(value) ? value : null;
+  }
+
+  private peerReviewSettingsPath(taskId: string): string {
+    return `/task/${encodeURIComponent(taskId)}/peer-review`;
+  }
+
+  private enablePeerReviewPath(taskId: string): string {
+    return `/task/${encodeURIComponent(taskId)}/peer-review/enable`;
+  }
+
+  private manualPeerReviewAssignmentsPath(taskId: string): string {
+    return `/task/${encodeURIComponent(taskId)}/peer-review/manual-assignments`;
+  }
+
+  private confirmPeerReviewPath(taskId: string): string {
+    return `/task/${encodeURIComponent(taskId)}/peer-review/confirm`;
   }
 
   private mapNotificationAttachment(
