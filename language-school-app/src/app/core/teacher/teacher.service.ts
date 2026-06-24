@@ -74,6 +74,8 @@ type TeacherTaskResponse = {
   peerReviewDistributionType?: string | null;
   peerReviewerVisibleToTeams?: boolean | null;
   peerReviewConfirmedAt?: string | null;
+  finalizedAt?: string | null;
+  submissionClosed?: boolean | null;
   groupName?: string;
   teams?: TeacherTeamResponse[] | null;
   teacher?: {
@@ -394,6 +396,17 @@ export class TeacherService {
       .pipe(map((response) => this.normalizePeerReviewResults(response)));
   }
 
+  finalizeTask(taskId: string): Observable<TeacherTask | null> {
+    const normalizedTaskId = taskId.trim();
+    if (!normalizedTaskId) {
+      return of(null);
+    }
+
+    return this.http
+      .post<TeacherTaskResponse>(withOpenApiBase(this.finalizeTaskPath(normalizedTaskId)), null)
+      .pipe(map((task) => task ? this.mapTask(task, task.courseName ?? task.groupName ?? '', normalizedTaskId) : null));
+  }
+
   editPeerAssessment(taskId: string, assignmentId: string, items: PeerAssessmentEditItem[]): Observable<void> {
     return this.http
       .put<void>(
@@ -710,6 +723,10 @@ export class TeacherService {
 
   private confirmPeerReviewPath(taskId: string): string {
     return `/task/${encodeURIComponent(taskId)}/peer-review/confirm`;
+  }
+
+  private finalizeTaskPath(taskId: string): string {
+    return `/task/${encodeURIComponent(taskId)}/finalize`;
   }
 
   private mapNotificationAttachment(
@@ -1128,6 +1145,7 @@ export class TeacherService {
       peerReviewDistributionType: this.resolvePeerReviewDistributionType(task?.peerReviewDistributionType),
       peerReviewerVisibleToTeams: Boolean(task?.peerReviewerVisibleToTeams),
       peerReviewConfirmedAt: this.asTrimmedString(task?.peerReviewConfirmedAt) || null,
+      finalizedAt: this.asTrimmedString(task?.finalizedAt) || null,
       teams: (task?.teams ?? []).map((t) => this.mapTeam(t)),
     };
   }

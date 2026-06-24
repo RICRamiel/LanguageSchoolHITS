@@ -144,6 +144,8 @@ export class TeacherPageComponent implements OnInit {
   taskCriteriaLoading = false;
   taskCriteriaSaving = false;
   taskCriteriaError: string | null = null;
+  taskFinalizing = false;
+  taskFinalizeError: string | null = null;
   peerAssessmentResults: PeerAssessmentResult[] = [];
   peerAssessmentResultsLoading = false;
   peerAssessmentResultsError: string | null = null;
@@ -343,6 +345,8 @@ export class TeacherPageComponent implements OnInit {
     this.taskCriteriaLoading = false;
     this.taskCriteriaSaving = false;
     this.taskCriteriaError = null;
+    this.taskFinalizing = false;
+    this.taskFinalizeError = null;
     this.peerAssessmentResults = [];
     this.peerAssessmentResultsLoading = false;
     this.peerAssessmentResultsError = null;
@@ -437,6 +441,34 @@ export class TeacherPageComponent implements OnInit {
         this.taskCriteria = this.taskCriteria.map((item) =>
           item.id === criterionId ? { ...item, active: false } : item,
         );
+      },
+    });
+  }
+
+  onFinalizeTask(): void {
+    const taskId = this.selectedTask?.id;
+    if (!taskId || this.taskFinalizing) {
+      return;
+    }
+
+    this.taskFinalizing = true;
+    this.taskFinalizeError = null;
+
+    this.teacherService.finalizeTask(taskId).pipe(
+      finalize(() => {
+        this.taskFinalizing = false;
+      }),
+      catchError(() => {
+        this.taskFinalizeError = 'Не удалось финализировать задание';
+        return of(null);
+      }),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: (task) => {
+        if (!task) {
+          return;
+        }
+        this.applySelectedTaskUpdate(task);
       },
     });
   }

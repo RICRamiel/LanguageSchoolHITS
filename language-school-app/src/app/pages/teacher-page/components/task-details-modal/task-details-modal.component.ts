@@ -39,6 +39,8 @@ export class TaskDetailsModalComponent implements OnInit {
   readonly criteriaLoading = input<boolean>(false);
   readonly criteriaSaving = input<boolean>(false);
   readonly criteriaError = input<string | null>(null);
+  readonly taskFinalizing = input<boolean>(false);
+  readonly taskFinalizeError = input<string | null>(null);
   readonly peerAssessmentResults = input<PeerAssessmentResult[]>([]);
   readonly peerAssessmentResultsLoading = input<boolean>(false);
   readonly peerAssessmentResultsError = input<string | null>(null);
@@ -51,6 +53,7 @@ export class TaskDetailsModalComponent implements OnInit {
   readonly peerReviewManualAssignmentSaving = input<boolean>(false);
   readonly peerReviewConfirmSaving = input<boolean>(false);
   readonly createCriterion = output<TaskCriterionPayload>();
+  readonly finalizeTask = output<void>();
   readonly editPeerAssessment = output<{ assignmentId: string; items: PeerAssessmentEditItem[] }>();
   readonly enablePeerReview = output<PeerReviewEnablePayload>();
   readonly assignManualPeerReview = output<PeerReviewManualAssignmentPayload>();
@@ -158,6 +161,13 @@ export class TaskDetailsModalComponent implements OnInit {
     }
     this.submitComment.emit(value);
     this.commentText.set('');
+  }
+
+  onFinalizeTask(): void {
+    if (this.taskFinalizing() || this.task().finalizedAt) {
+      return;
+    }
+    this.finalizeTask.emit();
   }
 
   onTeamNameInput(event: Event): void {

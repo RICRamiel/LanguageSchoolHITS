@@ -77,6 +77,7 @@ export type TeacherTask = {
   peerReviewDistributionType: PeerReviewDistributionType | null;
   peerReviewerVisibleToTeams: boolean;
   peerReviewConfirmedAt: string | null;
+  finalizedAt: string | null;
   teams: TaskTeam[];
 };
 

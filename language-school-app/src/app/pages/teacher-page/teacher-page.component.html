@@ -136,6 +136,8 @@
       [criteriaLoading]="taskCriteriaLoading"
       [criteriaSaving]="taskCriteriaSaving"
       [criteriaError]="taskCriteriaError"
+      [taskFinalizing]="taskFinalizing"
+      [taskFinalizeError]="taskFinalizeError"
       [peerAssessmentResults]="peerAssessmentResults"
       [peerAssessmentResultsLoading]="peerAssessmentResultsLoading"
       [peerAssessmentResultsError]="peerAssessmentResultsError"
@@ -158,6 +160,7 @@
       (createCriterion)="onCreateCriterion($event)"
       (updateCriterion)="onUpdateCriterion($event)"
       (deactivateCriterion)="onDeactivateCriterion($event)"
+      (finalizeTask)="onFinalizeTask()"
       (close)="closeTaskDetailsModal()"
     />
   }

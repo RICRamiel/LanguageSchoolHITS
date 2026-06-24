@@ -357,8 +357,10 @@ export class StudentPageComponent implements OnInit {
     this.completeInProgress = true;
     this.cdr.detectChanges();
 
+    const body = this.selectedTask?.currentTeamId ? { teamId: this.selectedTask.currentTeamId } : {};
+
     this.http
-      .post<unknown>(withOpenApiBase(`/task/${encodeURIComponent(taskId)}/complete_task`), {})
+      .post<unknown>(withOpenApiBase(`/task/${encodeURIComponent(taskId)}/submit_solution`), body)
       .pipe(
         timeout(15000),
         catchError(() => of(null)),

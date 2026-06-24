@@ -100,7 +100,26 @@
           <dt>Комментарии:</dt>
           <dd>{{ task().comments }}</dd>
         </div>
+        @if (task().finalizedAt) {
+          <div class="modal__meta-row">
+            <dt>Финализировано:</dt>
+            <dd>{{ task().finalizedAt }}</dd>
+          </div>
+        }
       </dl>
+      <div class="modal__criteria-actions modal__finalize-actions">
+        <button
+          class="modal__action-btn"
+          type="button"
+          [disabled]="taskFinalizing() || !!task().finalizedAt"
+          (click)="onFinalizeTask()"
+        >
+          {{ taskFinalizing() ? 'Финализация...' : (task().finalizedAt ? 'Задание финализировано' : 'Финализировать задание') }}
+        </button>
+      </div>
+      @if (taskFinalizeError()) {
+        <p class="modal__empty">{{ taskFinalizeError() }}</p>
+      }
     } @else if (selectedSection() === 'submissions') {
       <div class="modal__list">
         @if (task().attachedWorks.length) {
