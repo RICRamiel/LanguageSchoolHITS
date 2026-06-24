@@ -64,21 +64,6 @@
                         <p class="teacher-grading__email">{{ student.email }}</p>
                       </div>
                       <div class="teacher-grading__controls">
-                        <input
-                          class="teacher-grading__input"
-                          type="text"
-                          placeholder="Оценка"
-                          [value]="student.grade"
-                          (input)="onStudentGradeInput(student.id, $any($event.target).value)"
-                        />
-                        <button
-                          class="teacher-grading__save"
-                          type="button"
-                          [disabled]="student.saving || !student.grade.trim()"
-                          (click)="onSaveStudentGrade(student.id)"
-                        >
-                          {{ student.saving ? 'Сохранение...' : 'Сохранить' }}
-                        </button>
                         <button
                           class="teacher-grading__save teacher-grading__save--criteria"
                           type="button"

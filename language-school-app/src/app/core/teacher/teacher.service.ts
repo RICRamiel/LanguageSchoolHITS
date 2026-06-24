@@ -261,8 +261,6 @@ export class TeacherService {
                 lastName,
                 fullName,
                 email: (student.email ?? '').trim(),
-                grade: '',
-                saving: false,
                 error: null,
               } as TeacherStudentGrade;
             })
@@ -412,21 +410,6 @@ export class TeacherService {
       .put<void>(
         withOpenApiBase(OPENAPI_PATHS.tasks.peerReviewAssessment(taskId.trim(), assignmentId.trim())),
         { items },
-      )
-      .pipe(map(() => void 0));
-  }
-
-  updateStudentGrade(student: TeacherStudentGrade): Observable<void> {
-    const normalizedGrade = student.grade.trim();
-
-    return this.http
-      .put(
-        withOpenApiBase(OPENAPI_PATHS.admin.students.update(student.id)),
-        {
-          firstName: student.firstName,
-          lastName: student.lastName,
-          grade: normalizedGrade,
-        },
       )
       .pipe(map(() => void 0));
   }

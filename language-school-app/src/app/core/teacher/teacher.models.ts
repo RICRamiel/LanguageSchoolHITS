@@ -245,8 +245,6 @@ export type TeacherStudentGrade = {
   lastName: string;
   fullName: string;
   email: string;
-  grade: string;
-  saving: boolean;
   error: string | null;
 };
 
