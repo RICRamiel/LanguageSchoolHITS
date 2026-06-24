@@ -249,12 +249,17 @@ public class PeerReviewServiceImpl implements PeerReviewService {
         ensurePeerReviewEnabled(task);
 
         PeerReviewAssignment assignment = getAssignmentInTask(taskId, assignmentId);
-        ensureAssignmentCanBeEditedByTeacher(assignment);
-
-        Assessment assessment = assignment.getAssessment();
-        assessment.setTotalPoints(replacePeerAssessmentItems(assessment, dto));
-        assessment.setUpdatedAt(LocalDateTime.now());
-        Assessment savedAssessment = assessmentRepository.save(assessment);
+        Assessment savedAssessment;
+        if (assignment.getAssessment() == null) {
+            ensureAssignmentCanBeCreatedByTeacher(assignment);
+            savedAssessment = createPeerAssessment(task, assignment, task.getCourse().getTeacher(), dto);
+        } else {
+            ensureAssignmentCanBeEditedByTeacher(assignment);
+            Assessment assessment = assignment.getAssessment();
+            assessment.setTotalPoints(replacePeerAssessmentItems(assessment, dto));
+            assessment.setUpdatedAt(LocalDateTime.now());
+            savedAssessment = assessmentRepository.save(assessment);
+        }
 
         assignment.setAssessment(savedAssessment);
         assignment.setStatus(PeerReviewAssignmentStatus.TEACHER_EDITED);
@@ -610,6 +615,16 @@ public class PeerReviewServiceImpl implements PeerReviewService {
         if (assignment.getStatus() != PeerReviewAssignmentStatus.SUBMITTED
                 && assignment.getStatus() != PeerReviewAssignmentStatus.TEACHER_EDITED) {
             throw new IllegalArgumentException("Peer review assessment is not available for teacher edit");
+        }
+    }
+
+    private void ensureAssignmentCanBeCreatedByTeacher(PeerReviewAssignment assignment) {
+        if (assignment.getStatus() != PeerReviewAssignmentStatus.WITHOUT_REVIEWER
+                && assignment.getStatus() != PeerReviewAssignmentStatus.TEACHER_REVIEW_REQUIRED) {
+            throw new IllegalArgumentException("Peer review assessment is not submitted yet");
+        }
+        if (assignment.getTargetParticipation() == null) {
+            throw new IllegalArgumentException("Peer review assignment has no target participation");
         }
     }
 
