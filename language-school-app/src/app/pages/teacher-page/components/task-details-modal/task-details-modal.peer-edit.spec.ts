@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { PeerAssessmentResult } from '../../teacher-page.types';
 import {
   buildPeerEditDraft,
+  buildPeerEditDraftFromCriteria,
   buildPeerEditItems,
   updateDraftComment,
   updateDraftPoints,
@@ -113,5 +114,22 @@ describe('Feature: Преподаватель редактирует peer-оце
 
     expect(Object.keys(draft)).toHaveLength(2);
     expect(items).toHaveLength(2);
+  });
+
+  it('Scenario: teacher fallback criteria build empty draft for a team without peer reviewer', () => {
+    const draft = buildPeerEditDraftFromCriteria([
+      {
+        criterionId: 'teacher-fallback',
+        title: 'Content',
+        description: 'Task criterion',
+        maxPoints: 10,
+        sectionName: 'Main',
+        orderIndex: 1,
+        points: null,
+        comment: null,
+      },
+    ]);
+
+    expect(draft['teacher-fallback']).toEqual({ points: '', comment: '' });
   });
 });

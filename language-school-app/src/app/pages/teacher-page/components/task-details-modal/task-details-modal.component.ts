@@ -3,6 +3,7 @@ import {
   TaskCriterion,
   TaskCriterionPayload,
   PeerAssessmentEditItem,
+  PeerAssessmentCriterionResult,
   PeerAssessmentResult,
   PeerReviewDistributionType,
   PeerReviewEnablePayload,
@@ -281,8 +282,50 @@ export class TaskDetailsModalComponent implements OnInit {
 
   canEditPeerResult(result: PeerAssessmentResult): boolean {
     return Boolean(result.assignmentId)
-      && result.criteria.length > 0
-      && (result.status === 'SUBMITTED' || result.status === 'TEACHER_EDITED');
+      && this.getPeerCriteriaForResult(result).length > 0
+      && (
+        result.status === 'SUBMITTED'
+        || result.status === 'TEACHER_EDITED'
+        || result.status === 'TEACHER_REVIEW_REQUIRED'
+        || result.status === 'WITHOUT_REVIEWER'
+      );
+  }
+
+  getPeerCriteriaForResult(result: PeerAssessmentResult): PeerAssessmentCriterionResult[] {
+    if (result.criteria.length) {
+      return result.criteria;
+    }
+
+    return this.criteria()
+      .filter((criterion) => criterion.active)
+      .map((criterion) => ({
+        criterionId: criterion.id,
+        title: criterion.title,
+        description: criterion.description,
+        maxPoints: criterion.maxPoints,
+        sectionName: criterion.sectionName,
+        orderIndex: criterion.orderIndex,
+        points: null,
+        comment: null,
+      }))
+      .sort((a, b) => a.orderIndex - b.orderIndex);
+  }
+
+  getPeerResultActionLabel(result: PeerAssessmentResult): string {
+    if (result.status === 'WITHOUT_REVIEWER' || result.status === 'TEACHER_REVIEW_REQUIRED') {
+      return 'Оценить преподавателю';
+    }
+    return 'Редактировать';
+  }
+
+  getPeerReviewerLabel(result: PeerAssessmentResult): string {
+    if (result.reviewerTeamId) {
+      return result.reviewerTeamName ?? 'команда не указана';
+    }
+    if (result.status === 'WITHOUT_REVIEWER' || result.status === 'TEACHER_REVIEW_REQUIRED') {
+      return 'преподаватель';
+    }
+    return 'не назначена';
   }
 
   getPeerResultStatusLabel(status: string): string {
@@ -396,7 +439,10 @@ export class TaskDetailsModalComponent implements OnInit {
   }
 
   startEditPeerResult(result: PeerAssessmentResult): void {
-    this.peerEditDraft.set(buildPeerEditDraft(result));
+    this.peerEditDraft.set(buildPeerEditDraft({
+      ...result,
+      criteria: this.getPeerCriteriaForResult(result),
+    }));
     this.editingPeerResultId.set(result.id);
   }
 

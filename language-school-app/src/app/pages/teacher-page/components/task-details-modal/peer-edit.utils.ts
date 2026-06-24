@@ -3,8 +3,12 @@ import { PeerAssessmentCriterionResult, PeerAssessmentEditItem, PeerAssessmentRe
 export type PeerEditDraft = Record<string, { points: string; comment: string }>;
 
 export function buildPeerEditDraft(result: PeerAssessmentResult): PeerEditDraft {
+  return buildPeerEditDraftFromCriteria(result.criteria);
+}
+
+export function buildPeerEditDraftFromCriteria(criteria: PeerAssessmentCriterionResult[]): PeerEditDraft {
   const draft: PeerEditDraft = {};
-  for (const c of result.criteria) {
+  for (const c of criteria) {
     draft[c.criterionId] = {
       points: c.points !== null ? String(c.points) : '',
       comment: c.comment ?? '',
