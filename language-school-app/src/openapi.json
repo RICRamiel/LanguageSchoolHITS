@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": { "title": "Language School API", "version": "1.0" },
   "servers": [
-    { "url": "http://api.thallassianangel.su:5461", "description": "Generated server url" }
+    { "url": "https://api.thallassianangel.su:5461", "description": "Generated server url" }
   ],
   "security": [{ "JWT": [] }],
   "paths": {

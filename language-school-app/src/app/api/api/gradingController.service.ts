@@ -38,7 +38,7 @@ import { Configuration }                                     from '../configurat
 })
 export class GradingControllerService {
 
-    protected basePath = 'http://api.thallassianangel.su:5461';
+    protected basePath = 'https://api.thallassianangel.su:5461';
     public defaultHeaders = new HttpHeaders();
     public configuration = new Configuration();
     public encoder: HttpParameterCodec;

@@ -12,6 +12,12 @@ import {
   ParticipationAssessment,
   ParticipationAssessmentItem,
   AssessmentType,
+  PeerReviewAssignment,
+  PeerReviewDistributionType,
+  PeerReviewEnablePayload,
+  PeerReviewManualAssignmentPayload,
+  PeerReviewSettings,
+  PeerReviewWithoutReviewerWarning,
   PeerAssessmentCriterionResult,
   PeerAssessmentEditItem,
   PeerAssessmentResult,
@@ -183,6 +189,13 @@ type PeerReviewAssignmentResponse = {
   teacherEditedAt?: string | null;
 };
 
+type PeerReviewWithoutReviewerWarningResponse = {
+  assignmentId?: string;
+  teamId?: string;
+  teamName?: string;
+  message?: string;
+};
+
 type PeerAssessmentResultResponse = {
   taskId?: string;
   assignment?: PeerReviewAssignmentResponse | null;
@@ -203,6 +216,17 @@ type PeerReviewResultsResponse = {
   peerReviewConfirmedAt?: string | null;
   totalMaxPoints?: number | null;
   results?: PeerAssessmentResultResponse[] | null;
+};
+
+type PeerReviewSettingsResponse = {
+  taskId?: string;
+  peerReviewEnabled?: boolean;
+  peerReviewDistributionType?: string | null;
+  peerReviewerVisibleToTeams?: boolean;
+  peerReviewConfirmedAt?: string | null;
+  hasTeamsWithoutReviewer?: boolean;
+  assignments?: PeerReviewAssignmentResponse[] | null;
+  teamsWithoutReviewer?: PeerReviewWithoutReviewerWarningResponse[] | null;
 };
 
 @Injectable({ providedIn: 'root' })
@@ -327,6 +351,47 @@ export class TeacherService {
       .pipe(
         map((response) => this.normalizePeerReviewResults(response)),
       );
+  }
+
+  getPeerReviewSettings(taskId: string): Observable<PeerReviewSettings> {
+    const normalizedTaskId = taskId.trim();
+    if (!normalizedTaskId) {
+      return of(this.emptyPeerReviewSettings(''));
+    }
+
+    return this.http
+      .get<PeerReviewSettingsResponse>(withOpenApiBase(OPENAPI_PATHS.tasks.peerReviewSettings(normalizedTaskId)))
+      .pipe(map((settings) => this.mapPeerReviewSettings(settings, normalizedTaskId)));
+  }
+
+  enablePeerReview(taskId: string, payload: PeerReviewEnablePayload): Observable<TeacherTask | null> {
+    const normalizedTaskId = taskId.trim();
+    return this.http
+      .post<TeacherTaskResponse>(
+        withOpenApiBase(OPENAPI_PATHS.tasks.enablePeerReview(normalizedTaskId)),
+        payload,
+      )
+      .pipe(map((task) => task ? this.mapTask(task, task.courseName ?? task.groupName ?? '', normalizedTaskId) : null));
+  }
+
+  assignManualPeerReview(
+    taskId: string,
+    payload: PeerReviewManualAssignmentPayload,
+  ): Observable<PeerReviewAssignment> {
+    const normalizedTaskId = taskId.trim();
+    return this.http
+      .post<PeerReviewAssignmentResponse>(
+        withOpenApiBase(OPENAPI_PATHS.tasks.manualPeerReviewAssignments(normalizedTaskId)),
+        payload,
+      )
+      .pipe(map((assignment) => this.mapPeerReviewAssignment(assignment, normalizedTaskId)));
+  }
+
+  confirmPeerReview(taskId: string): Observable<PeerAssessmentResult[]> {
+    const normalizedTaskId = taskId.trim();
+    return this.http
+      .post<PeerReviewResultsResponse>(withOpenApiBase(OPENAPI_PATHS.tasks.confirmPeerReview(normalizedTaskId)), null)
+      .pipe(map((response) => this.normalizePeerReviewResults(response)));
   }
 
   editPeerAssessment(taskId: string, assignmentId: string, items: PeerAssessmentEditItem[]): Observable<void> {
@@ -795,6 +860,90 @@ export class TeacherService {
     return results.map((item) => this.mapPeerAssessmentResult(item, totalMaxPoints));
   }
 
+  private mapPeerReviewSettings(
+    settings: PeerReviewSettingsResponse | null | undefined,
+    fallbackTaskId: string,
+  ): PeerReviewSettings {
+    const taskId = this.toId(settings?.taskId) || fallbackTaskId;
+    const teamsWithoutReviewer = (settings?.teamsWithoutReviewer ?? [])
+      .map((warning) => this.mapPeerReviewWarning(warning))
+      .filter((warning): warning is PeerReviewWithoutReviewerWarning => warning !== null);
+
+    return {
+      taskId,
+      peerReviewEnabled: Boolean(settings?.peerReviewEnabled),
+      peerReviewDistributionType: this.resolvePeerReviewDistributionType(settings?.peerReviewDistributionType),
+      peerReviewerVisibleToTeams: Boolean(settings?.peerReviewerVisibleToTeams),
+      peerReviewConfirmedAt: this.asTrimmedString(settings?.peerReviewConfirmedAt) || null,
+      hasTeamsWithoutReviewer: Boolean(settings?.hasTeamsWithoutReviewer) || teamsWithoutReviewer.length > 0,
+      assignments: (settings?.assignments ?? []).map((assignment) => this.mapPeerReviewAssignment(assignment, taskId)),
+      teamsWithoutReviewer,
+    };
+  }
+
+  private emptyPeerReviewSettings(taskId: string): PeerReviewSettings {
+    return {
+      taskId,
+      peerReviewEnabled: false,
+      peerReviewDistributionType: null,
+      peerReviewerVisibleToTeams: false,
+      peerReviewConfirmedAt: null,
+      hasTeamsWithoutReviewer: false,
+      assignments: [],
+      teamsWithoutReviewer: [],
+    };
+  }
+
+  private mapPeerReviewAssignment(
+    assignment: PeerReviewAssignmentResponse | null | undefined,
+    fallbackTaskId: string,
+  ): PeerReviewAssignment {
+    return {
+      id: this.toId(assignment?.id) || `peer-assignment-${Math.random()}`,
+      taskId: this.toId(assignment?.taskId) || fallbackTaskId,
+      reviewerTeamId: this.toId(assignment?.reviewerTeamId) || null,
+      reviewedTeamId: this.toId(assignment?.reviewedTeamId) || null,
+      targetParticipationId: this.toId(assignment?.targetParticipationId) || null,
+      assessmentId: this.toId(assignment?.assessmentId) || null,
+      status: this.asTrimmedString(assignment?.status) || 'ASSIGNED',
+      createdAt: this.asTrimmedString(assignment?.createdAt) || null,
+      submittedAt: this.asTrimmedString(assignment?.submittedAt) || null,
+      teacherEditorId: this.toId(assignment?.teacherEditorId) || null,
+      teacherEditedAt: this.asTrimmedString(assignment?.teacherEditedAt) || null,
+    };
+  }
+
+  private mapPeerReviewWarning(
+    warning: PeerReviewWithoutReviewerWarningResponse | null | undefined,
+  ): PeerReviewWithoutReviewerWarning | null {
+    const teamId = this.toId(warning?.teamId);
+    const teamName = this.asTrimmedString(warning?.teamName);
+    if (!teamId && !teamName) {
+      return null;
+    }
+
+    return {
+      assignmentId: this.toId(warning?.assignmentId) || null,
+      teamId,
+      teamName: teamName || 'РљРѕРјР°РЅРґР° Р±РµР· РѕС†РµРЅС‰РёРєР°',
+      message: this.asTrimmedString(warning?.message),
+    };
+  }
+
+  private resolvePeerReviewDistributionType(value: unknown): PeerReviewDistributionType | null {
+    const normalized = this.asTrimmedString(value).toUpperCase();
+    if (
+      normalized === 'MANUAL'
+      || normalized === 'PAIR'
+      || normalized === 'CIRCLE'
+      || normalized === 'RANDOM_PAIR'
+      || normalized === 'RANDOM_CIRCLE'
+    ) {
+      return normalized;
+    }
+    return null;
+  }
+
   private mapPeerAssessmentCriterionResult(
     item: ParticipationAssessmentItemResponse | null | undefined,
   ): PeerAssessmentCriterionResult {
@@ -960,6 +1109,9 @@ export class TeacherService {
       maxTeamsAmount,
       votesThreshold,
       peerReviewEnabled: Boolean(task?.peerReviewEnabled),
+      peerReviewDistributionType: this.resolvePeerReviewDistributionType(task?.peerReviewDistributionType),
+      peerReviewerVisibleToTeams: Boolean(task?.peerReviewerVisibleToTeams),
+      peerReviewConfirmedAt: this.asTrimmedString(task?.peerReviewConfirmedAt) || null,
       teams: (task?.teams ?? []).map((t) => this.mapTeam(t)),
     };
   }

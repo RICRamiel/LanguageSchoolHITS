@@ -4,6 +4,10 @@ import {
   TaskCriterionPayload,
   PeerAssessmentEditItem,
   PeerAssessmentResult,
+  PeerReviewDistributionType,
+  PeerReviewEnablePayload,
+  PeerReviewManualAssignmentPayload,
+  PeerReviewSettings,
   TeacherTask,
   TeacherTaskDetailsSection,
   TeacherTaskSubmission,
@@ -40,10 +44,20 @@ export class TaskDetailsModalComponent implements OnInit {
   readonly peerAssessmentResultsError = input<string | null>(null);
   readonly peerAssessmentEditSaving = input<boolean>(false);
   readonly peerAssessmentEditError = input<string | null>(null);
+  readonly peerReviewSettings = input<PeerReviewSettings | null>(null);
+  readonly peerReviewSettingsLoading = input<boolean>(false);
+  readonly peerReviewSettingsSaving = input<boolean>(false);
+  readonly peerReviewSettingsError = input<string | null>(null);
+  readonly peerReviewManualAssignmentSaving = input<boolean>(false);
+  readonly peerReviewConfirmSaving = input<boolean>(false);
   readonly createCriterion = output<TaskCriterionPayload>();
   readonly editPeerAssessment = output<{ assignmentId: string; items: PeerAssessmentEditItem[] }>();
+  readonly enablePeerReview = output<PeerReviewEnablePayload>();
+  readonly assignManualPeerReview = output<PeerReviewManualAssignmentPayload>();
+  readonly confirmPeerReview = output<void>();
   readonly updateCriterion = output<{ criterionId: string; payload: TaskCriterionPayload }>();
   readonly deactivateCriterion = output<string>();
+  readonly distributionTypes: PeerReviewDistributionType[] = ['MANUAL', 'PAIR', 'CIRCLE', 'RANDOM_PAIR', 'RANDOM_CIRCLE'];
   readonly selectedSection = signal<TeacherTaskDetailsSection>('overview');
   readonly commentText = signal('');
   readonly newTeamName = signal('');
@@ -56,18 +70,80 @@ export class TaskDetailsModalComponent implements OnInit {
   readonly editingCriterionId = signal<string | null>(null);
   readonly editingPeerResultId = signal<string | null>(null);
   readonly peerEditDraft = signal<PeerEditDraft>({});
-  readonly teamsWithoutReviewer = computed(() =>
-    this.peerAssessmentResults()
+  readonly selectedPeerDistributionType = signal<PeerReviewDistributionType>('MANUAL');
+  readonly peerReviewerVisibleToTeams = signal(false);
+  readonly selectedReviewerTeamId = signal('');
+  readonly selectedReviewedTeamId = signal('');
+  readonly teamsWithoutReviewer = computed(() => {
+    const settingsTeams = this.peerReviewSettings()?.teamsWithoutReviewer.map((warning) => warning.teamName) ?? [];
+    const resultTeams = this.peerAssessmentResults()
       .filter((r) => r.status === 'WITHOUT_REVIEWER')
-      .map((r) => r.reviewedTeamName),
-  );
+      .map((r) => r.reviewedTeamName);
+
+    return [...settingsTeams, ...resultTeams]
+      .filter((teamName, index, list) => teamName && list.indexOf(teamName) === index);
+  });
+  readonly canConfirmPeerReviews = computed(() => {
+    const results = this.peerAssessmentResults();
+    return results.length > 0
+      && results.every((result) => Boolean(result.assessmentId))
+      && !this.peerReviewSettings()?.peerReviewConfirmedAt;
+  });
 
   ngOnInit(): void {
     this.selectedSection.set(this.activeSection());
+    this.selectedPeerDistributionType.set(this.task().peerReviewDistributionType ?? 'MANUAL');
+    this.peerReviewerVisibleToTeams.set(this.task().peerReviewerVisibleToTeams);
   }
 
   setSection(section: TeacherTaskDetailsSection): void {
     this.selectedSection.set(section);
+  }
+
+  onPeerDistributionSelect(value: string): void {
+    const normalized = value as PeerReviewDistributionType;
+    if (this.distributionTypes.includes(normalized)) {
+      this.selectedPeerDistributionType.set(normalized);
+    }
+  }
+
+  onPeerReviewerVisibleChange(event: Event): void {
+    const target = event.target as HTMLInputElement | null;
+    this.peerReviewerVisibleToTeams.set(Boolean(target?.checked));
+  }
+
+  onEnablePeerReview(): void {
+    if (this.peerReviewSettingsSaving()) {
+      return;
+    }
+    this.enablePeerReview.emit({
+      peerReviewDistributionType: this.selectedPeerDistributionType(),
+      peerReviewerVisibleToTeams: this.peerReviewerVisibleToTeams(),
+    });
+  }
+
+  onReviewerTeamSelect(value: string): void {
+    this.selectedReviewerTeamId.set(value);
+  }
+
+  onReviewedTeamSelect(value: string): void {
+    this.selectedReviewedTeamId.set(value);
+  }
+
+  onAssignManualPeerReview(): void {
+    const reviewerTeamId = this.selectedReviewerTeamId();
+    const reviewedTeamId = this.selectedReviewedTeamId();
+    if (!reviewerTeamId || !reviewedTeamId || reviewerTeamId === reviewedTeamId || this.peerReviewManualAssignmentSaving()) {
+      return;
+    }
+    this.assignManualPeerReview.emit({ reviewerTeamId, reviewedTeamId });
+  }
+
+  onConfirmPeerReview(): void {
+    if (!this.canConfirmPeerReviews() || this.peerReviewConfirmSaving()) {
+      return;
+    }
+    this.confirmPeerReview.emit();
   }
 
   onCommentInput(event: Event): void {
@@ -156,6 +232,43 @@ export class TaskDetailsModalComponent implements OnInit {
     }
   }
 
+  getPeerDistributionLabel(value: PeerReviewDistributionType | null): string {
+    switch (value) {
+      case 'MANUAL':
+        return 'Ручное назначение';
+      case 'PAIR':
+        return 'Попарно';
+      case 'CIRCLE':
+        return 'По кругу';
+      case 'RANDOM_PAIR':
+        return 'Случайные пары';
+      case 'RANDOM_CIRCLE':
+        return 'Случайный круг';
+      default:
+        return 'Не задано';
+    }
+  }
+
+  getTeamName(teamId: string | null): string {
+    if (!teamId) {
+      return 'не назначена';
+    }
+    return this.task().teams.find((team) => team.id === teamId)?.name ?? `Команда #${teamId}`;
+  }
+
+  getConfirmPeerReviewHint(): string {
+    if (this.peerReviewSettings()?.peerReviewConfirmedAt) {
+      return 'Результаты уже подтверждены';
+    }
+    if (!this.peerAssessmentResults().length) {
+      return 'Нет результатов для подтверждения';
+    }
+    if (!this.peerAssessmentResults().every((result) => Boolean(result.assessmentId))) {
+      return 'Есть команды без отправленной оценки';
+    }
+    return '';
+  }
+
   canEditPeerResult(result: PeerAssessmentResult): boolean {
     return Boolean(result.assignmentId)
       && result.criteria.length > 0
@@ -168,6 +281,8 @@ export class TaskDetailsModalComponent implements OnInit {
         return 'Назначено';
       case 'SUBMITTED':
         return 'Отправлено';
+      case 'TEACHER_REVIEW_REQUIRED':
+        return 'Требуется проверка преподавателя';
       case 'TEACHER_EDITED':
         return 'Изменено преподавателем';
       case 'FINAL':

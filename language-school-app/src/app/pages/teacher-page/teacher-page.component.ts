@@ -13,6 +13,9 @@ import {
   ParticipationAssessment,
   PeerAssessmentResult,
   PeerAssessmentEditItem,
+  PeerReviewEnablePayload,
+  PeerReviewManualAssignmentPayload,
+  PeerReviewSettings,
   AssessmentSubmitItem,
   TaskCriterion,
   TaskCriterionPayload,
@@ -146,6 +149,12 @@ export class TeacherPageComponent implements OnInit {
   peerAssessmentResultsError: string | null = null;
   peerAssessmentEditSaving = false;
   peerAssessmentEditError: string | null = null;
+  peerReviewSettings: PeerReviewSettings | null = null;
+  peerReviewSettingsLoading = false;
+  peerReviewSettingsSaving = false;
+  peerReviewSettingsError: string | null = null;
+  peerReviewManualAssignmentSaving = false;
+  peerReviewConfirmSaving = false;
   selectedAssessmentStudent: TeacherStudentGrade | null = null;
   selectedAssessmentParticipationId: string | null = null;
   teacherAssessment: ParticipationAssessment | null = null;
@@ -223,6 +232,7 @@ export class TeacherPageComponent implements OnInit {
     this.selectedTaskSection = payload.section;
     this.isTaskDetailsModalOpen = true;
     this.loadTaskCriteria(task.id);
+    this.loadPeerReviewSettings(task.id);
     this.loadPeerAssessmentResults(task);
 
     if (task.id) {
@@ -338,6 +348,12 @@ export class TeacherPageComponent implements OnInit {
     this.peerAssessmentResultsError = null;
     this.peerAssessmentEditSaving = false;
     this.peerAssessmentEditError = null;
+    this.peerReviewSettings = null;
+    this.peerReviewSettingsLoading = false;
+    this.peerReviewSettingsSaving = false;
+    this.peerReviewSettingsError = null;
+    this.peerReviewManualAssignmentSaving = false;
+    this.peerReviewConfirmSaving = false;
   }
 
   onCreateCriterion(payload: TaskCriterionPayload): void {
@@ -883,11 +899,156 @@ export class TeacherPageComponent implements OnInit {
     });
   }
 
+  onEnablePeerReview(payload: PeerReviewEnablePayload): void {
+    const taskId = this.selectedTask?.id;
+    if (!taskId || this.peerReviewSettingsSaving) {
+      return;
+    }
+
+    this.peerReviewSettingsSaving = true;
+    this.peerReviewSettingsError = null;
+
+    this.teacherService.enablePeerReview(taskId, payload).pipe(
+      switchMap((updatedTask) => {
+        if (updatedTask) {
+          this.applySelectedTaskUpdate(updatedTask);
+        } else if (this.selectedTask) {
+          this.applySelectedTaskUpdate({
+            ...this.selectedTask,
+            peerReviewEnabled: true,
+            peerReviewDistributionType: payload.peerReviewDistributionType,
+            peerReviewerVisibleToTeams: payload.peerReviewerVisibleToTeams,
+          });
+        }
+        return this.teacherService.getPeerReviewSettings(taskId);
+      }),
+      finalize(() => {
+        this.peerReviewSettingsSaving = false;
+      }),
+      catchError(() => {
+        this.peerReviewSettingsError = 'Не удалось включить peer-оценивание';
+        return of(null);
+      }),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: (settings) => {
+        if (!settings) {
+          return;
+        }
+        this.peerReviewSettings = settings;
+        if (this.selectedTask) {
+          this.loadPeerAssessmentResults(this.selectedTask);
+        }
+      },
+    });
+  }
+
+  onAssignManualPeerReview(payload: PeerReviewManualAssignmentPayload): void {
+    const taskId = this.selectedTask?.id;
+    if (!taskId || this.peerReviewManualAssignmentSaving) {
+      return;
+    }
+
+    this.peerReviewManualAssignmentSaving = true;
+    this.peerReviewSettingsError = null;
+
+    this.teacherService.assignManualPeerReview(taskId, payload).pipe(
+      switchMap(() => this.teacherService.getPeerReviewSettings(taskId)),
+      finalize(() => {
+        this.peerReviewManualAssignmentSaving = false;
+      }),
+      catchError(() => {
+        this.peerReviewSettingsError = 'Не удалось назначить оценщика';
+        return of(null);
+      }),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: (settings) => {
+        if (!settings) {
+          return;
+        }
+        this.peerReviewSettings = settings;
+        if (this.selectedTask) {
+          this.loadPeerAssessmentResults(this.selectedTask);
+        }
+      },
+    });
+  }
+
+  onConfirmPeerReview(): void {
+    const taskId = this.selectedTask?.id;
+    if (!taskId || this.peerReviewConfirmSaving) {
+      return;
+    }
+
+    this.peerReviewConfirmSaving = true;
+    this.peerReviewSettingsError = null;
+
+    this.teacherService.confirmPeerReview(taskId).pipe(
+      switchMap((results) => {
+        this.peerAssessmentResults = results;
+        return this.teacherService.getPeerReviewSettings(taskId);
+      }),
+      finalize(() => {
+        this.peerReviewConfirmSaving = false;
+      }),
+      catchError(() => {
+        this.peerReviewSettingsError = 'Не удалось подтвердить peer-оценивание';
+        return of(null);
+      }),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: (settings) => {
+        if (!settings) {
+          return;
+        }
+        this.peerReviewSettings = settings;
+        if (this.selectedTask) {
+          this.applySelectedTaskUpdate({
+            ...this.selectedTask,
+            peerReviewConfirmedAt: settings.peerReviewConfirmedAt,
+          });
+        }
+      },
+    });
+  }
+
+  private loadPeerReviewSettings(taskId: string): void {
+    this.peerReviewSettings = null;
+    this.peerReviewSettingsLoading = true;
+    this.peerReviewSettingsError = null;
+
+    this.teacherService.getPeerReviewSettings(taskId).pipe(
+      finalize(() => {
+        this.peerReviewSettingsLoading = false;
+      }),
+      catchError(() => {
+        this.peerReviewSettingsError = 'Не удалось загрузить настройки peer-оценивания';
+        return of(null);
+      }),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next: (settings) => {
+        this.peerReviewSettings = settings;
+        if (settings?.peerReviewEnabled && this.selectedTask && !this.selectedTask.peerReviewEnabled) {
+          this.applySelectedTaskUpdate({
+            ...this.selectedTask,
+            peerReviewEnabled: true,
+            peerReviewDistributionType: settings.peerReviewDistributionType,
+            peerReviewerVisibleToTeams: settings.peerReviewerVisibleToTeams,
+            peerReviewConfirmedAt: settings.peerReviewConfirmedAt,
+          });
+          this.loadPeerAssessmentResults(this.selectedTask);
+        }
+      },
+    });
+  }
+
   private loadPeerAssessmentResults(task: TeacherTask): void {
     this.peerAssessmentResults = [];
     this.peerAssessmentResultsError = null;
 
-    if (!task.peerReviewEnabled) {
+    if (!task.peerReviewEnabled && !this.peerReviewSettings?.peerReviewEnabled) {
       this.peerAssessmentResultsLoading = false;
       return;
     }
@@ -908,6 +1069,13 @@ export class TeacherPageComponent implements OnInit {
         this.peerAssessmentResults = results;
       },
     });
+  }
+
+  private applySelectedTaskUpdate(task: TeacherTask): void {
+    this.selectedTask = task;
+    this.allTasksSubject.next(
+      this.allTasksSubject.value.map((item) => (item.id === task.id ? task : item)),
+    );
   }
 
   private resolveParticipationId(studentId: string): string | null {

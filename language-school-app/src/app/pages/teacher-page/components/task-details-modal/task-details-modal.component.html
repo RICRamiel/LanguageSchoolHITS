@@ -29,16 +29,14 @@
       >
         Критерии
       </button>
-      @if (task().peerReviewEnabled) {
-        <button
-          class="modal__tab"
-          type="button"
-          [class.modal__tab--active]="selectedSection() === 'peerReviews'"
-          (click)="setSection('peerReviews')"
-        >
-          Peer-оценки
-        </button>
-      }
+      <button
+        class="modal__tab"
+        type="button"
+        [class.modal__tab--active]="selectedSection() === 'peerReviews'"
+        (click)="setSection('peerReviews')"
+      >
+        Peer-оценки
+      </button>
       <button
         class="modal__tab"
         type="button"
@@ -224,6 +222,130 @@
         }
       </div>
     } @else if (selectedSection() === 'peerReviews') {
+      @if (peerReviewSettingsLoading()) {
+        <p class="modal__empty">Загрузка настроек peer-оценивания...</p>
+      }
+      @if (peerReviewSettingsError()) {
+        <p class="modal__empty">{{ peerReviewSettingsError() }}</p>
+      }
+
+      @if (!task().peerReviewEnabled && !peerReviewSettings()?.peerReviewEnabled) {
+        <section class="modal__peer-settings">
+          <p class="modal__item-title">Peer-to-peer оценивание выключено</p>
+          <p class="modal__item-meta">
+            Выберите схему распределения оценщиков и включите p2p для этого задания.
+          </p>
+          <div class="modal__peer-controls">
+            <label class="modal__peer-field">
+              <span>Тип распределения</span>
+              <select
+                class="modal__team-select"
+                [value]="selectedPeerDistributionType()"
+                (change)="onPeerDistributionSelect($any($event.target).value)"
+              >
+                @for (type of distributionTypes; track type) {
+                  <option [value]="type">{{ getPeerDistributionLabel(type) }}</option>
+                }
+              </select>
+            </label>
+            <label class="modal__peer-checkbox">
+              <input
+                type="checkbox"
+                [checked]="peerReviewerVisibleToTeams()"
+                (change)="onPeerReviewerVisibleChange($event)"
+              />
+              Показывать командам, кто их оценивает
+            </label>
+          </div>
+          <button
+            class="modal__action-btn"
+            type="button"
+            [disabled]="peerReviewSettingsSaving()"
+            (click)="onEnablePeerReview()"
+          >
+            {{ peerReviewSettingsSaving() ? 'Включение...' : 'Включить peer-оценивание' }}
+          </button>
+        </section>
+      } @else {
+        <section class="modal__peer-settings">
+          <div class="modal__peer-settings-head">
+            <div>
+              <p class="modal__item-title">Peer-to-peer включено</p>
+              <p class="modal__item-meta">
+                Тип: {{ getPeerDistributionLabel(peerReviewSettings()?.peerReviewDistributionType ?? task().peerReviewDistributionType) }}
+              </p>
+              <p class="modal__item-meta">
+                Оценщик виден командам: {{ (peerReviewSettings()?.peerReviewerVisibleToTeams ?? task().peerReviewerVisibleToTeams) ? 'да' : 'нет' }}
+              </p>
+              @if (peerReviewSettings()?.peerReviewConfirmedAt || task().peerReviewConfirmedAt) {
+                <p class="modal__item-meta">
+                  Подтверждено: {{ peerReviewSettings()?.peerReviewConfirmedAt ?? task().peerReviewConfirmedAt }}
+                </p>
+              }
+            </div>
+            <button
+              class="modal__action-btn"
+              type="button"
+              [disabled]="!canConfirmPeerReviews() || peerReviewConfirmSaving()"
+              [title]="getConfirmPeerReviewHint()"
+              (click)="onConfirmPeerReview()"
+            >
+              {{ peerReviewConfirmSaving() ? 'Подтверждение...' : 'Подтвердить результаты' }}
+            </button>
+          </div>
+
+          @if ((peerReviewSettings()?.peerReviewDistributionType ?? task().peerReviewDistributionType) === 'MANUAL') {
+            <div class="modal__peer-manual">
+              <label class="modal__peer-field">
+                <span>Команда-оценщик</span>
+                <select
+                  class="modal__team-select"
+                  [value]="selectedReviewerTeamId()"
+                  (change)="onReviewerTeamSelect($any($event.target).value)"
+                >
+                  <option value="">Выберите команду</option>
+                  @for (team of task().teams; track team.id) {
+                    <option [value]="team.id" [disabled]="team.id === selectedReviewedTeamId()">{{ team.name }}</option>
+                  }
+                </select>
+              </label>
+              <label class="modal__peer-field">
+                <span>Оцениваемая команда</span>
+                <select
+                  class="modal__team-select"
+                  [value]="selectedReviewedTeamId()"
+                  (change)="onReviewedTeamSelect($any($event.target).value)"
+                >
+                  <option value="">Выберите команду</option>
+                  @for (team of task().teams; track team.id) {
+                    <option [value]="team.id" [disabled]="team.id === selectedReviewerTeamId()">{{ team.name }}</option>
+                  }
+                </select>
+              </label>
+              <button
+                class="modal__action-btn"
+                type="button"
+                [disabled]="!selectedReviewerTeamId() || !selectedReviewedTeamId() || selectedReviewerTeamId() === selectedReviewedTeamId() || peerReviewManualAssignmentSaving()"
+                (click)="onAssignManualPeerReview()"
+              >
+                {{ peerReviewManualAssignmentSaving() ? 'Назначение...' : 'Назначить' }}
+              </button>
+            </div>
+          }
+
+          @if (peerReviewSettings()?.assignments?.length) {
+            <div class="modal__peer-assignments">
+              @for (assignment of peerReviewSettings()?.assignments ?? []; track assignment.id) {
+                <p class="modal__item-meta">
+                  {{ getTeamName(assignment.reviewerTeamId) }} → {{ getTeamName(assignment.reviewedTeamId) }}
+                  · {{ getPeerResultStatusLabel(assignment.status) }}
+                </p>
+              }
+            </div>
+          }
+        </section>
+      }
+
       @if (teamsWithoutReviewer().length) {
         <div class="modal__peer-warning">
           <p class="modal__peer-warning-title">Внимание: команды без оценщика</p>

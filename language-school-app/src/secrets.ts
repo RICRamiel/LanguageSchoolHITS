@@ -1,1 +1,1 @@
-export const API_URL = 'http://api.thallassianangel.su:5461';
+export const API_URL = 'https://api.thallassianangel.su:5461';

@@ -1,6 +1,6 @@
 import { API_URL } from '../../../secrets';
 
-const OPENAPI_SERVER_URL = 'http://api.thallassianangel.su:5461';
+const OPENAPI_SERVER_URL = 'https://api.thallassianangel.su:5461';
 
 export const OPENAPI_PATHS = {
   auth: {
@@ -47,6 +47,14 @@ export const OPENAPI_PATHS = {
       `/task/${encodeURIComponent(taskId)}/participations/${encodeURIComponent(participationId)}/self-assessment`,
     peerReviewResults: (taskId: string) =>
       `/task/${encodeURIComponent(taskId)}/peer-review/results`,
+    peerReviewSettings: (taskId: string) =>
+      `/task/${encodeURIComponent(taskId)}/peer-review`,
+    enablePeerReview: (taskId: string) =>
+      `/task/${encodeURIComponent(taskId)}/peer-review/enable`,
+    manualPeerReviewAssignments: (taskId: string) =>
+      `/task/${encodeURIComponent(taskId)}/peer-review/manual-assignments`,
+    confirmPeerReview: (taskId: string) =>
+      `/task/${encodeURIComponent(taskId)}/peer-review/confirm`,
     peerReviewAssessment: (taskId: string, assignmentId: string) =>
       `/task/${encodeURIComponent(taskId)}/peer-review/assignments/${encodeURIComponent(assignmentId)}/assessment`,
     myPeerReviewAssignment: (taskId: string) =>

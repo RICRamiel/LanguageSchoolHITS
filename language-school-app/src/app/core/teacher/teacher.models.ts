@@ -13,6 +13,7 @@ export type TaskResolveType =
   | 'CAPTAINS_SOLUTION'
   | 'MOST_VOTES_SOLUTION'
   | 'AT_LEAST_VOTES_SOLUTION';
+export type PeerReviewDistributionType = 'MANUAL' | 'PAIR' | 'CIRCLE' | 'RANDOM_PAIR' | 'RANDOM_CIRCLE';
 
 export type TaskDetailsOpenPayload = {
   taskId: string;
@@ -73,7 +74,52 @@ export type TeacherTask = {
   maxTeamsAmount: number | null;
   votesThreshold: number | null;
   peerReviewEnabled: boolean;
+  peerReviewDistributionType: PeerReviewDistributionType | null;
+  peerReviewerVisibleToTeams: boolean;
+  peerReviewConfirmedAt: string | null;
   teams: TaskTeam[];
+};
+
+export type PeerReviewAssignment = {
+  id: string;
+  taskId: string;
+  reviewerTeamId: string | null;
+  reviewedTeamId: string | null;
+  targetParticipationId: string | null;
+  assessmentId: string | null;
+  status: string;
+  createdAt: string | null;
+  submittedAt: string | null;
+  teacherEditorId: string | null;
+  teacherEditedAt: string | null;
+};
+
+export type PeerReviewWithoutReviewerWarning = {
+  assignmentId: string | null;
+  teamId: string;
+  teamName: string;
+  message: string;
+};
+
+export type PeerReviewSettings = {
+  taskId: string;
+  peerReviewEnabled: boolean;
+  peerReviewDistributionType: PeerReviewDistributionType | null;
+  peerReviewerVisibleToTeams: boolean;
+  peerReviewConfirmedAt: string | null;
+  hasTeamsWithoutReviewer: boolean;
+  assignments: PeerReviewAssignment[];
+  teamsWithoutReviewer: PeerReviewWithoutReviewerWarning[];
+};
+
+export type PeerReviewEnablePayload = {
+  peerReviewDistributionType: PeerReviewDistributionType;
+  peerReviewerVisibleToTeams: boolean;
+};
+
+export type PeerReviewManualAssignmentPayload = {
+  reviewerTeamId: string;
+  reviewedTeamId: string;
 };
 
 export type TaskCriterion = {
